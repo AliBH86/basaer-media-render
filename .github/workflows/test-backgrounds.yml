@@ -53,7 +53,7 @@ jobs:
           curl -sS -X POST "https://api.cloudinary.com/v1_1/b72gfdzx/video/upload" \
             -F "file=@out/${{ matrix.style }}.mp4" \
             -F "upload_preset=ml_default" \
-            -F "public_id=reel-bg-test/${{ matrix.style }}" \
+            -F "public_id=reel-bg-test/${{ matrix.style }}-${{ github.run_id }}" \
             -o response.json
           cat response.json
           echo "---"
