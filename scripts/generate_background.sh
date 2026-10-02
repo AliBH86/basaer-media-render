@@ -59,7 +59,7 @@ case "$STYLE" in
     # Source tile is 2200x2200; crop window is 1080x1920, so x must stay in [0,1120]
     # and y in [0,280] or the crop rectangle runs off the edge of the source image.
     ffmpeg -y -loop 1 -i "${ASSETS_DIR}/lattice_tile.png" \
-      -vf "crop=${W}:${H}:x='mod(T*14,1120)':y='mod(T*6,280)'" \
+      -vf "crop=${W}:${H}:x='mod(t*14,1120)':y='mod(t*6,280)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
 
