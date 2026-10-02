@@ -24,7 +24,7 @@ case "$STYLE" in
     # Self-authored diagonal two-tone navy gradient (assets/gradient_tile.png, our own
     # SVG), panned slowly across a larger canvas. Source is 2400x2400, crop is
     # 1080x1920, so x must stay in [0,1320] and y in [0,480].
-    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/gradient_tile.png" \
+    ffmpeg -y -nostdin -loop 1 -i "${ASSETS_DIR}/gradient_tile.png" \
       -vf "crop=${W}:${H}:x='mod(t*10,1320)':y='mod(t*7,480)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
@@ -40,7 +40,7 @@ case "$STYLE" in
     # + crop-pan approach replaces it entirely rather than chasing the blend filter.)
     # Source tile is 2400x2400, crop is 1080x1920, so x must stay in [0,1320] and y in
     # [0,480].
-    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/stars_tile.png" \
+    ffmpeg -y -nostdin -loop 1 -i "${ASSETS_DIR}/stars_tile.png" \
       -vf "crop=${W}:${H}:x='mod(t*8,1320)':y='mod(t*5,480)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
@@ -49,7 +49,7 @@ case "$STYLE" in
     # Self-authored diagonal light-ray pattern (assets/rays_tile.png, our own SVG),
     # panned slowly across a larger canvas. Source is 2400x2400, crop is 1080x1920,
     # so x must stay in [0,1320] and y in [0,480].
-    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/rays_tile.png" \
+    ffmpeg -y -nostdin -loop 1 -i "${ASSETS_DIR}/rays_tile.png" \
       -vf "crop=${W}:${H}:x='mod(t*18,1320)':y='mod(t*4,480)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
@@ -64,7 +64,7 @@ case "$STYLE" in
     # correct, but the motion was too subtle to read as "mist" on screen.)
     # Source tile is 2400x2400, crop is 1080x1920, so x must stay in [0,1320] and y in
     # [0,480].
-    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/mist_tile.png" \
+    ffmpeg -y -nostdin -loop 1 -i "${ASSETS_DIR}/mist_tile.png" \
       -vf "crop=${W}:${H}:x='mod(t*22,1320)':y='mod(t*12,480)',gblur=sigma=40" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
@@ -75,7 +75,7 @@ case "$STYLE" in
     # slowly across a larger canvas for a drifting effect.
     # Source tile is 2200x2200; crop window is 1080x1920, so x must stay in [0,1120]
     # and y in [0,280] or the crop rectangle runs off the edge of the source image.
-    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/lattice_tile.png" \
+    ffmpeg -y -nostdin -loop 1 -i "${ASSETS_DIR}/lattice_tile.png" \
       -vf "crop=${W}:${H}:x='mod(t*14,1120)':y='mod(t*6,280)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;

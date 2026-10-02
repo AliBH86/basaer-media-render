@@ -55,7 +55,7 @@ jobs:
         run: |
           REEL_FILE=$(ls out/reel_*.mp4)
           node scripts/pick_still_times.js out | while read -r ayah seconds; do
-            ffmpeg -y -ss "$seconds" -i "$REEL_FILE" -frames:v 1 "out/frame_ayah_${ayah}.png"
+            ffmpeg -y -nostdin -ss "$seconds" -i "$REEL_FILE" -frames:v 1 "out/frame_ayah_${ayah}.png"
           done
           ls -la out/
 

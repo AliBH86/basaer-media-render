@@ -112,7 +112,7 @@ async function main() {
   sh(`curl -sS -L "${timeline.audioUrl}" -o "${chapterPath}"`);
   const audioPath = path.join(workDir, 'audio.m4a');
   const fadeFilter = timeline.fadeInMs > 0 ? `,afade=t=in:st=0:d=${(timeline.fadeInMs / 1000).toFixed(3)}` : '';
-  sh(`ffmpeg -y -i "${chapterPath}" -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -af "aformat=channel_layouts=stereo${fadeFilter}" -c:a aac -b:a 128k "${audioPath}"`);
+  sh(`ffmpeg -y -nostdin -i "${chapterPath}" -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -af "aformat=channel_layouts=stereo${fadeFilter}" -c:a aac -b:a 128k "${audioPath}"`);
 
   // 4. Background, with render-budget fallback
   const bgPath = path.join(workDir, 'bg.mp4');
@@ -173,7 +173,7 @@ async function main() {
 
   const audioInputIdx = overlaySpecs.length + 1;
   const outPath = path.join(outDir, `reel_${surah}_${ayahStart}.mp4`);
-  sh(`ffmpeg -y ${inputs} -filter_complex_script "${filterScriptPath}" -map "[vout]" -map ${audioInputIdx}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 128k -shortest "${outPath}"`);
+  sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${filterScriptPath}" -map "[vout]" -map ${audioInputIdx}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 128k -shortest "${outPath}"`);
 
   const elapsed = (Date.now() - t0) / 1000;
   console.log(`\nTotal render time: ${elapsed.toFixed(1)}s (budget: ${TOTAL_BUDGET_SEC}s)`);
