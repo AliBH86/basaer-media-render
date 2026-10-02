@@ -1,0 +1,46 @@
+name: Test background styles
+
+on:
+  workflow_dispatch:
+    inputs:
+      duration:
+        description: "Sample duration in seconds"
+        default: "15"
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        style: [gradient, stars, rays, mist, lattice, bokeh]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm ffmpeg is available
+        run: ffmpeg -version | head -1
+
+      - name: Render ${{ matrix.style }} sample
+        run: |
+          chmod +x scripts/generate_background.sh
+          mkdir -p out
+          time ./scripts/generate_background.sh "${{ matrix.style }}" "${{ github.event.inputs.duration || '15' }}" "out/${{ matrix.style }}.mp4"
+          ls -la "out/${{ matrix.style }}.mp4"
+
+      - name: Upload ${{ matrix.style }} to Cloudinary (unsigned preset, no secret needed)
+        run: |
+          curl -sS -X POST "https://api.cloudinary.com/v1_1/b72gfdzx/video/upload" \
+            -F "file=@out/${{ matrix.style }}.mp4" \
+            -F "upload_preset=ml_default" \
+            -F "public_id=reel-bg-test/${{ matrix.style }}" \
+            -o response.json
+          cat response.json
+          echo "---"
+          node -e "const r=require('./response.json'); console.log('${{ matrix.style }} ->', r.secure_url || JSON.stringify(r.error));"
+
+      - name: Upload artifact (backup copy, 7-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: bg-${{ matrix.style }}
+          path: out/${{ matrix.style }}.mp4
+          retention-days: 7
