@@ -6,6 +6,8 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+const { amiriQuranBase64, montserratBase64 } = require('./font_data');
+
 const REPO_ROOT = path.join(__dirname, '..');
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
 const W = 1080, H = 1920, FPS = 30;
@@ -37,22 +39,35 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   // the per-ayah reference line below.
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Self-hosted, base64-embedded fonts - no network dependency at render time. Google
+     Fonts splits Amiri Quran into separate arabic/latin woff2 chunks fetched on demand;
+     under repeated headless Chrome invocations in CI, that chunked fetch was flaky
+     (different Arabic words randomly rendered as tofu/missing-glyph boxes across runs
+     depending on which chunk hadn't finished loading). Embedding the font data directly
+     removes the race entirely instead of trying to out-wait it. */
+  @font-face {
+    font-family: 'Amiri Quran Local';
+    src: url(data:font/woff2;base64,${amiriQuranBase64}) format('woff2');
+    font-weight: 400 700;
+  }
+  @font-face {
+    font-family: 'Montserrat Local';
+    src: url(data:font/woff2;base64,${montserratBase64}) format('woff2');
+    font-weight: 100 900;
+  }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { width:${W}px; height:${H}px; background:transparent; font-family:'Amiri Quran', serif; position:relative; overflow:hidden; }
+  body { width:${W}px; height:${H}px; background:transparent; font-family:'Amiri Quran Local', serif; position:relative; overflow:hidden; }
   .progress-track { position:absolute; top:290px; left:${SAFE_X}px; width:${SAFE_W}px; height:4px; background:rgba(242,236,225,0.18); border-radius:2px; }
   .progress-fill { position:absolute; top:290px; left:${SAFE_X}px; width:${fillPct * SAFE_W / 100}px; height:4px; background:#C9A24B; border-radius:2px; }
   .header { position:absolute; top:324px; width:100%; text-align:center; }
-  .surah-ar { font-family:'Amiri Quran',serif; font-size:38px; color:#C9A24B; }
-  .surah-en { font-family:'Montserrat',sans-serif; font-size:23px; color:#F2ECE1; opacity:0.8; margin-top:10px; letter-spacing:1px; }
-  .reciter { font-family:'Montserrat',sans-serif; font-size:32px; color:#F2ECE1; opacity:0.65; margin-top:14px; }
+  .surah-ar { font-family:'Amiri Quran Local',serif; font-size:38px; color:#C9A24B; }
+  .surah-en { font-family:'Montserrat Local',sans-serif; font-size:23px; color:#F2ECE1; opacity:0.8; margin-top:10px; letter-spacing:1px; }
+  .reciter { font-family:'Montserrat Local',sans-serif; font-size:32px; color:#F2ECE1; opacity:0.65; margin-top:14px; }
   .content { position:absolute; top:480px; bottom:700px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:hidden; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
-  .translation { font-family:'Montserrat',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:46px; max-width:860px; line-height:1.4; }
-  .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
+  .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:46px; max-width:860px; line-height:1.4; }
+  .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
 </style></head>
 <body>
   <div class="progress-track"></div>
@@ -93,13 +108,12 @@ let chromeUserDataDir = null;
 function renderOverlayPng(html, outPath) {
   const htmlPath = outPath.replace(/\.png$/, '.html');
   fs.writeFileSync(htmlPath, html);
-  // A shared --user-data-dir across all 15-ish overlay invocations lets Chrome cache the
-  // Google Fonts files after the first hit instead of re-fetching over the network every
-  // time, which also removes most of the font-loading race the fonts.ready gate protects
-  // against. --virtual-time-budget gives the page's async work (document.fonts.ready, the
-  // autofit it gates) time to finish before the screenshot, rather than firing at 'load'.
+  // Fonts are embedded as data: URIs (see font_data.js) so there's no network fetch left
+  // to race - document.fonts.ready now resolves against data already in the page. Kept
+  // --virtual-time-budget as a small safety margin and the shared --user-data-dir since
+  // reusing one Chrome profile across the ~15 invocations is still a bit faster to launch.
   if (!chromeUserDataDir) chromeUserDataDir = fs.mkdtempSync('/tmp/chrome-profile-');
-  sh(`"${CHROME}" --headless --disable-gpu --disable-software-rasterizer --hide-scrollbars --default-background-color=00000000 --window-size=${W},${H} --user-data-dir="${chromeUserDataDir}" --virtual-time-budget=4000 --screenshot="${outPath}" "file://${htmlPath}" 2>&1 | tail -3`);
+  sh(`"${CHROME}" --headless --disable-gpu --disable-software-rasterizer --hide-scrollbars --default-background-color=00000000 --window-size=${W},${H} --user-data-dir="${chromeUserDataDir}" --virtual-time-budget=1200 --screenshot="${outPath}" "file://${htmlPath}" 2>&1 | tail -3`);
 }
 
 async function main() {
