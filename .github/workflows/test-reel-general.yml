@@ -17,6 +17,9 @@ on:
         description: "Background style"
         default: "stars"
         required: false
+      resumeUrl:
+        description: "n8n resumeUrl to POST results back to (optional - omitted on manual/standalone runs)"
+        required: false
 
 jobs:
   render:
@@ -62,10 +65,11 @@ jobs:
       - name: Upload Reel + stills to Cloudinary
         run: |
           REEL_FILE=$(ls out/reel_*.mp4)
-          node scripts/upload_cloudinary.js "$REEL_FILE" "reel-test/reel-${{ github.run_id }}" video
+          node scripts/upload_cloudinary.js "$REEL_FILE" "reel-test/reel-${{ github.run_id }}" video out reelUrl
           for f in out/frame_ayah_*.png; do
             name=$(basename "$f" .png)
-            node scripts/upload_cloudinary.js "$f" "reel-test/${name}-${{ github.run_id }}" image
+            ayah=$(echo "$name" | sed 's/frame_ayah_//')
+            node scripts/upload_cloudinary.js "$f" "reel-test/${name}-${{ github.run_id }}" image out "frameAyah${ayah}Url"
           done
 
       - name: Spec check
@@ -76,6 +80,8 @@ jobs:
           cat out/render_stats.json
           echo "--- caption.txt ---"
           cat out/caption.txt
+          echo "--- uploads.json ---"
+          cat out/uploads.json
 
       - name: Upload artifacts (backup, 7-day retention)
         uses: actions/upload-artifact@v4
@@ -83,3 +89,17 @@ jobs:
           name: reel-general-outputs
           path: out/
           retention-days: 7
+
+      - name: Notify n8n (resumeUrl callback, only if provided)
+        if: ${{ github.event.inputs.resumeUrl != '' }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const uploads = JSON.parse(fs.readFileSync('out/uploads.json', 'utf8'));
+            const stats = JSON.parse(fs.readFileSync('out/render_stats.json', 'utf8'));
+            const caption = fs.readFileSync('out/caption.txt', 'utf8');
+            fs.writeFileSync('out/callback_payload.json', JSON.stringify({ ...uploads, stats, caption, runId: '${{ github.run_id }}' }));
+          "
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" \
+            -H "Content-Type: application/json" \
+            -d @out/callback_payload.json
