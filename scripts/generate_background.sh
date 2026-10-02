@@ -28,16 +28,19 @@ case "$STYLE" in
     ;;
 
   stars)
-    # Navy base + sparse bright pixels from thresholded temporal noise, added on top so
-    # black contributes nothing and only the rare bright noise peaks show as "stars".
-    # blend must run in RGB: YUV chroma is offset-centered at 128, so "addition" on raw
-    # YUV planes pushes U/V to extremes and tints the whole frame magenta, not just the
-    # bright dots. format=rgb24 on both inputs before blend avoids that.
-    ffmpeg -y \
-      -f lavfi -i "color=c=0x0B1F2A:s=${W}x${H}:d=${DUR}:r=${FPS},format=rgb24" \
-      -f lavfi -i "color=c=black:s=${W}x${H}:d=${DUR}:r=${FPS},noise=alls=45:allf=t,lutyuv=y='if(gt(val\,250)\,val\,0)':u=128:v=128,format=rgb24" \
-      -filter_complex "[0:v][1:v]blend=all_mode=addition,format=yuv420p" \
-      -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
+    # Self-authored starfield (assets/stars_tile.png: navy + ~180 scattered white/gold
+    # dots, our own SVG), panned slowly across a larger canvas - same proven technique
+    # as gradient/rays/lattice. (An earlier version used blend=all_mode=addition to
+    # composite a noise-based starfield onto navy, which rendered as solid magenta: YUV
+    # chroma planes are offset-centered at 128, and addition without rebasing that
+    # offset pushes U/V to extremes across the whole frame, not just at the bright
+    # dots. Forcing format=rgb24 around the blend did not fix it either, so this asset
+    # + crop-pan approach replaces it entirely rather than chasing the blend filter.)
+    # Source tile is 2400x2400, crop is 1080x1920, so x must stay in [0,1320] and y in
+    # [0,480].
+    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/stars_tile.png" \
+      -vf "crop=${W}:${H}:x='mod(t*8,1320)':y='mod(t*5,480)'" \
+      -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
 
   rays)
