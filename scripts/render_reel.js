@@ -83,21 +83,34 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   </div>
   <div class="handle">${handle}</div>
   <script>
-    function autofit(el, maxWidth, maxHeight, maxSize, minSize) {
-      let size = maxSize;
-      el.style.fontSize = size + 'px';
-      while (size > minSize && (el.scrollWidth > maxWidth || el.scrollHeight > maxHeight)) {
-        size -= 2;
-        el.style.fontSize = size + 'px';
-      }
+    function fits(el, maxWidth, maxHeight) {
+      return el.scrollWidth <= maxWidth && el.scrollHeight <= maxHeight;
     }
-    // Wait for webfonts to actually finish loading before measuring/sizing - without this,
-    // a word can get measured and painted against the fallback font (seen as broken/tofu
-    // glyphs for ligature-heavy words like "Allah" when Amiri Quran hadn't loaded yet) if
-    // the font request is still in flight when window.onload fires.
+    // Binary search instead of a ~70-step linear decrement: far fewer synchronous
+    // font-size mutations against the same element. A long linear loop was corrupting
+    // Arabic ligature shaping (the 'Allah' glyph and others rendering as tofu boxes) on
+    // some words in some renders, even with fonts fully embedded and preloaded - this
+    // was never actually a font-loading race, it was shaping breaking under rapid
+    // resize. Binary search reduces mutations from ~70 to ~8 and a forced reflow
+    // (reading offsetHeight) plus a settle frame after the last mutation lets the
+    // shaping engine fully re-run on the final size before the screenshot is taken.
+    function autofit(el, maxWidth, maxHeight, maxSize, minSize) {
+      let lo = minSize, hi = maxSize, best = minSize;
+      while (lo <= hi) {
+        const mid = Math.floor((lo + hi) / 2);
+        el.style.fontSize = mid + 'px';
+        void el.offsetHeight; // force synchronous reflow before measuring
+        if (fits(el, maxWidth, maxHeight)) { best = mid; lo = mid + 1; }
+        else { hi = mid - 1; }
+      }
+      el.style.fontSize = best + 'px';
+      void el.offsetHeight;
+    }
     document.fonts.ready.then(() => {
       autofit(document.getElementById('arabic'), ${ARABIC_MAX_WIDTH}, 480, 190, 46);
-      document.body.setAttribute('data-fonts-ready', '1');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.body.setAttribute('data-fonts-ready', '1');
+      }));
     });
   </script>
 </body></html>`;
