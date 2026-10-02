@@ -12,13 +12,17 @@ jobs:
   render:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         style: [gradient, stars, rays, mist, lattice, bokeh]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Confirm ffmpeg is available
-        run: ffmpeg -version | head -1
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
 
       - name: Render ${{ matrix.style }} sample
         run: |
