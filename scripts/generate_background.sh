@@ -4,7 +4,9 @@
 # SVG-derived PNG assets committed in assets/) - no stock photo/video API involved.
 #
 # Usage: generate_background.sh <style> <duration_seconds> <output_path>
-# style: gradient | stars | rays | mist | lattice | bokeh
+# style: gradient | stars | rays | mist | lattice
+# (bokeh was dropped: its gold particles were the same color as the word-highlight gold,
+# which is confusing on screen - see scripts/pick_style.js for the rotation logic.)
 
 set -euo pipefail
 
@@ -53,13 +55,18 @@ case "$STYLE" in
     ;;
 
   mist)
-    # Heavily blurred temporal+uniform noise averaged with a flat navy base - soft,
-    # slow-shifting cloud-like texture, low contrast by construction (average blend).
-    ffmpeg -y \
-      -f lavfi -i "color=c=0x0F2A3D:s=${W}x${H}:d=${DUR}:r=${FPS}" \
-      -f lavfi -i "color=c=0x0F2A3D:s=${W}x${H}:d=${DUR}:r=${FPS},noise=alls=25:allf=t+u,gblur=sigma=60" \
-      -filter_complex "[0:v][1:v]blend=all_mode=average" \
-      -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
+    # Self-authored soft cloud shapes (assets/mist_tile.png: overlapping navy-tone
+    # ellipses, sharp-edged on purpose - blur is applied here via gblur rather than
+    # baked into the SVG, since Chrome's feGaussianBlur filter region clipped at each
+    # shape's edge and left visible hard seams), panned faster than the other styles
+    # and blurred for a clearly-visible drifting cloud effect. (Replaces an earlier
+    # version that blended live per-frame noise against flat navy - technically
+    # correct, but the motion was too subtle to read as "mist" on screen.)
+    # Source tile is 2400x2400, crop is 1080x1920, so x must stay in [0,1320] and y in
+    # [0,480].
+    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/mist_tile.png" \
+      -vf "crop=${W}:${H}:x='mod(t*22,1320)':y='mod(t*12,480)',gblur=sigma=40" \
+      -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
 
   lattice)
@@ -71,24 +78,6 @@ case "$STYLE" in
     ffmpeg -y -loop 1 -i "${ASSETS_DIR}/lattice_tile.png" \
       -vf "crop=${W}:${H}:x='mod(t*14,1120)':y='mod(t*6,280)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
-    ;;
-
-  bokeh)
-    # A handful of soft gold glow particles (assets/gold_blob.png, self-authored radial
-    # gradient) drifting slowly upward with gentle horizontal sway, wrapping vertically.
-    ffmpeg -y -f lavfi -i "color=c=0x0F2A3D:s=${W}x${H}:d=${DUR}:r=${FPS}" \
-      -i "${ASSETS_DIR}/gold_blob.png" \
-      -filter_complex "
-        [1:v]scale=160:160[p1];[1:v]scale=100:100[p2];[1:v]scale=130:130[p3];
-        [1:v]scale=90:90[p4];[1:v]scale=150:150[p5];[1:v]scale=110:110[p6];
-        [0:v][p1]overlay=x='140+40*sin(2*PI*(t*0.07))':y='mod(-t*60+1900,2100)-200':format=auto[s1];
-        [s1][p2]overlay=x='820+30*sin(2*PI*(t*0.09+0.3))':y='mod(-t*50+2400,2100)-200':format=auto[s2];
-        [s2][p3]overlay=x='460+50*sin(2*PI*(t*0.05+0.6))':y='mod(-t*45+1600,2100)-200':format=auto[s3];
-        [s3][p4]overlay=x='950+25*sin(2*PI*(t*0.11+0.1))':y='mod(-t*70+1200,2100)-200':format=auto[s4];
-        [s4][p5]overlay=x='260+35*sin(2*PI*(t*0.06+0.8))':y='mod(-t*40+2000,2100)-200':format=auto[s5];
-        [s5][p6]overlay=x='650+45*sin(2*PI*(t*0.08+0.4))':y='mod(-t*55+900,2100)-200':format=auto[outv]
-      " -map "[outv]" \
-      -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
     ;;
 
   *)

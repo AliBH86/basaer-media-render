@@ -1,0 +1,107 @@
+name: Test Reel (general, multi-ayah)
+
+on:
+  workflow_dispatch:
+    inputs:
+      surah:
+        description: "Surah number"
+        required: true
+      ayahStart:
+        description: "Starting ayah number"
+        required: true
+      reciterId:
+        description: "Reciter ID"
+        default: "7"
+        required: false
+      style:
+        description: "Background style"
+        default: "stars"
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then
+              echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"
+              echo "Found: $bin at $(command -v $bin)"
+              exit 0
+            fi
+          done
+          echo "No Chrome/Chromium binary found" >&2
+          exit 1
+
+      - name: Render Reel
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+        run: |
+          mkdir -p out
+          node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId || '7' }}" "${{ github.event.inputs.style || 'stars' }}" out
+
+      - name: Extract one still per ayah (at a gold-word moment)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const t = JSON.parse(fs.readFileSync('out/timeline.json'));
+            const times = t.ayahs.map(a => {
+              const mid = a.wordTimings[Math.floor(a.wordTimings.length/2)];
+              return { ayah: a.number, time: (mid.startMs + 50) / 1000 };
+            });
+  fs.writeFileSync('out/still_times.json', JSON.stringify(times));
+            console.log(JSON.stringify(times));
+          "
+          REEL_FILE=$(ls out/reel_*.mp4)
+          while IFS= read -r line; do
+            ayah=$(echo "$line" | node -e "process.stdin.on('data',d=>{const o=JSON.parse(d);console.log(o.ayah)})")
+            time=$(echo "$line" | node -e "process.stdin.on('data',d=>{const o=JSON.parse(d);console.log(o.time)})")
+            ffmpeg -y -ss "$time" -i "$REEL_FILE" -frames:v 1 "out/frame_ayah_${ayah}.png"
+          done < <(node -e "
+            const fs = require('fs');
+            const times = JSON.parse(fs.readFileSync('out/still_times.json'));
+            times.forEach(t => console.log(JSON.stringify(t)));
+          ")
+          ls -la out/
+
+      - name: Upload Reel + stills to Cloudinary
+        run: |
+          upload() {
+            local file="$1" pubid="$2" type="$3"
+            curl -sS -X POST "https://api.cloudinary.com/v1_1/b72gfdzx/${type}/upload" \
+              -F "file=@${file}" -F "upload_preset=ml_default" -F "public_id=${pubid}" -o "resp_$(basename $pubid).json"
+            node -e "const r=require('./resp_$(basename $pubid).json'); console.log('${pubid} ->', r.secure_url || JSON.stringify(r.error));"
+          }
+          REEL_FILE=$(ls out/reel_*.mp4)
+          upload "$REEL_FILE" "reel-test/reel-${{ github.run_id }}" "video"
+          for f in out/frame_ayah_*.png; do
+            name=$(basename "$f" .png)
+            upload "$f" "reel-test/${name}-${{ github.run_id }}" "image"
+          done
+
+      - name: Spec check
+        run: |
+          REEL_FILE=$(ls out/reel_*.mp4)
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=width,height,codec_name,avg_frame_rate -of default=noprint_wrappers=1 "$REEL_FILE"
+          stat -c '%s bytes' "$REEL_FILE"
+          cat out/render_stats.json
+          echo "--- caption.txt ---"
+          cat out/caption.txt
+
+      - name: Upload artifacts (backup, 7-day retention)
+        uses: actions/upload-artifact@v4
+        with:
+          name: reel-general-outputs
+          path: out/
+          retention-days: 7
