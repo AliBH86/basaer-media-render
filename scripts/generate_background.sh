@@ -30,10 +30,13 @@ case "$STYLE" in
   stars)
     # Navy base + sparse bright pixels from thresholded temporal noise, added on top so
     # black contributes nothing and only the rare bright noise peaks show as "stars".
+    # blend must run in RGB: YUV chroma is offset-centered at 128, so "addition" on raw
+    # YUV planes pushes U/V to extremes and tints the whole frame magenta, not just the
+    # bright dots. format=rgb24 on both inputs before blend avoids that.
     ffmpeg -y \
-      -f lavfi -i "color=c=0x0B1F2A:s=${W}x${H}:d=${DUR}:r=${FPS}" \
-      -f lavfi -i "color=c=black:s=${W}x${H}:d=${DUR}:r=${FPS},noise=alls=45:allf=t,lutyuv=y='if(gt(val\,250)\,val\,0)':u=128:v=128" \
-      -filter_complex "[0:v][1:v]blend=all_mode=addition" \
+      -f lavfi -i "color=c=0x0B1F2A:s=${W}x${H}:d=${DUR}:r=${FPS},format=rgb24" \
+      -f lavfi -i "color=c=black:s=${W}x${H}:d=${DUR}:r=${FPS},noise=alls=45:allf=t,lutyuv=y='if(gt(val\,250)\,val\,0)':u=128:v=128,format=rgb24" \
+      -filter_complex "[0:v][1:v]blend=all_mode=addition,format=yuv420p" \
       -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
     ;;
 
