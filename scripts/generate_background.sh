@@ -19,10 +19,12 @@ ASSETS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/assets"
 case "$STYLE" in
 
   gradient)
-    # Slow drifting diagonal gradient between the two brand navies.
-    ffmpeg -y -f lavfi -i "color=c=0x0F2A3D:s=${W}x${H}:d=${DUR}:r=${FPS}" \
-      -vf "geq=r='15-4*(0.5+0.5*sin(2*PI*(X/${W}+Y/${H}+T*0.03)))':g='42-11*(0.5+0.5*sin(2*PI*(X/${W}+Y/${H}+T*0.03)))':b='61-19*(0.5+0.5*sin(2*PI*(X/${W}+Y/${H}+T*0.03)))'" \
-      -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
+    # Self-authored diagonal two-tone navy gradient (assets/gradient_tile.png, our own
+    # SVG), panned slowly across a larger canvas. Source is 2400x2400, crop is
+    # 1080x1920, so x must stay in [0,1320] and y in [0,480].
+    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/gradient_tile.png" \
+      -vf "crop=${W}:${H}:x='mod(t*10,1320)':y='mod(t*7,480)'" \
+      -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
 
   stars)
@@ -36,10 +38,12 @@ case "$STYLE" in
     ;;
 
   rays)
-    # Gentle diagonal light bands, subtle gold tint at the bright edge of each band.
-    ffmpeg -y -f lavfi -i "color=c=0x0F2A3D:s=${W}x${H}:d=${DUR}:r=${FPS}" \
-      -vf "geq=r='15+20*(0.5+0.5*sin(2*PI*((X-Y)/260+T*0.08)))':g='42+14*(0.5+0.5*sin(2*PI*((X-Y)/260+T*0.08)))':b='61-5*(0.5+0.5*sin(2*PI*((X-Y)/260+T*0.08)))'" \
-      -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
+    # Self-authored diagonal light-ray pattern (assets/rays_tile.png, our own SVG),
+    # panned slowly across a larger canvas. Source is 2400x2400, crop is 1080x1920,
+    # so x must stay in [0,1320] and y in [0,480].
+    ffmpeg -y -loop 1 -i "${ASSETS_DIR}/rays_tile.png" \
+      -vf "crop=${W}:${H}:x='mod(t*18,1320)':y='mod(t*4,480)'" \
+      -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
 
   mist)
