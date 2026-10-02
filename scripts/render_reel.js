@@ -76,15 +76,30 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
         el.style.fontSize = size + 'px';
       }
     }
-    autofit(document.getElementById('arabic'), ${ARABIC_MAX_WIDTH}, 480, 190, 46);
+    // Wait for webfonts to actually finish loading before measuring/sizing - without this,
+    // a word can get measured and painted against the fallback font (seen as broken/tofu
+    // glyphs for ligature-heavy words like "Allah" when Amiri Quran hadn't loaded yet) if
+    // the font request is still in flight when window.onload fires.
+    document.fonts.ready.then(() => {
+      autofit(document.getElementById('arabic'), ${ARABIC_MAX_WIDTH}, 480, 190, 46);
+      document.body.setAttribute('data-fonts-ready', '1');
+    });
   </script>
 </body></html>`;
 }
 
+let chromeUserDataDir = null;
+
 function renderOverlayPng(html, outPath) {
   const htmlPath = outPath.replace(/\.png$/, '.html');
   fs.writeFileSync(htmlPath, html);
-  sh(`"${CHROME}" --headless --disable-gpu --disable-software-rasterizer --hide-scrollbars --default-background-color=00000000 --window-size=${W},${H} --screenshot="${outPath}" "file://${htmlPath}" 2>&1 | tail -3`);
+  // A shared --user-data-dir across all 15-ish overlay invocations lets Chrome cache the
+  // Google Fonts files after the first hit instead of re-fetching over the network every
+  // time, which also removes most of the font-loading race the fonts.ready gate protects
+  // against. --virtual-time-budget gives the page's async work (document.fonts.ready, the
+  // autofit it gates) time to finish before the screenshot, rather than firing at 'load'.
+  if (!chromeUserDataDir) chromeUserDataDir = fs.mkdtempSync('/tmp/chrome-profile-');
+  sh(`"${CHROME}" --headless --disable-gpu --disable-software-rasterizer --hide-scrollbars --default-background-color=00000000 --window-size=${W},${H} --user-data-dir="${chromeUserDataDir}" --virtual-time-budget=4000 --screenshot="${outPath}" "file://${htmlPath}" 2>&1 | tail -3`);
 }
 
 async function main() {
