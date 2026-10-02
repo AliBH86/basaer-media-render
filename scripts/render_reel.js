@@ -23,7 +23,7 @@ function sh(cmd) {
   execSync(cmd, { stdio: 'inherit', shell: '/bin/bash' });
 }
 
-function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglish, arabicWords, highlightIndex, translation, progressFraction, handle, credit }) {
+function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglish, surahNumber, ayahNumber, arabicWords, highlightIndex, translation, progressFraction, handle }) {
   const spans = arabicWords.map((w, i) => {
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
@@ -31,6 +31,10 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   }).join(' ');
   const fillPct = Math.max(0, Math.min(1, progressFraction)) * 100;
 
+  // No on-screen credit line (it's small by nature and the safe zone is tight on a
+  // multi-ayah layout) - credit lives in the caption only; see render_reel.js caption
+  // generation. Dropping it also frees vertical room for the enlarged reciter name and
+  // the per-ayah reference line below.
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,21 +46,20 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   .progress-track { position:absolute; top:290px; left:${SAFE_X}px; width:${SAFE_W}px; height:4px; background:rgba(242,236,225,0.18); border-radius:2px; }
   .progress-fill { position:absolute; top:290px; left:${SAFE_X}px; width:${fillPct * SAFE_W / 100}px; height:4px; background:#C9A24B; border-radius:2px; }
   .header { position:absolute; top:324px; width:100%; text-align:center; }
-  .surah-ar { font-family:'Amiri Quran',serif; font-size:36px; color:#C9A24B; }
-  .surah-en { font-family:'Montserrat',sans-serif; font-size:22px; color:#F2ECE1; opacity:0.75; margin-top:8px; letter-spacing:1px; }
-  .reciter { font-family:'Montserrat',sans-serif; font-size:18px; color:#F2ECE1; opacity:0.55; margin-top:6px; }
-  .content { position:absolute; top:470px; bottom:770px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:440px; overflow:hidden; line-height:1.7; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
-  .translation { font-family:'Montserrat',sans-serif; font-size:38px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:50px; max-width:820px; line-height:1.45; }
-  .handle { position:absolute; top:1140px; width:100%; text-align:center; font-family:'Montserrat',sans-serif; font-size:26px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
-  .credit { position:absolute; top:1182px; width:100%; text-align:center; font-family:'Montserrat',sans-serif; font-size:19px; color:#F2ECE1; opacity:0.55; padding:0 90px; line-height:1.35; }
+  .surah-ar { font-family:'Amiri Quran',serif; font-size:38px; color:#C9A24B; }
+  .surah-en { font-family:'Montserrat',sans-serif; font-size:23px; color:#F2ECE1; opacity:0.8; margin-top:10px; letter-spacing:1px; }
+  .reciter { font-family:'Montserrat',sans-serif; font-size:32px; color:#F2ECE1; opacity:0.65; margin-top:14px; }
+  .content { position:absolute; top:480px; bottom:700px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:hidden; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
+  .translation { font-family:'Montserrat',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:46px; max-width:860px; line-height:1.4; }
+  .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
 </style></head>
 <body>
   <div class="progress-track"></div>
   <div class="progress-fill"></div>
   <div class="header">
-    <div class="surah-ar">${surahNameArabic}</div>
-    <div class="surah-en">SURAH ${surahNameEnglish.toUpperCase()}</div>
+    <div class="surah-ar">سورة ${surahNameArabic}</div>
+    <div class="surah-en">SURAH ${surahNameEnglish.toUpperCase()} &middot; ${surahNumber}:${ayahNumber}</div>
     <div class="reciter">${reciterNameEnglish}</div>
   </div>
   <div class="content">
@@ -64,7 +67,6 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
     <div class="translation">${translation}</div>
   </div>
   <div class="handle">${handle}</div>
-  <div class="credit">${credit}</div>
   <script>
     function autofit(el, maxWidth, maxHeight, maxSize, minSize) {
       let size = maxSize;
@@ -74,7 +76,7 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
         el.style.fontSize = size + 'px';
       }
     }
-    autofit(document.getElementById('arabic'), ${ARABIC_MAX_WIDTH}, 440, 108, 42);
+    autofit(document.getElementById('arabic'), ${ARABIC_MAX_WIDTH}, 480, 190, 46);
   </script>
 </body></html>`;
 }
@@ -146,11 +148,13 @@ async function main() {
       surahNameArabic: timeline.surahNameArabic,
       surahNameEnglish: timeline.surahNameEnglish,
       reciterNameEnglish: reciterName,
+      surahNumber: timeline.surah,
+      ayahNumber: spec.ayahNumber,
       arabicWords: spec.arabicWords,
       highlightIndex: spec.highlightIndex,
       translation: spec.translation,
       progressFraction: spec.startSec / timeline.durationSec,
-      handle, credit,
+      handle,
     });
     spec.pngPath = path.join(workDir, `overlay_${i}.png`);
     renderOverlayPng(html, spec.pngPath);
