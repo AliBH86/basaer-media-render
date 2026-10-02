@@ -56,8 +56,10 @@ case "$STYLE" in
     # Self-authored low-contrast Islamic-style lattice tile (assets/lattice_tile.png,
     # generated locally from our own SVG, not sourced from any stock library), panned
     # slowly across a larger canvas for a drifting effect.
+    # Source tile is 2200x2200; crop window is 1080x1920, so x must stay in [0,1120]
+    # and y in [0,280] or the crop rectangle runs off the edge of the source image.
     ffmpeg -y -loop 1 -i "${ASSETS_DIR}/lattice_tile.png" \
-      -vf "crop=${W}:${H}:x='mod(T*14,1120)':y='mod(T*9,1120)'" \
+      -vf "crop=${W}:${H}:x='mod(T*14,1120)':y='mod(T*6,280)'" \
       -t "${DUR}" -r "${FPS}" -c:v libx264 -pix_fmt yuv420p "${OUT}"
     ;;
 
@@ -69,12 +71,12 @@ case "$STYLE" in
       -filter_complex "
         [1:v]scale=160:160[p1];[1:v]scale=100:100[p2];[1:v]scale=130:130[p3];
         [1:v]scale=90:90[p4];[1:v]scale=150:150[p5];[1:v]scale=110:110[p6];
-        [0:v][p1]overlay=x='140+40*sin(2*PI*(T*0.07))':y='mod(-T*60+1900,2100)-200':format=auto[s1];
-        [s1][p2]overlay=x='820+30*sin(2*PI*(T*0.09+0.3))':y='mod(-T*50+2400,2100)-200':format=auto[s2];
-        [s2][p3]overlay=x='460+50*sin(2*PI*(T*0.05+0.6))':y='mod(-T*45+1600,2100)-200':format=auto[s3];
-        [s3][p4]overlay=x='950+25*sin(2*PI*(T*0.11+0.1))':y='mod(-T*70+1200,2100)-200':format=auto[s4];
-        [s4][p5]overlay=x='260+35*sin(2*PI*(T*0.06+0.8))':y='mod(-T*40+2000,2100)-200':format=auto[s5];
-        [s5][p6]overlay=x='650+45*sin(2*PI*(T*0.08+0.4))':y='mod(-T*55+900,2100)-200':format=auto[outv]
+        [0:v][p1]overlay=x='140+40*sin(2*PI*(t*0.07))':y='mod(-t*60+1900,2100)-200':format=auto[s1];
+        [s1][p2]overlay=x='820+30*sin(2*PI*(t*0.09+0.3))':y='mod(-t*50+2400,2100)-200':format=auto[s2];
+        [s2][p3]overlay=x='460+50*sin(2*PI*(t*0.05+0.6))':y='mod(-t*45+1600,2100)-200':format=auto[s3];
+        [s3][p4]overlay=x='950+25*sin(2*PI*(t*0.11+0.1))':y='mod(-t*70+1200,2100)-200':format=auto[s4];
+        [s4][p5]overlay=x='260+35*sin(2*PI*(t*0.06+0.8))':y='mod(-t*40+2000,2100)-200':format=auto[s5];
+        [s5][p6]overlay=x='650+45*sin(2*PI*(t*0.08+0.4))':y='mod(-t*55+900,2100)-200':format=auto[outv]
       " -map "[outv]" \
       -c:v libx264 -pix_fmt yuv420p -t "${DUR}" "${OUT}"
     ;;

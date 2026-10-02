@@ -7,14 +7,30 @@ on:
         description: "Sample duration in seconds"
         default: "15"
         required: false
+      styles:
+        description: "Comma-separated styles to render"
+        default: "gradient,stars,rays,mist,lattice,bokeh"
+        required: false
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      styles: ${{ steps.parse.outputs.styles }}
+    steps:
+      - id: parse
+        run: |
+          raw="${{ github.event.inputs.styles || 'gradient,stars,rays,mist,lattice,bokeh' }}"
+          json=$(node -e "console.log(JSON.stringify('$raw'.split(',').map(s=>s.trim())))")
+          echo "styles=$json" >> "$GITHUB_OUTPUT"
+
   render:
+    needs: setup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        style: [gradient, stars, rays, mist, lattice, bokeh]
+        style: ${{ fromJSON(needs.setup.outputs.styles) }}
     steps:
       - uses: actions/checkout@v4
 
