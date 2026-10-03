@@ -406,7 +406,7 @@ async function main() {
     endCutInSilence: after ? after.maxDb < -40 : null,
   };
   const envelope = {
-    startFinal: envelopeDb(outPath, 0, 0.4), startSource: envelopeDb(chapterPath, timeline.clipStartSec, 0.4),
+    startFinal: envelopeDb(outPath, 0, 1.2), startSource: envelopeDb(chapterPath, timeline.clipStartSec, 1.2),
     endFinal: envelopeDb(outPath, fileDur - 0.3, 0.3), endSource: envelopeDb(chapterPath, timeline.clipEndSec - 0.3, 0.3),
     stepMs: 20,
   };
