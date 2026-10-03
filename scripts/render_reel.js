@@ -176,6 +176,25 @@ function levelDb(file, startSec, durSec) {
   return { meanDb: num(mean), maxDb: num(max) };
 }
 
+// Peak level (dBFS) per 20 ms step over [startSec, startSec + durSec] of an audio/video file. Used to compare the final
+// file with the source around the cut: shows whether a fade or cut touches a letter. Steps before time 0 are skipped.
+function envelopeDb(file, startSec, durSec) {
+  const from = Math.max(0, startSec);
+  const PRE = Math.min(0.15, from); // decoder warm-up after a seek
+  let buf;
+  try {
+    buf = execSync(`ffmpeg -v error -nostdin -ss ${(from - PRE).toFixed(3)} -t ${(durSec + PRE).toFixed(3)} -i "${file}" -vn -ac 1 -ar 16000 -f s16le -`, { shell: '/bin/bash', maxBuffer: 64 * 1024 * 1024 });
+  } catch (e) { return null; }
+  const STEP = 320; // 20 ms
+  const out = [];
+  for (let i = Math.round(PRE * 16000 / STEP) * STEP; i + STEP <= buf.length / 2; i += STEP) {
+    let peak = 0;
+    for (let j = 0; j < STEP; j++) peak = Math.max(peak, Math.abs(buf.readInt16LE((i + j) * 2)));
+    out.push(Math.round(20 * Math.log10(Math.max(peak, 1) / 32768)));
+  }
+  return out;
+}
+
 // Quietest 5 ms frame of the SOURCE audio in [fromSec, toSec]. Among frames within 1.5x of the minimum energy (or
 // below about -60 dBFS) the one closest to preferSec wins. Returns { sec, db } or null when nothing can be read.
 function quietestPoint(file, fromSec, toSec, preferSec) {
@@ -386,13 +405,19 @@ async function main() {
     startCutInSilence: before ? before.maxDb < -40 : null,
     endCutInSilence: after ? after.maxDb < -40 : null,
   };
+  const envelope = {
+    startFinal: envelopeDb(outPath, 0, 0.4), startSource: envelopeDb(chapterPath, timeline.clipStartSec, 0.4),
+    endFinal: envelopeDb(outPath, fileDur - 0.3, 0.3), endSource: envelopeDb(chapterPath, timeline.clipEndSec - 0.3, 0.3),
+    stepMs: 20,
+  };
+  console.log('Audio envelope (peak dBFS per 20 ms):', JSON.stringify(envelope));
   console.log('Audio levels (final file):', JSON.stringify(audioLevels));
   console.log('Audio levels (source around the cut):', JSON.stringify(sourceLevels));
 
   const fileBytes = fs.statSync(outPath).size;
   fs.writeFileSync(path.join(outDir, 'timeline.json'), JSON.stringify(timeline, null, 2));
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify({
-    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut,
+    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope,
   }, null, 2));
 }
 
