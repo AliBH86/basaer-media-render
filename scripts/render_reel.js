@@ -288,7 +288,7 @@ async function main() {
   console.log('Audio cut points:', JSON.stringify(audioCut));
   // -ss BEFORE -i (input seeking) so the filter clock starts at 0 at the cut; with output-side -ss the filters see the
   // absolute position in the chapter (about 4000 s) and the envelope below would mute everything.
-  sh(`ffmpeg -y -nostdin -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -i "${chapterPath}" -af "aformat=channel_layouts=stereo,volume='${gain}':eval=frame" -c:a aac -b:a 128k "${audioPath}"`);
+  sh(`ffmpeg -y -nostdin -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -i "${chapterPath}" -vn -map 0:a:0 -af "aformat=channel_layouts=stereo,volume='${gain}':eval=frame" -c:a aac -b:a 128k "${audioPath}"`);
   // Guard: the processed audio must not be silent (a broken filter once produced a silent Reel).
   const processed = levelDb(audioPath, 0, timeline.durationSec);
   console.log('Processed audio level:', JSON.stringify(processed));
