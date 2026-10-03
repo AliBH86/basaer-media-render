@@ -17,6 +17,10 @@ const fs = require('fs');
 
 const REPLACEMENT_CHAR = String.fromCharCode(0xFFFD);
 const HIZB_MARKER = String.fromCharCode(0x06DE);
+// The per-word texts of the API carry two small tajweed marks (U+06ED, U+06E2) that the verse-level text does not
+// have. The Reel shows the verse-level form (identical to the Daily Post and the captions), so they are removed
+// from the display words; the guard proves that the result equals the verse text.
+const WORD_ANNOTATIONS = String.fromCharCode(0x06ED, 0x06E2);
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
@@ -45,7 +49,7 @@ function cleanTranslation(text) {
 function wordsFromApi(verse) {
   return verse.words
     .filter(w => w.char_type_name === 'word')
-    .map(w => w.text_uthmani.split(HIZB_MARKER).join('').replace(/\s+/g, ' ').trim())
+    .map(w => [...w.text_uthmani].filter(c => c !== HIZB_MARKER && !WORD_ANNOTATIONS.includes(c)).join('').replace(/\s+/g, ' ').trim())
     .filter(Boolean);
 }
 

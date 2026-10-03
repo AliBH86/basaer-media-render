@@ -32,8 +32,10 @@ const strip = (t) => String(t).replace(/<sup[^>]*>.*?<\/sup>/g, '').replace(/<[^
 const cp = (c) => (c === undefined ? 'end-of-text' : 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'));
 const BAD = /\uFFFD|\u00C3|\u00C2|\u00D8|\u00D9|\u00DA|\u00DB|\u00E2\u20AC|\u00EF\u00BF\u00BD/;
 const ARABIC_OK = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]/;
-// Display-only normalisation applied to BOTH sides: the hizb marker is hidden, spaces collapsed.
-const norm = (t) => String(t).replace(HIZB, '').replace(/\s+/g, ' ').trim();
+// Display-only normalisation applied to BOTH sides: the hizb marker and the two per-word tajweed marks (U+06ED,
+// U+06E2) that the API's verse-level text does not contain are hidden, spaces collapsed, canonical (NFC) mark order.
+const ANNOTATIONS = new RegExp('[' + String.fromCharCode(0x06ED, 0x06E2) + ']', 'g');
+const norm = (t) => String(t).replace(HIZB, '').replace(ANNOTATIONS, '').replace(/\s+/g, ' ').trim().normalize('NFC');
 
 function same(issues, label, expected, actual) {
   if (typeof actual !== 'string' || actual.length === 0) { issues.push(`${label}: text is missing`); return; }
@@ -66,12 +68,13 @@ function readOverlay(html) {
 function checkOverlay(label, drawn, fresh) {
   const issues = [];
   const wantWords = (fresh.words || fresh.arabic.trim().split(/\s+/)).map(norm);
-  same(issues, `${label} Arabic`, wantWords.join(' '), drawn.words.join(' '));
-  if (drawn.words.length !== wantWords.length) {
+  const drawnWords = drawn.words.map(norm);
+  same(issues, `${label} Arabic`, wantWords.join(' '), drawnWords.join(' '));
+  if (drawnWords.length !== wantWords.length) {
     issues.push(`${label} Arabic: ${drawn.words.length} drawn words but the API has ${wantWords.length} words (highlight would be misaligned)`);
   } else {
-    const k = wantWords.findIndex((w, i) => w !== drawn.words[i]);
-    if (k >= 0 && wantWords.join(' ') === drawn.words.join(' ')) issues.push(`${label} Arabic: word ${k + 1} is split differently from the API`);
+    const k = wantWords.findIndex((w, i) => w !== drawnWords[i]);
+    if (k >= 0 && wantWords.join(' ') === drawnWords.join(' ')) issues.push(`${label} Arabic: word ${k + 1} is split differently from the API`);
   }
   scan(issues, `${label} Arabic`, drawn.words.join(' '), true);
   same(issues, `${label} English`, fresh.english, drawn.translation);
