@@ -68,9 +68,11 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   .reciter-ar { font-family:'Amiri Quran Local',serif; font-size:34px; direction:rtl; }
   .reciter-sep { font-family:'Montserrat Local',sans-serif; font-size:26px; opacity:0.6; }
   .reciter-en { font-family:'Montserrat Local',sans-serif; font-size:28px; }
-  .content { position:absolute; top:520px; bottom:700px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  /* Fixed text area 520..1160 px (640 px tall): below the header, above the @handle (1190) and clear of the
+     bottom 670 px that Instagram's UI covers. The script below fits Arabic + English TOGETHER into it. */
+  .content { position:absolute; top:520px; height:640px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:visible; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
-  .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:76px; max-width:860px; line-height:1.4; }
+  .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:70px; max-width:860px; line-height:1.4; }
   .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
 </style></head>
 <body>
@@ -83,7 +85,7 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   </div>
   <div class="content">
     <div class="arabic" id="arabic">${spans}</div>
-    <div class="translation">${translation}</div>
+    <div class="translation" id="translation">${translation}</div>
   </div>
   <div class="handle">${handle}</div>
   <script>
@@ -110,8 +112,34 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
       el.style.fontSize = best + 'px';
       void el.offsetHeight;
     }
+    // Fit Arabic and English TOGETHER into the 640 px text area. Order of preference: biggest Arabic that fits
+    // its own box, English at 46 px; if the pair is too tall, shrink the English (floor 30 px); only if it is still
+    // too tall shrink the Arabic further (floor 46 px). Every step is a binary search (see the note above).
+    function fitBoth(ar, tr, avail, gap) {
+      const total = () => ar.offsetHeight + gap + tr.offsetHeight;
+      const search = (el, lo, hi, ok) => {
+        let best = lo;
+        while (lo <= hi) {
+          const mid = Math.floor((lo + hi) / 2);
+          el.style.fontSize = mid + 'px';
+          void el.offsetHeight;
+          if (ok()) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
+        }
+        el.style.fontSize = best + 'px';
+        void el.offsetHeight;
+        return best;
+      };
+      search(ar, 46, 190, () => ar.scrollWidth <= ${ARABIC_MAX_WIDTH} && ar.scrollHeight <= 480);
+      tr.style.fontSize = '46px';
+      void tr.offsetHeight;
+      if (total() > avail) {
+        search(tr, 30, 46, () => total() <= avail);
+        if (total() > avail) search(ar, 46, parseInt(ar.style.fontSize, 10), () => total() <= avail);
+      }
+      document.body.setAttribute('data-fit', 'ar=' + ar.style.fontSize + ' en=' + tr.style.fontSize + ' total=' + total() + '/' + avail);
+    }
     document.fonts.ready.then(() => {
-      autofit(document.getElementById('arabic'), ${ARABIC_MAX_WIDTH}, 480, 190, 46);
+      fitBoth(document.getElementById('arabic'), document.getElementById('translation'), 640, 70);
       requestAnimationFrame(() => requestAnimationFrame(() => {
         document.body.setAttribute('data-fonts-ready', '1');
       }));
