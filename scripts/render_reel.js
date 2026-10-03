@@ -181,13 +181,16 @@ function levelDb(file, startSec, durSec) {
 function quietestPoint(file, fromSec, toSec, preferSec) {
   const from = Math.max(0, fromSec);
   if (!(toSec > from)) return null;
+  // Decode from 150 ms earlier and ignore that part: after a seek the MP3 decoder outputs a few milliseconds of
+  // false silence (bit-reservoir warm-up) that would otherwise look like the quietest point.
+  const PREROLL = Math.min(0.15, from);
   let buf;
   try {
-    buf = execSync(`ffmpeg -v error -nostdin -ss ${from.toFixed(3)} -t ${(toSec - from).toFixed(3)} -i "${file}" -vn -ac 1 -ar 16000 -f s16le -`, { shell: '/bin/bash', maxBuffer: 64 * 1024 * 1024 });
+    buf = execSync(`ffmpeg -v error -nostdin -ss ${(from - PREROLL).toFixed(3)} -t ${(toSec - from + PREROLL).toFixed(3)} -i "${file}" -vn -ac 1 -ar 16000 -f s16le -`, { shell: '/bin/bash', maxBuffer: 64 * 1024 * 1024 });
   } catch (e) { return null; }
   const FR = 80; // 5 ms at 16 kHz
   const rms = [];
-  for (let i = 0; i + FR <= buf.length / 2; i += FR) {
+  for (let i = Math.round(PREROLL * 16000 / FR) * FR; i + FR <= buf.length / 2; i += FR) {
     let s = 0;
     for (let j = 0; j < FR; j++) { const v = buf.readInt16LE((i + j) * 2); s += v * v; }
     rms.push(Math.sqrt(s / FR));
