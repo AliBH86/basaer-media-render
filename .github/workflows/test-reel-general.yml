@@ -17,6 +17,9 @@ on:
         description: "Background style"
         default: "stars"
         required: false
+      ayahEnd:
+        description: "Last ayah of the passage (optional). When given, exactly ayahStart..ayahEnd is rendered (40 s soft cap, 45 s hard cap). When empty the passage auto-extends to ~15 s."
+        required: false
       resumeUrl:
         description: "n8n resumeUrl to POST results back to (optional - omitted on manual/standalone runs)"
         required: false
@@ -59,13 +62,13 @@ jobs:
           INTEGRITY_TEST_TAMPER: ${{ github.event.inputs.integrityTest }}
         run: |
           mkdir -p out
-          node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId || '7' }}" "${{ github.event.inputs.style || 'stars' }}" out
+          node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId || '7' }}" "${{ github.event.inputs.style || 'stars' }}" out "${{ github.event.inputs.ayahEnd }}"
 
-      - name: Extract one still per ayah (at a gold-word moment)
+      - name: Extract the 4 review stills (start, two middles, end - each with a gold word)
         run: |
           REEL_FILE=$(ls out/reel_*.mp4)
-          node scripts/pick_still_times.js out | while read -r ayah seconds; do
-            ffmpeg -y -nostdin -ss "$seconds" -i "$REEL_FILE" -frames:v 1 "out/frame_ayah_${ayah}.png"
+          node scripts/pick_review_stills.js out | while read -r name seconds; do
+            ffmpeg -y -nostdin -ss "$seconds" -i "$REEL_FILE" -frames:v 1 "out/${name}.png"
           done
           ls -la out/
 
@@ -73,10 +76,10 @@ jobs:
         run: |
           REEL_FILE=$(ls out/reel_*.mp4)
           node scripts/upload_cloudinary.js "$REEL_FILE" "reel-test/reel-${{ github.run_id }}" video out reelUrl
-          for f in out/frame_ayah_*.png; do
+          for f in out/frame_start.png out/frame_mid1.png out/frame_mid2.png out/frame_end.png; do
             name=$(basename "$f" .png)
-            ayah=$(echo "$name" | sed 's/frame_ayah_//')
-            node scripts/upload_cloudinary.js "$f" "reel-test/${name}-${{ github.run_id }}" image out "frameAyah${ayah}Url"
+            part=${name#frame_}
+            node scripts/upload_cloudinary.js "$f" "reel-test/${name}-${{ github.run_id }}" image out "frame${part^}Url"
           done
 
       - name: Spec check

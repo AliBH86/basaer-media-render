@@ -1,7 +1,8 @@
 // Orchestrates a full multi-ayah Reel render: timeline fetch, audio trim, background,
 // word-synced text overlays (with auto-fit Arabic sizing), composite, mux.
 //
-// Usage: node render_reel.js <surah> <ayahStart> <reciterId> <style> <outDir>
+// Usage: node render_reel.js <surah> <ayahStart> <reciterId> <style> <outDir> [ayahEnd]
+//   ayahEnd (optional): render exactly ayahStart..ayahEnd. Without it the passage is auto-extended to ~15 s.
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
@@ -25,7 +26,7 @@ function sh(cmd) {
   execSync(cmd, { stdio: 'inherit', shell: '/bin/bash' });
 }
 
-function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglish, surahNumber, ayahNumber, arabicWords, highlightIndex, translation, progressFraction, handle }) {
+function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglish, reciterNameArabic, surahNumber, ayahNumber, arabicWords, highlightIndex, translation, progressFraction, handle }) {
   const spans = arabicWords.map((w, i) => {
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
@@ -63,8 +64,11 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   .header { position:absolute; top:324px; width:100%; text-align:center; }
   .surah-ar { font-family:'Amiri Quran Local',serif; font-size:38px; color:#C9A24B; }
   .surah-en { font-family:'Montserrat Local',sans-serif; font-size:23px; color:#F2ECE1; opacity:0.8; margin-top:10px; letter-spacing:1px; }
-  .reciter { font-family:'Montserrat Local',sans-serif; font-size:32px; color:#F2ECE1; opacity:0.65; margin-top:14px; }
-  .content { position:absolute; top:480px; bottom:700px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .reciter { display:flex; justify-content:center; align-items:baseline; gap:18px; direction:ltr; margin-top:14px; color:#F2ECE1; opacity:0.7; line-height:1.3; }
+  .reciter-ar { font-family:'Amiri Quran Local',serif; font-size:34px; direction:rtl; }
+  .reciter-sep { font-family:'Montserrat Local',sans-serif; font-size:26px; opacity:0.6; }
+  .reciter-en { font-family:'Montserrat Local',sans-serif; font-size:28px; }
+  .content { position:absolute; top:520px; bottom:700px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:visible; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
   .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:76px; max-width:860px; line-height:1.4; }
   .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
@@ -75,7 +79,7 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   <div class="header">
     <div class="surah-ar">سورة ${surahNameArabic}</div>
     <div class="surah-en">SURAH ${surahNameEnglish.toUpperCase()} &middot; ${surahNumber}:${ayahNumber}</div>
-    <div class="reciter">${reciterNameEnglish}</div>
+    <div class="reciter"><span class="reciter-ar">${reciterNameArabic}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterNameEnglish}</span></div>
   </div>
   <div class="content">
     <div class="arabic" id="arabic">${spans}</div>
@@ -129,8 +133,23 @@ function renderOverlayPng(html, outPath) {
   sh(`"${CHROME}" --headless --disable-gpu --disable-software-rasterizer --hide-scrollbars --default-background-color=00000000 --window-size=${W},${H} --user-data-dir="${chromeUserDataDir}" --virtual-time-budget=1200 --screenshot="${outPath}" "file://${htmlPath}" 2>&1 | tail -3`);
 }
 
+// Mean/max volume (dB) of a time window of an audio/video file, via ffmpeg volumedetect.
+// Returns null when the window does not exist. Digital silence is reported as -91 dB.
+function levelDb(file, startSec, durSec) {
+  if (!(startSec >= 0) || !(durSec > 0)) return null;
+  let out = '';
+  try {
+    out = execSync(`ffmpeg -nostdin -hide_banner -ss ${startSec.toFixed(3)} -t ${durSec.toFixed(3)} -i "${file}" -vn -af volumedetect -f null - 2>&1`, { shell: '/bin/bash', encoding: 'utf8' });
+  } catch (e) { out = String(e.stdout || ''); }
+  const mean = out.match(/mean_volume:\s*(-?[\d.]+|-inf) dB/);
+  const max = out.match(/max_volume:\s*(-?[\d.]+|-inf) dB/);
+  if (!mean || !max) return null;
+  const num = (m) => (m[1] === '-inf' ? -91 : parseFloat(m[1]));
+  return { meanDb: num(mean), maxDb: num(max) };
+}
+
 async function main() {
-  const [surah, ayahStart, reciterId, style, outDir] = process.argv.slice(2);
+  const [surah, ayahStart, reciterId, style, outDir, ayahEnd] = process.argv.slice(2);
   fs.mkdirSync(outDir, { recursive: true });
   const workDir = fs.mkdtempSync('/tmp/reel-');
 
@@ -138,7 +157,7 @@ async function main() {
 
   // 1. Timeline
   const timelinePath = path.join(workDir, 'timeline.json');
-  sh(`node "${path.join(REPO_ROOT, 'scripts', 'fetch_timeline.js')}" ${surah} ${ayahStart} ${reciterId} "${timelinePath}"`);
+  sh(`node "${path.join(REPO_ROOT, 'scripts', 'fetch_timeline.js')}" ${surah} ${ayahStart} ${reciterId} "${timelinePath}" ${ayahEnd || ''}`);
   const timeline = JSON.parse(fs.readFileSync(timelinePath, 'utf8'));
 
   // Test-only hook: set by the workflow's `integrityTest` input (never by n8n's normal dispatch). It corrupts
@@ -153,13 +172,12 @@ async function main() {
     }
   }
 
-  // 2. Reciter English name (from the same API list we verified for the mapping table)
-  const RECITER_NAMES = {
-    7: "Mishari Rashid al-`Afasy", 2: "AbdulBaset AbdulSamad (Murattal)", 1: "AbdulBaset AbdulSamad (Mujawwad)",
-    6: "Mahmoud Khalil Al-Husary", 9: "Mohamed Siddiq al-Minshawi (Murattal)", 3: "Abdur-Rahman as-Sudais",
-    97: "Yasser Ad Dussary", 5: "Hani ar-Rifai", 4: "Abu Bakr al-Shatri", 10: "Sa`ud ash-Shuraym",
-  };
-  const reciterName = RECITER_NAMES[timeline.reciterId] || `Reciter ${timeline.reciterId}`;
+  // 2. Reciter display names (Arabic + English), approved by the user; key = Quran.com audio API reciter ID.
+  const RECITERS = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'data', 'reciters.json'), 'utf8'));
+  const reciterInfo = RECITERS[String(timeline.reciterId)];
+  if (!reciterInfo) throw new Error(`reciter ${timeline.reciterId} is not in data/reciters.json - refusing to render without an approved name`);
+  const reciterName = reciterInfo.en;
+  const reciterNameArabic = reciterInfo.ar;
   const handle = '@basaer.media.bh';
   const credit = 'Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh International.';
 
@@ -202,6 +220,7 @@ async function main() {
       surahNameArabic: timeline.surahNameArabic,
       surahNameEnglish: timeline.surahNameEnglish,
       reciterNameEnglish: reciterName,
+      reciterNameArabic,
       surahNumber: timeline.surah,
       ayahNumber: spec.ayahNumber,
       arabicWords: spec.arabicWords,
@@ -261,9 +280,32 @@ async function main() {
   const caption = `Surah ${timeline.surahNameEnglish} (${timeline.surah}:${ayahRange})\n\n${handle}\n\n${credit}`;
   fs.writeFileSync(path.join(outDir, 'caption.txt'), caption);
 
+  // 7. Audio checks (first-letter / last-letter clipping).
+  //  - audioLevels: level of the FINAL file at its very start and end. The 80 ms fade-in (used only when the source
+  //    has no lead-in) makes the first 80 ms quieter by design.
+  //  - sourceLevels: level of the SOURCE recording just outside the cut. If the 100 ms before the cut start / after
+  //    the cut end is near-silent, the cut falls in a pause, so no letter is clipped. 'silent' = peak below -40 dB.
+  const probe = execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${outPath}"`, { shell: '/bin/bash', encoding: 'utf8' });
+  const fileDur = parseFloat(probe);
+  const audioLevels = {
+    first50ms: levelDb(outPath, 0, 0.05), first250ms: levelDb(outPath, 0, 0.25),
+    last250ms: levelDb(outPath, fileDur - 0.25, 0.25), last50ms: levelDb(outPath, fileDur - 0.05, 0.05),
+  };
+  const before = timeline.clipStartSec >= 0.1 ? levelDb(chapterPath, timeline.clipStartSec - 0.1, 0.1) : null;
+  const after = levelDb(chapterPath, timeline.clipEndSec, 0.1);
+  const sourceLevels = {
+    beforeCut100ms: before, afterCut100ms: after,
+    startsAtFileBeginning: timeline.clipStartSec < 0.1,
+    startCutInSilence: before ? before.maxDb < -40 : null,
+    endCutInSilence: after ? after.maxDb < -40 : null,
+  };
+  console.log('Audio levels (final file):', JSON.stringify(audioLevels));
+  console.log('Audio levels (source around the cut):', JSON.stringify(sourceLevels));
+
+  const fileBytes = fs.statSync(outPath).size;
   fs.writeFileSync(path.join(outDir, 'timeline.json'), JSON.stringify(timeline, null, 2));
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify({
-    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName,
+    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels,
   }, null, 2));
 }
 

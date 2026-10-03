@@ -1,0 +1,13 @@
+{
+  "_comment": "Approved by the user 2026-10-03. Key = Quran.com audio API reciter ID. 'ar' and 'en' are the DISPLAY names shown on every Reel. ID 1 is the Mujawwad recording of ID 2 (not in the rotation).",
+  "7":  { "ar": "مشاري راشد العفاسي", "en": "Mishary Alafasy" },
+  "2":  { "ar": "عبد الباسط عبد الصمد", "en": "Abdul Basit Abdus-Samad" },
+  "1":  { "ar": "عبد الباسط عبد الصمد", "en": "Abdul Basit Abdus-Samad" },
+  "6":  { "ar": "محمود خليل الحصري", "en": "Mahmoud Khalil Al-Husary" },
+  "9":  { "ar": "محمد صديق المنشاوي", "en": "Mohamed Siddiq Al-Minshawi" },
+  "3":  { "ar": "عبدالرحمن السديس", "en": "Abdur-Rahman As-Sudais" },
+  "97": { "ar": "ياسر الدوسري", "en": "Yasser Al-Dosari" },
+  "5":  { "ar": "هاني الرفاعي", "en": "Hani Ar-Rifai" },
+  "4":  { "ar": "أبو بكر الشاطري", "en": "Abu Bakr Al-Shatri" },
+  "10": { "ar": "سعود الشريم", "en": "Saud Ash-Shuraim" }
+}

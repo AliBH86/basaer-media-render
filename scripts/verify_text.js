@@ -3,6 +3,8 @@
 // Compares, character by character, the text that is about to be DRAWN into every Reel overlay (read back from
 // the generated overlay HTML files) with a FRESH, independent copy of the same ayahs from the Quran.com API,
 // and scans for corrupted characters (U+FFFD, mojibake, non-Arabic characters inside the Arabic).
+// It also checks ALIGNMENT: the drawn words must be exactly the API's words (same count), and every word must
+// have a highlight timing, otherwise the gold highlight would land on the wrong word.
 // Any difference fails the render BEFORE any frame is drawn or encoded.
 //
 // Usage:  node verify_text.js <timeline.json> <workDir> <outDir>     verify a render
@@ -25,10 +27,13 @@ function getJson(url) {
   });
 }
 
+const HIZB = /\u06DE/g;
 const strip = (t) => String(t).replace(/<sup[^>]*>.*?<\/sup>/g, '').replace(/<[^>]+>/g, '').trim();
 const cp = (c) => (c === undefined ? 'end-of-text' : 'U+' + c.codePointAt(0).toString(16).toUpperCase().padStart(4, '0'));
 const BAD = /\uFFFD|\u00C3|\u00C2|\u00D8|\u00D9|\u00DA|\u00DB|\u00E2\u20AC|\u00EF\u00BF\u00BD/;
 const ARABIC_OK = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF\s]/;
+// Display-only normalisation applied to BOTH sides: the hizb marker is hidden, spaces collapsed.
+const norm = (t) => String(t).replace(HIZB, '').replace(/\s+/g, ' ').trim();
 
 function same(issues, label, expected, actual) {
   if (typeof actual !== 'string' || actual.length === 0) { issues.push(`${label}: text is missing`); return; }
@@ -57,22 +62,43 @@ function readOverlay(html) {
   return { words, translation: t ? t[1] : '' };
 }
 
-// Pure check of one overlay against the fresh API copy. Returns a list of issues.
+// Pure check of one overlay against the fresh API copy. fresh = { arabic, words, english }.
 function checkOverlay(label, drawn, fresh) {
   const issues = [];
-  const wantWords = fresh.arabic.trim().split(/\s+/);
+  const wantWords = (fresh.words || fresh.arabic.trim().split(/\s+/)).map(norm);
   same(issues, `${label} Arabic`, wantWords.join(' '), drawn.words.join(' '));
+  if (drawn.words.length !== wantWords.length) {
+    issues.push(`${label} Arabic: ${drawn.words.length} drawn words but the API has ${wantWords.length} words (highlight would be misaligned)`);
+  } else {
+    const k = wantWords.findIndex((w, i) => w !== drawn.words[i]);
+    if (k >= 0 && wantWords.join(' ') === drawn.words.join(' ')) issues.push(`${label} Arabic: word ${k + 1} is split differently from the API`);
+  }
   scan(issues, `${label} Arabic`, drawn.words.join(' '), true);
   same(issues, `${label} English`, fresh.english, drawn.translation);
   scan(issues, `${label} English`, drawn.translation, false);
   return issues;
 }
 
+// Every word must have a highlight timing, and timings must point at real words.
+function checkTimings(label, wordCount, wordTimings) {
+  const issues = [];
+  const seen = new Set();
+  for (const wt of wordTimings) {
+    if (!(wt.wordIndex >= 0 && wt.wordIndex < wordCount)) issues.push(`${label}: a timing points at word ${wt.wordIndex + 1}, but there are only ${wordCount} words`);
+    seen.add(wt.wordIndex);
+  }
+  for (let i = 0; i < wordCount; i++) if (!seen.has(i)) { issues.push(`${label}: word ${i + 1} of ${wordCount} has no highlight timing`); break; }
+  return issues;
+}
+
 async function freshAyah(surah, number) {
-  const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${surah}:${number}?language=en&translations=20&fields=text_uthmani`);
+  const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${surah}:${number}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=20`);
   const v = r.verse;
   if (v.text_uthmani.includes('\uFFFD')) throw new Error(`API response for ${surah}:${number} itself contains U+FFFD`);
-  return { arabic: v.text_uthmani, english: strip(v.translations[0].text) };
+  const words = v.words.filter((w) => w.char_type_name === 'word').map((w) => norm(w.text_uthmani)).filter(Boolean);
+  const issues = [];
+  if (words.join(' ') !== norm(v.text_uthmani)) issues.push(`${surah}:${number}: the API's word list does not reconstruct the API's verse text`);
+  return { arabic: v.text_uthmani, words, english: strip(v.translations[0].text), apiIssues: issues };
 }
 
 async function verifyRender(timelinePath, workDir, outDir) {
@@ -84,8 +110,10 @@ async function verifyRender(timelinePath, workDir, outDir) {
     const ref = `${timeline.surah}:${ayah.number}`;
     refs.push(ref);
     const fresh = await freshAyah(timeline.surah, ayah.number);
-    // The timeline data itself must equal the fresh copy too.
+    issues.push(...fresh.apiIssues);
+    // The timeline data itself must equal the fresh copy too, and every word must have a highlight timing.
     issues.push(...checkOverlay(`${ref} timeline`, { words: ayah.arabicWords, translation: ayah.translation }, fresh));
+    issues.push(...checkTimings(ref, fresh.words.length, ayah.wordTimings));
     for (let w = 0; w < ayah.wordTimings.length; w++) {
       const file = path.join(workDir, `overlay_${overlayIndex}.html`);
       overlayIndex++;
@@ -106,10 +134,11 @@ async function verifyRender(timelinePath, workDir, outDir) {
 // Offline self-test: every kind of corruption we care about must be reported, the clean case must not.
 function selftest() {
   // Quran 112:1 as the API returns it, written as code points so this file stays pure ASCII.
-  const ar = '\u0642\u064F\u0644\u0652 \u0647\u064F\u0648\u064E \u0671\u0644\u0644\u0651\u064E\u0647\u064F \u0623\u064E\u062D\u064E\u062F\u064C';
-  const fresh = { arabic: ar, english: 'Say, "He is All\u0101h, [who is] One,' };
+  const w = ['\u0642\u064F\u0644\u0652', '\u0647\u064F\u0648\u064E', '\u0671\u0644\u0644\u0651\u064E\u0647\u064F', '\u0623\u064E\u062D\u064E\u062F\u064C'];
+  const ar = w.join(' ');
+  const fresh = { arabic: ar, words: w, english: 'Say, "He is All\u0101h, [who is] One,' };
   const drawn = (words, translation) => ({ words, translation });
-  const clean = drawn(ar.split(' '), fresh.english);
+  const clean = drawn(w.slice(), fresh.english);
   const cases = [
     ['clean text passes', clean, false],
     ['one dropped diacritic', drawn(ar.replace('\u064E', '').split(' '), fresh.english), true],
@@ -119,6 +148,7 @@ function selftest() {
     ['Latin letter inside the Arabic', drawn(ar.replace('\u0623', 'a').split(' '), fresh.english), true],
     ['a word missing', drawn(clean.words.slice(0, -1), fresh.english), true],
     ['English letter changed', drawn(clean.words, fresh.english.replace('One', 'Ond')), true],
+    ['a word split in two (misaligned highlight)', drawn([w[0], w[1], '\u0671\u0644\u0644\u0651\u064E', '\u0647\u064F', w[3]], fresh.english), true],
   ];
   let failed = 0;
   for (const [name, d, shouldFail] of cases) {
@@ -128,11 +158,20 @@ function selftest() {
     if (!pass) failed++;
     console.log(`${pass ? 'PASS' : 'FAIL'}  ${name}${caught ? '  -> ' + issues[0] : ''}`);
   }
+  // timing coverage checks
+  const t1 = checkTimings('selftest', 4, [0, 1, 2, 3].map((i) => ({ wordIndex: i })));
+  const t2 = checkTimings('selftest', 4, [0, 1, 3].map((i) => ({ wordIndex: i })));
+  const t3 = checkTimings('selftest', 4, [0, 1, 2, 3, 4].map((i) => ({ wordIndex: i })));
+  for (const [name, issues, shouldFail] of [['all words timed', t1, false], ['a word without timing', t2, true], ['timing beyond the last word', t3, true]]) {
+    const pass = (issues.length > 0) === shouldFail;
+    if (!pass) failed++;
+    console.log(`${pass ? 'PASS' : 'FAIL'}  ${name}${issues.length ? '  -> ' + issues[0] : ''}`);
+  }
   if (failed) { console.error(`${failed} self-test case(s) failed`); process.exit(1); }
   console.log('integrity guard self-test: all cases behave correctly');
 }
 
-module.exports = { checkOverlay, readOverlay, verifyRender, selftest };
+module.exports = { checkOverlay, checkTimings, readOverlay, verifyRender, selftest };
 
 if (require.main === module) {
   const args = process.argv.slice(2);
