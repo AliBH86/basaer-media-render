@@ -176,6 +176,35 @@ function levelDb(file, startSec, durSec) {
   return { meanDb: num(mean), maxDb: num(max) };
 }
 
+// Quietest 5 ms frame of the SOURCE audio in [fromSec, toSec]. Among frames within 1.5x of the minimum energy (or
+// below about -60 dBFS) the one closest to preferSec wins. Returns { sec, db } or null when nothing can be read.
+function quietestPoint(file, fromSec, toSec, preferSec) {
+  const from = Math.max(0, fromSec);
+  if (!(toSec > from)) return null;
+  let buf;
+  try {
+    buf = execSync(`ffmpeg -v error -nostdin -ss ${from.toFixed(3)} -t ${(toSec - from).toFixed(3)} -i "${file}" -vn -ac 1 -ar 16000 -f s16le -`, { shell: '/bin/bash', maxBuffer: 64 * 1024 * 1024 });
+  } catch (e) { return null; }
+  const FR = 80; // 5 ms at 16 kHz
+  const rms = [];
+  for (let i = 0; i + FR <= buf.length / 2; i += FR) {
+    let s = 0;
+    for (let j = 0; j < FR; j++) { const v = buf.readInt16LE((i + j) * 2); s += v * v; }
+    rms.push(Math.sqrt(s / FR));
+  }
+  if (!rms.length) return null;
+  const limit = Math.max(Math.min(...rms) * 1.5, 33);
+  let best = -1, bestDist = Infinity;
+  rms.forEach((r, k) => {
+    if (r > limit) return;
+    const t = from + (k + 0.5) * 0.005;
+    const d = Math.abs(t - preferSec);
+    if (d < bestDist) { bestDist = d; best = k; }
+  });
+  if (best < 0) return null;
+  return { sec: from + (best + 0.5) * 0.005, db: Math.round(20 * Math.log10(Math.max(rms[best], 1) / 32768) * 10) / 10 };
+}
+
 async function main() {
   const [surah, ayahStart, reciterId, style, outDir, ayahEnd] = process.argv.slice(2);
   fs.mkdirSync(outDir, { recursive: true });
@@ -213,8 +242,28 @@ async function main() {
   const chapterPath = path.join(workDir, 'chapter.mp3');
   sh(`curl -sS -L "${timeline.audioUrl}" -o "${chapterPath}"`);
   const audioPath = path.join(workDir, 'audio.m4a');
-  const fadeFilter = timeline.fadeInMs > 0 ? `,afade=t=in:st=0:d=${(timeline.fadeInMs / 1000).toFixed(3)}` : '';
-  sh(`ffmpeg -y -nostdin -i "${chapterPath}" -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -af "aformat=channel_layouts=stereo${fadeFilter}" -c:a aac -b:a 128k "${audioPath}"`);
+  // Clean cuts: in recitations that run ayah into ayah (no pause) the cut falls inside sound, which gives a click or
+  // the tail of the previous ayah. So the cut is moved to the quietest 5 ms of the SOURCE near the boundary:
+  //  - start: inside the lead-in (before the first word); everything before it is muted, 12 ms fade-in
+  //  - end: within the last 120 ms of the clip; everything after it is muted, 30 ms fade-out
+  // Muting never moves a word, so the word timings stay valid.
+  const clipStartAbs = timeline.clipStartSec;
+  const clipEndAbs = timeline.clipEndSec;
+  const firstWordAbs = clipStartAbs + timeline.availableLeadInMs / 1000;
+  let startRel = 0, fadeInSec = timeline.fadeInMs / 1000;
+  const audioCut = { start: null, end: null };
+  if (timeline.availableLeadInMs >= 100) {
+    const q = quietestPoint(chapterPath, firstWordAbs - 0.2, firstWordAbs - 0.01, firstWordAbs - 0.01);
+    if (q) { startRel = Math.max(0, q.sec - clipStartAbs); fadeInSec = 0.012; audioCut.start = { cutOffsetMs: Math.round(startRel * 1000), levelDb: q.db }; }
+  }
+  let endRel = timeline.durationSec;
+  const qe = quietestPoint(chapterPath, clipEndAbs - 0.12, clipEndAbs, clipEndAbs);
+  if (qe) { endRel = Math.min(timeline.durationSec, qe.sec - clipStartAbs); audioCut.end = { cutBeforeEndMs: Math.round((timeline.durationSec - endRel) * 1000), levelDb: qe.db }; }
+  const fadeOutSec = 0.03;
+  const afadeIn = fadeInSec > 0 ? `,afade=t=in:st=${startRel.toFixed(3)}:d=${fadeInSec.toFixed(3)}` : '';
+  const afadeOut = `,afade=t=out:st=${Math.max(0, endRel - fadeOutSec).toFixed(3)}:d=${fadeOutSec.toFixed(3)}`;
+  console.log('Audio cut points:', JSON.stringify(audioCut));
+  sh(`ffmpeg -y -nostdin -i "${chapterPath}" -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -af "aformat=channel_layouts=stereo${afadeIn}${afadeOut}" -c:a aac -b:a 128k "${audioPath}"`);
 
   // 4. Background, with render-budget fallback
   const bgPath = path.join(workDir, 'bg.mp4');
@@ -333,7 +382,7 @@ async function main() {
   const fileBytes = fs.statSync(outPath).size;
   fs.writeFileSync(path.join(outDir, 'timeline.json'), JSON.stringify(timeline, null, 2));
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify({
-    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels,
+    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut,
   }, null, 2));
 }
 
