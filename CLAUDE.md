@@ -21,10 +21,11 @@
 - **Cloudinary** hosts all rendered media.
 - **Quran.com API v4** is the primary text/audio source; **alquran.cloud** is the fallback.
 
-## Three n8n workflows
+## Four n8n workflows
 
-- `Basaer - Daily Post (Quran Image)` — static image carousel posts.
-- `Basaer - Reel (Quran)` — multi-ayah video Reels via GitHub Actions.
-- `Basaer - Reel Error Alerts` — failure notifications (needs to be assigned as the Reel workflow's Error Workflow via the n8n UI — no MCP tool for that).
+- `Basaer - Daily Post (Quran Image)` — single-slide image posts from a fixed approved rotation; sends each draft (image + caption + Approve/Reject) to the owner on Telegram. INACTIVE until go-live.
+- `Basaer - Draft Approval (Telegram)` — handles the button presses (owner-only, pending-only, expires after a day). ACTIVE; its Instagram nodes are DISABLED.
+- `Basaer - Reel (Quran)` — multi-ayah video Reels via GitHub Actions. INACTIVE.
+- `Basaer - Reel Error Alerts` — failure notifications (still needs a Telegram credential + chat id).
 
-All three are currently inactive/disabled. Full details, blockers, and exact next steps are in `docs/HANDOFF.md`.
+Captions: the reflection line is picked from the user-approved list — never call an AI at publish time. No dua line in captions. Full details, blockers, and exact next steps are in `docs/HANDOFF.md`.
