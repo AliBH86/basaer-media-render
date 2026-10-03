@@ -21,11 +21,12 @@
 - **Cloudinary** hosts all rendered media.
 - **Quran.com API v4** is the primary text/audio source; **alquran.cloud** is the fallback.
 
-## Four n8n workflows
+## Five n8n workflows
 
 - `Basaer - Daily Post (Quran Image)` — single-slide image posts from a fixed approved rotation; sends each draft (image + caption + Approve/Reject) to the owner on Telegram. INACTIVE until go-live.
 - `Basaer - Draft Approval (Telegram)` — handles the button presses (owner-only, pending-only, expires after a day). ACTIVE; its Instagram nodes are DISABLED.
 - `Basaer - Reel (Quran)` — multi-ayah video Reels via GitHub Actions. INACTIVE.
 - `Basaer - Reel Error Alerts` — failure notifications to the owner on Telegram. **Must stay ACTIVE** (this n8n ignores inactive error workflows); it only has an Error Trigger.
+- `Basaer - Instagram Token Monitor` — twice-daily read-only token check + expiry reminders (14/7/3/1 days) to Telegram. ACTIVE by design; renewal is manual (HANDOFF > "Renew the Instagram token"). Never create an n8n API key with write access to automate it.
 
-Captions: the reflection line is picked from the user-approved list — never call an AI at publish time. No dua line in captions. **Integrity guards**: slides, captions and Reels are compared character by character with a fresh Quran.com API copy; any difference voids the draft and alerts the owner — never bypass them, and keep the Reel `integrityTest` input empty. Rotation starts 2026-10-10 (Config.CYCLE_START_DATE); do not activate the Daily Post workflow before then. Go-live steps are in the GO-LIVE CHECKLIST at the top of `docs/HANDOFF.md`. Full details, blockers and next steps are in `docs/HANDOFF.md`.
+Captions: the reflection line is picked from the user-approved list — never call an AI at publish time. No dua line in captions. **Integrity guards**: slides, captions and Reels are compared character by character with a fresh Quran.com API copy; any difference voids the draft and alerts the owner — never bypass them, and keep the Reel `integrityTest` input empty. Rotation starts 2026-10-10 (Config.CYCLE_START_DATE); Daily Post and Reel skip silently (and log) before that date. Go-live steps are in the GO-LIVE CHECKLIST at the top of `docs/HANDOFF.md`. Full details, blockers and next steps are in `docs/HANDOFF.md`.
