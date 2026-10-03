@@ -1,6 +1,53 @@
 # Basaer Media — Handoff
 
-Last updated: 2026-10-03 (evening, after the Telegram approval flow, caption/slide rework and Reel renderer fixes). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
+Last updated: 2026-10-03 (late evening: integrity guards, working error alerts, rotation start 2026-10-10, go-live checklist). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
+
+---
+
+## GO-LIVE CHECKLIST
+
+Do these in order. **Nothing publishes to Instagram until step 4, and step 4 needs the user's explicit instruction.** Every Instagram node in every Basaer workflow is DISABLED today.
+
+**0. Before anything (already done unless noted)**
+- [x] Arabic/English integrity guards in the Daily Post and Reel pipelines (tested 2026-10-03).
+- [x] "Basaer - Reel Error Alerts" active, using the Basaer bot and the owner's chat (tested with a forced failure).
+- [x] Rotation start date set: `CYCLE_START_DATE` = **2026-10-10** (Saturday, day 1; Fridays always use the Al-Kahf set, starting 2026-10-16).
+- [ ] Decide the Instagram-token-expiry approach (reminder recommended, see "Token expiry" below) and have it built before go-live. The current token expires **2026-12-01**.
+
+**1. Rotate the Instagram token (and the Telegram bot token if it was ever pasted in chat)**
+1. In Instagram (account @basaer.media.bh): Settings → **Apps and websites** → remove the app "Basaer Publisher". This revokes every existing token.
+2. In the Meta app dashboard (Basaer Publisher → Instagram → API setup with Instagram login): add the account again and **Generate token** for @basaer.media.bh, accepting all permissions (including content publishing).
+3. In n8n: Credentials → "Basaer Media — Instagram Login token" (id `qxx0V2sGYu8YXpZM`). **Name must stay `access_token`**, Value = the new token only, no spaces or quotes. Save and wait for the confirmation. Never paste the token into chat.
+4. Read-only check (ask Claude): `GET graph.instagram.com/v25.0/me?fields=user_id,username,account_type` through that credential must return 200 and `user_id` = `17841414160930384`.
+5. Note the new expiry date (60 days from generation) in the expiry reminder.
+6. Telegram bot: if its token ever appeared in chat, revoke it with @BotFather (`/revoke`), put the new token only into the n8n credential "Basaer Media — Telegram Bot (Basaermedia_bot)", and press Start on the bot again if asked.
+7. GitHub PAT "Basaer - GitHub (render dispatch)" expires about **2027-01-01** (90 days from 2026-10-03): put a reminder in your calendar.
+
+**2. One manual test post (needs the user's explicit go-ahead in chat for each post)**
+1. Claude first adds the `status_code = FINISHED` retry/If gate to the Instagram chain (it is not there yet).
+2. The user picks one approved draft (for example the day-1 post, 70:5) and says "go" in chat.
+3. Claude enables only that chain for a single manual run, publishes that one draft, then disables the nodes again.
+4. The user looks at the live post: Arabic text and diacritics, translation, caption, hashtags, credit line, image framing. Delete the post if anything is wrong.
+
+**3. Review week (7 days)**
+1. Activate "Basaer - Daily Post (Quran Image)" on or after 2026-10-10 (never before: it has no before-start guard). The 19:00 Bahrain schedule then sends one draft per day to Telegram.
+2. Each day press ✅ Approve or ❌ Reject. In review mode **Approve only means "this draft is good"** — nothing publishes. If you want real posts during this week, do them one at a time with the manual procedure in step 2.
+3. Keep a tally: approved / rejected / voided by the integrity guard. Investigate any void or any rejected draft before moving on; there should be none for text corruption.
+4. "Basaer - Draft Approval (Telegram)" and "Basaer - Reel Error Alerts" must stay active throughout.
+
+**4. Auto-publish switch (only after the review week AND the user's explicit instruction)**
+1. Confirm: token rotated and read-only check passed, expiry reminder running, Error Alerts active, review week clean.
+2. Claude enables, in "Basaer - Draft Approval (Telegram)", the chain: Create Image Container → Wait → Check Container Status (FINISHED gate) → Publish → Log Posted Ayah. Decide first whether Approve publishes immediately or at a scheduled time.
+3. Rollback at any time: disable those five nodes (or deactivate the Draft Approval workflow). Drafts keep arriving; nothing publishes.
+4. Reels follow the same pattern later: enable the four disabled nodes in "Basaer - Reel (Quran)" only on the user's say-so.
+
+### Token expiry (Instagram Login long-lived token, expires 2026-12-01)
+
+Per Meta's docs: long-lived tokens last 60 days; `GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=<token>` returns a new token valid for another 60 days, but only if the old one is at least 24 hours old, not yet expired, and `instagram_business_basic` is still granted. A token that expires can never be refreshed (the owner must re-authorize).
+
+- **Recommended (safer): reminder + daily health check, no automatic token rewrite.** A small workflow that (a) messages the owner on Telegram 14, 7, 3 and 1 days before the stored expiry date, and (b) once a day runs the read-only `me` call and alerts immediately if it fails (catches revocation or a password change, which auto-refresh cannot prevent). Renewal stays a 2-minute manual step: generate a token in the Meta dashboard, paste it into the n8n credential, update the stored expiry date.
+- **Not recommended: automatic refresh.** The refreshed token has to be written back into the n8n credential, which needs an n8n Public API key with write access to credentials. On this shared instance such a key is instance-wide power (it can reach AH Brands workflows and credentials too), and a half-failed run (new token fetched, write failed or wrote the wrong value) could break publishing silently. The AH Brands side already has such a workflow ("IG Token Auto-Refresh") — it was not opened or touched.
+- Not built yet: waiting for the user's decision.
 
 ---
 
@@ -12,29 +59,31 @@ Last updated: 2026-10-03 (evening, after the Telegram approval flow, caption/sli
 - **Instagram account ID (`user_id`, the `<IG_ID>` used for publishing): `17841414160930384`** (the `/me` `id` 28886708307608776 is app-scoped — do not use it for publishing). Token expires **Tue Dec 1, 2026**.
 - **Publish nodes rebuilt** on graph.instagram.com v25.0 in both the Reel workflow and the Draft Approval workflow. **All DISABLED.**
 - **GitHub credential** saved and verified: n8n dispatched a real render (workflow_dispatch). Minimal PAT permissions: Actions read+write (+ Metadata read, automatic), one repo, 90 days.
-- **Telegram draft-approval flow** built, credentialed, and tested with real button presses (see the Draft Approval workflow below).
+- **Telegram draft-approval flow** built, credentialed, and tested with real button presses and simulated edge cases (see the Draft Approval workflow below).
 - **Content set approved by the user**: 68 daily ayahs + 8 Friday (Al-Kahf), caption layout, render style, reflection lines (treated as approved unless the user says otherwise after reading the Arabic).
-- **Two Reel renderer bugs found and fixed today** (both visible only by looking at the frames): (1) `fetch_timeline.js` decoded each HTTPS chunk separately, so a 2-byte Arabic character split across chunks became two U+FFFD chars (a broken "Allah" in 112:1) — now Buffers are concatenated and decoded once, and any U+FFFD aborts the render (commit 04ffc80); (2) `.arabic { overflow:hidden }` sliced the tails of ق/ل/و on one-line ayahs — now `overflow:visible` plus more space above the English line (commits 08678f8 and the spacing follow-up).
+- **Arabic/English integrity guards** (after the corrupted-"Allah" bug) in both pipelines — see "Arabic integrity guard" under section 4. Each was proven with a clean run (passes, no false alarm) and a deliberately corrupted run (blocked, owner alerted on Telegram).
+- **Error alerts working.** Finding: this n8n only runs an Error Workflow when that workflow is **active (published)**. While "Basaer - Reel Error Alerts" was inactive, failures were silent. It is now active and tested with a harmless forced failure; it is attached to the Reel, Daily Post and Draft Approval workflows. It contains only an Error Trigger (no schedule/webhook), so it can fire only when one of those workflows fails.
+- **Rotation start date** set: `CYCLE_START_DATE` = 2026-10-10 (Saturday = day 1). First Friday (2026-10-16) = 18:1.
+- **Two Reel renderer bugs found and fixed earlier today** (both visible only by looking at the frames): (1) `fetch_timeline.js` decoded each HTTPS chunk separately, so a 2-byte Arabic character split across chunks became two U+FFFD chars (a broken "Allah" in 112:1) — now Buffers are concatenated and decoded once, and any U+FFFD aborts the render; (2) `.arabic { overflow:hidden }` sliced the tails of ق/ل/و on one-line ayahs — now `overflow:visible` plus more space above the English line.
 
 ### Needs the user
 
 | # | Item | Why it matters | Blocks |
 |---|---|---|---|
-| 1 | Press **Reject** on the newest test draft in Telegram (and optionally press a button on an already-handled draft to see "Already … – ignored") | Completes the real-press test of the reject path | Sign-off of the approval flow |
-| 2 | Tell Claude the **go-live date** → set `Config.CYCLE_START_DATE` in the Daily Post workflow | Rotation start (until set, today = day 0) | Go-live |
-| 3 | Choose the **failure-alert Telegram chat** (different from the review chat) | "Basaer - Reel Error Alerts" has no credential/chat yet | Failure notifications |
-| 4 | **Rotate tokens before go-live**: Instagram, Telegram bot (both passed through chat text). Paste only into the n8n credential fields (Instagram credential Name must stay `access_token`). Note the GitHub PAT expires ~2027-01-01 | Treat chat-exposed tokens as leaked | Go-live |
-| 5 | Plan the Instagram token refresh before **Dec 1, 2026** | Publishing stops at expiry | Go-live after Dec 1 |
-| 6 | Finish reading the Arabic reflection lines (treated as approved) | One-time approval | — |
-| 7 | Approve the reciter Arabic-name table (API-sourced) | Arabic reciter names not used in renders until approved | Arabic reciter display |
-| 8 | Apply for Quran.Foundation production API access | Quran.com v4 calls use the open endpoints today | Long-term API stability |
-| 9 | Free space on the C: drive | General machine health | — |
+| 1 | Real ❌ **Reject** press not yet tested: every test draft is already approved (`_40192`, `_40210`, `_40212`, `_40220`) or void, so ask Claude to "send another draft", then press Reject. Tapping a button on an old approved draft should show "Already approved – ignored" (real double-press test) | The reject path and the double-press guard are only proven by simulation so far | Sign-off of the approval flow |
+| 2 | Decide the **Instagram token expiry approach** (reminder + daily health check recommended; see GO-LIVE CHECKLIST → Token expiry) | Token expires 2026-12-01; nothing is built until the user says so | Go-live after Dec 1 |
+| 3 | Send the **notes on the Reel** | Pending review feedback | Reel go-live |
+| 4 | **Rotate tokens before go-live** — GO-LIVE CHECKLIST step 1 | Chat-exposed tokens must be treated as leaked | Go-live |
+| 5 | Finish reading the Arabic reflection lines (treated as approved) | One-time approval | — |
+| 6 | Approve the reciter Arabic-name table (API-sourced) | Arabic reciter names are not used in renders until approved | Arabic reciter display |
+| 7 | Apply for Quran.Foundation production API access | Quran.com v4 calls use the open endpoints today | Long-term API stability |
+| 8 | Free space on the C: drive | General machine health | — |
 
 ### Needs Claude Code next, in priority order
 
-1. Attach the Basaer Telegram credential + chat id to "Basaer - Reel Error Alerts" (item 3 above).
-2. At go-live: set `CYCLE_START_DATE`, activate the Daily Post workflow (7 PM Bahrain schedule is re-enabled but the workflow is inactive). Review mode: every draft goes to Telegram and nothing publishes. Keep "Basaer - Draft Approval (Telegram)" active.
-3. **Before enabling any IG node** (only on the user's explicit say-so): add the `status_code = FINISHED` retry loop/If gate in both the Draft Approval and Reel workflows; decide whether Approve should publish immediately or queue for a time slot.
+1. Build the token-expiry reminder + daily health check **only after the user decides** (item 2).
+2. **Before enabling any IG node** (only on the user's explicit say-so): add the `status_code = FINISHED` retry loop/If gate in both the Draft Approval and Reel workflows; decide whether Approve publishes immediately or at a scheduled time.
+3. Optional safety: add a "before `CYCLE_START_DATE` → do nothing" guard to `Pick Ayah` (today the workflow is simply kept inactive until 2026-10-10).
 4. Reel workflow: port the approved-ayah selection (it is hardcoded to 112:1) and decide on a trigger. Reels currently pick the reflection by `Config.theme`/`dayIndex`.
 5. The Daily Post "Too Long - Needs Reel" branch is dead for the approved list; remove it or wire it to the Reel workflow if non-listed ayahs are ever used.
 6. Once Quran.Foundation access is granted, swap the API calls over.
@@ -54,8 +103,10 @@ Last updated: 2026-10-03 (evening, after the Telegram approval flow, caption/sli
 ## 2. Hard rules (never relax these without the user explicitly saying so)
 
 - **Ayah text**: only ever sourced from the Quran.com API (or alquran.cloud as fallback) at render time. Never hand-typed, never guessed, never cached/edited by hand.
-- **AI-authored text**: the only AI-written text allowed anywhere in a caption is the **one-line reflection**. Everything else (ayah, translation, dua, hashtags, credit) is either API-sourced or from an approved fixed list.
-- **Dua**: must come from the user's approved fixed list once provided. Never AI-generated, never guessed. Current code has a 3-item **placeholder** pool, explicitly flagged `dua_is_placeholder: true` in the output — this is not real content, just scaffolding.
+- **AI-authored text**: the only AI-written text anywhere in a caption is the one-line reflection, and it is written ONCE, approved by the user, and stored as a fixed list. At publish time the workflows only PICK from that list — they never call an AI. Everything else (ayah, translation, hashtags, credit) is API-sourced or fixed.
+- **Dua**: there is no dua line in captions any more. Duas appear only as ayahs in the approved rotation (text from the API). Never AI-generated.
+- **Integrity**: the Arabic/English text of every slide, caption and Reel must match a fresh API copy character for character; any difference voids the draft and alerts the owner (see section 4). Do not remove or bypass the guards, and keep the Reel `integrityTest` input empty.
+- **Error alerts**: "Basaer - Reel Error Alerts" must stay ACTIVE (this n8n ignores inactive error workflows).
 - **No faces, no music, no sectarian symbols** in any visual asset.
 - **Secrets**: never printed to chat, never written into any file in this repo or elsewhere. Credentials live only in n8n's credential store. See "Secrets" at the bottom.
 - **AH Brands**: never touch any "AH Brands —" prefixed workflow, credential, or resource on the shared n8n instance. Only ever create/edit "Basaer - ..." prefixed workflows and Basaer-labeled credentials.
@@ -100,17 +151,30 @@ workflow.
 
 ---
 
-## 4. n8n workflows (Daily Post and Reel INACTIVE; Draft Approval ACTIVE; all Instagram nodes DISABLED)
+## 4. n8n workflows (Daily Post and Reel INACTIVE; Draft Approval and Reel Error Alerts ACTIVE; all Instagram nodes DISABLED)
 
-### Basaer - Daily Post (Quran Image) — id `0rDJEBadks8oiKiL`, INACTIVE, 15 nodes
+No schedule trigger can fire on its own: the only schedule trigger (Daily Post, 19:00 Bahrain) sits in an INACTIVE workflow. The two active workflows have a Telegram button trigger and an Error Trigger respectively.
 
-`Schedule - Daily 7PM Bahrain` → `Config` (`QURAN_API_BASE`, `REVIEW_CHAT_ID`, `CYCLE_START_DATE`) → `Get Posted Ayahs History` → `Pick Ayah` → `Get Verse` → `Get Chapter` → `Build HTML` → `If Too Long For Carousel` (true branch `Too Long - Needs Reel` is now effectively unused: every listed ayah is single-slide) → `Render via Gotenberg` → `Upload to Cloudinary` → `Build Caption` → `Save Draft` → `Telegram - Send Draft Image` → `Telegram - Send Caption + Approve/Reject`.
+### Basaer - Daily Post (Quran Image) — id `0rDJEBadks8oiKiL`, INACTIVE, 19 nodes
 
-- **Pick Ayah** is a fixed, user-approved rotation (references only; text always comes from the Quran.com API): a 68-day cycle Saturday–Thursday (no surah on two consecutive days, no theme more than twice in a row, checked including the wrap-around) plus an 8-week Al-Kahf cycle on Fridays. Themes: Mercy, Patience, Gratitude, Dua, Trust, Family & forgiveness, Parents & departed, Friday. Day 0 = `Config.CYCLE_START_DATE` (yyyy-MM-dd, Bahrain time). **It is currently the placeholder `SET_GO_LIVE_DATE`; while unset, "today" counts as day 0 (test mode).** Set it to the go-live day.
-- **Build HTML**: single combined slide (1080×1350) in Scheherazade + Inter. English shown exactly as the API returns it (footnote markers removed only — no quote stripping, no added quotes). The ۞ marker is hidden on slides only. Fit-to-frame: binary search, Arabic floor 56px, English floor 26px; a red OVERFLOW bar appears if it still doesn't fit; Gotenberg waits for `window.__fitDone`. The end-of-ayah marker is glued to the last word with a non-breaking space; the footer has a spacing guard so the handle never touches the text above.
-- **Build Caption**: Arabic block, divider, English block, ONE credit line after both, 5–8 mixed Arabic/English hashtags. Reflection line is PICKED from the user-approved list (3 per theme, Arabic + English) by day index — **no AI call at publish time**. CTA rotates (save / share as Sadaqa Jariya / tag 🏷️). The dua line was removed at the user's request. The ۞ marker is hidden in captions too (display only). Caption length is checked against Instagram's 2,200 limit.
+`Schedule - Daily 7PM Bahrain` → `Config` (`QURAN_API_BASE`, `REVIEW_CHAT_ID`, `CYCLE_START_DATE`) → `Get Posted Ayahs History` → `Pick Ayah` → `Get Verse` → `Get Chapter` → `Build HTML` → `If Too Long For Carousel` (true branch `Too Long - Needs Reel` is effectively unused: every listed ayah is single-slide) → `Render via Gotenberg` → `Upload to Cloudinary` → `Build Caption` → **`Verify Text Integrity`** → **`Integrity OK?`** → true: `Save Draft` → `Telegram - Send Draft Image` → `Telegram - Send Caption + Approve/Reject`; false: `Save Void Draft` → `Telegram - Integrity Alert`. Error Workflow = "Basaer - Reel Error Alerts".
+
+- **Pick Ayah** is a fixed, user-approved rotation (references only; text always comes from the Quran.com API): a 68-day cycle Saturday–Thursday (no surah on two consecutive days, no theme more than twice in a row, checked including the wrap-around) plus an 8-week Al-Kahf cycle on Fridays. Fridays do not consume a daily slot. Themes: Mercy, Patience, Gratitude, Dua, Trust, Family & forgiveness, Parents & departed, Friday. Day 0 = `Config.CYCLE_START_DATE` = **2026-10-10** (Saturday, yyyy-MM-dd, Bahrain time): 10-10 → 70:5, 10-11 → 28:24, 10-12 → 25:58, 10-13 → 42:28, 10-14 → 2:152, 10-15 → 29:60, **10-16 (Fri) → 18:1**, 10-17 → 57:9. **There is no before-start guard**: do not activate the workflow before 2026-10-10 (before that date it would still produce drafts, from an out-of-sequence index). If the date is blank/invalid, "today" counts as day 0 (test mode).
+- **Build HTML**: single combined slide (1080×1350) in Scheherazade + Inter. English shown exactly as the API returns it (footnote markers removed only — no quote stripping, no added quotes). The ۞ marker is hidden on slides only. Fit-to-frame: binary search, Arabic floor 56px, English floor 26px; a red OVERFLOW bar appears if it still doesn't fit; Gotenberg waits for `window.__fitDone`. The end-of-ayah marker is glued to the last word with a non-breaking space; the footer has a spacing guard so the handle never touches the text above. It also records `rendered_arabic` / `rendered_english`, read back out of the final HTML, for the integrity guard.
+- **Build Caption**: Arabic block, divider, English block, ONE credit line after both, 5–8 mixed Arabic/English hashtags. Reflection line is PICKED from the user-approved list (3 per theme, Arabic + English) by day index — **no AI call at publish time**. CTA rotates (save / share as Sadaqa Jariya / tag 🏷️). No dua line (removed by the user). ۞ hidden in captions too (display only). Caption length is checked against Instagram's 2,200 limit.
 - **Draft flow (review mode)**: `Save Draft` writes a row to Data Table "Basaer drafts" (id `o2gqjZsMDJThOcWL`; columns draft_id, ayah_key, theme, posted_date, image_url, caption, status) with status `pending`. `draft_id` = `<date>_<ayah>_<execution id>`. The two Telegram nodes send the image, then the caption with ✅ Approve / ❌ Reject buttons (HTML parse mode, caption HTML-escaped — raw Markdown/entities broke the first attempt with "can't parse entities").
-- The old "Log Posted Ayah" node moved into the approval workflow (below); the date-based rotation does not need posting history, so `Get Posted Ayahs History` is now vestigial.
+- The old "Log Posted Ayah" node moved into the approval workflow; the date-based rotation does not need posting history, so `Get Posted Ayahs History` is vestigial.
+
+### Arabic integrity guard (after the corrupted-"Allah" bug)
+
+Purpose: never send the user a draft, and never render a Reel, whose Arabic or English differs from the Quran.com API by even one character, or that contains corrupted characters.
+
+- **Daily Post — `Verify Text Integrity` (Code node, after `Build Caption`)** re-fetches the ayah fresh from the API and compares, character by character: the Arabic and English text read back from the rendered slide HTML, the Arabic and English inside the caption, and the earlier `Get Verse` copy against the fresh copy. It also checks for U+FFFD, mojibake patterns, non-Arabic characters inside the Arabic, and the end-of-ayah number. The only differences it tolerates are the display-only ones: ۞ hidden, spaces before waqf marks turned into non-breaking spaces, the trailing ornament. On any difference: `Save Void Draft` (status `void: integrity check failed`, issues in the caption column), a Telegram alert with the ayah reference and the first differing position/code points, and **no draft is sent for approval**. The approval workflow ignores any draft whose status is not `pending`.
+- **Reel, layer 1 — inside the GitHub render (`scripts/verify_text.js`)**: after every overlay's HTML is built and before any frame is drawn, the text in each overlay (read back from the HTML) and in the timeline is compared with a fresh API copy. Also an offline `--selftest` (8 corruption cases) runs at the start of every render. Failure → `out/integrity_report.json`, the job fails, and `scripts/notify_failure.js` + a workflow step POST the failure to n8n's `resumeUrl` so the waiting execution continues instead of hanging. n8n: `Render OK?` → `Build Render Failure Alert` → `Telegram - Render Failure Alert`.
+- **Reel, layer 2 — n8n `Verify Text Integrity` + `Text OK?`** after `Build Caption`: the caption and the render payload are compared with a fresh API copy. Failure → `Telegram - Integrity Alert`, no review message.
+- **What it cannot see**: pixels. A missing glyph (tofu) or clipped text in the drawn image is not detectable from the text; that is covered by the human review in Telegram, the OVERFLOW bar, and the fixes listed under Resolved.
+- **Test hook (leave empty!)**: the Reel workflow input `integrityTest` / env `INTEGRITY_TEST_TAMPER` removes one diacritic from ayah 1 to prove the guard blocks. n8n's Config has `integrityTest` = "" and must stay empty.
+- **Proven 2026-10-03**: Daily Post clean run (exec 40220: ok, 0 issues, draft sent) and tampered run (exec 40221: 4 issues, void row, alert, no draft). Reel render tampered (GitHub run 37136954534: blocked at the guard, no frame drawn) and through n8n (exec 40226: callback + alert, no caption built); clean (run 37137317936 / exec 40227: 15 overlays checked, passes); caption-only tamper (exec 40228: blocked, alert, no review message).
 
 ### Basaer - Draft Approval (Telegram) — id `1E3k34CoG6qn7ZTj`, **ACTIVE** (it must be on to hear button presses), 17 nodes
 
@@ -120,22 +184,18 @@ Guards (all tested 2026-10-03):
 1. **Owner only**: presses from any Telegram user id other than `8704731927` are dropped at `Parse Button` — no reply, no data-table access.
 2. **Draft must exist, be `pending`, and be from today or yesterday (Bahrain)**: otherwise ignored with a toast ("Already approved/rejected – ignored", "Draft expired", "Draft not found").
 3. **Conditional update** (draft_id AND status = pending): if two presses race, the second matches zero rows and nothing downstream runs.
-Simulated edge cases: other account → dropped; Approve on a 3-day-old pending draft → "expired", status unchanged; second press on a handled draft → "Already rejected – ignored"; unknown draft id → "not found". Real presses: Approve on drafts …_40192 and …_40210 → status `approved`, confirmation sent, nothing published.
+Simulated edge cases: other account → dropped; Approve on a 3-day-old pending draft → "expired", status unchanged; second press on a handled draft → "Already rejected – ignored"; unknown draft id → "not found". Real presses: Approve on drafts …_40192, …_40210 and …_40212 → status `approved`, confirmation sent, nothing published.
 Settings: Error Workflow = "Basaer - Reel Error Alerts".
 
-### Basaer - Reel (Quran) — id `DDATobrIvVhVGmr0`, INACTIVE, 9 nodes
+### Basaer - Reel (Quran) — id `DDATobrIvVhVGmr0`, INACTIVE, 15 nodes
 
-`Manual Trigger (test)` → `Config` (surah/ayahStart/reciterId/style — **hardcoded 112/1/7/stars for testing**; reviewChatId `8704731927`; `igUserId` `17841414160930384`; `igApiBase`; `theme`/`dayIndex` for the reflection pick) → `Dispatch Reel Render & Wait` (GitHub node with credential `Basaer - GitHub (render dispatch)`; workflow = `test-reel-general.yml` selected **by filename** — the "name" mode failed activation; `workflow_dispatch` + resumeUrl callback, no polling) → `Build Caption` (same approved template and reflection list as the Daily Post, no dua line, no AI) → `Send Review Notification` (Telegram, Basaer credential, HTML parse mode, escaped) → `IG - Create Reel Container (DISABLED)` → `Wait for Processing (DISABLED)` → `IG - Check Container Status (DISABLED)` → `IG - Publish Reel (DISABLED)`.
-
-Verified end to end 2026-10-03 (n8n execution 40197, GitHub run 37132183857; later runs 37135515508 / 37135660732 for the render fixes): n8n dispatched the render, GitHub called back, caption built, review message delivered to Telegram. Error Workflow = "Basaer - Reel Error Alerts" (set via API; no UI step needed).
+`Manual Trigger (test)` → `Config` (surah/ayahStart/reciterId/style — **hardcoded 112/1/7/stars for testing**; reviewChatId `8704731927`; `igUserId` `17841414160930384`; `igApiBase`; `theme`/`dayIndex` for the reflection pick; `integrityTest` = "") → `Dispatch Reel Render & Wait` (GitHub node with credential `Basaer - GitHub (render dispatch)`; workflow = `test-reel-general.yml` selected **by filename** — the "name" mode failed activation; `workflow_dispatch` + resumeUrl callback, no polling) → `Render OK?` → `Build Caption` (same approved template and reflection list as the Daily Post, no dua line, no AI) → `Verify Text Integrity` → `Text OK?` → `Send Review Notification` (Telegram, Basaer credential, HTML parse mode, escaped) → `IG - Create Reel Container (DISABLED)` → `Wait for Processing (DISABLED)` → `IG - Check Container Status (DISABLED)` → `IG - Publish Reel (DISABLED)`. Failure branches: see "Arabic integrity guard". Error Workflow = "Basaer - Reel Error Alerts".
 
 All four Instagram nodes are HTTP Request nodes on `graph.instagram.com/v25.0` using credential "Basaer Media — Instagram Login token", and are `disabled: true`. Endpoints (Meta "Instagram API with Instagram Login" content publishing): `POST /{igUserId}/media` (media_type=REELS, video_url, caption) → `GET /{containerId}?fields=status_code` → `POST /{igUserId}/media_publish` (creation_id). Before enabling: add a retry loop + If gate so publish only runs when `status_code` = `FINISHED`.
 
-### Basaer - Reel Error Alerts — id `oltrBGOHGXhdMXBY`, inactive, 3 nodes
+### Basaer - Reel Error Alerts — id `oltrBGOHGXhdMXBY`, **ACTIVE** (required), 3 nodes
 
-`Error Trigger` → `Build Alert` → `Send Failure Notification` (Telegram). **Still needs the Basaer Telegram credential attached and a real chat id (currently `SET_ME`)** — use a DIFFERENT chat than the review chat so a Telegram outage doesn't swallow both. It is already assigned as the Error Workflow of both "Basaer - Reel (Quran)" and "Basaer - Draft Approval (Telegram)".
-
----
+`Error Trigger` → `Build Alert` (HTML-escaped text: workflow, failed node, error, execution link, "Nothing was published.") → `Send Failure Notification` (Telegram, Basaer bot credential `blya0LlxCW6TePBT`, chat `8704731927` — the same chat as the review messages, chosen by the user). **It must be active: this n8n does not run an inactive Error Workflow** (proved: forced failure with it inactive → no alert; active → alert delivered). It has no schedule/webhook trigger, so it cannot fire by itself. Used as the Error Workflow of the Reel, Daily Post and Draft Approval workflows. Because it shares the review chat, a Telegram outage would hide both reviews and alerts.
 
 ## 5. Design spec
 
@@ -184,36 +244,35 @@ All four Instagram nodes are HTTP Request nodes on `graph.instagram.com/v25.0` u
 
 ## 7. Caption template
 
-Established pattern (found already drafted, but disabled pending approval, in the Daily Post workflow's `Build Caption` node; reused in the Reel workflow's `Build Caption` node):
+Approved by the user 2026-10-03 (built in the Daily Post and Reel `Build Caption` nodes):
 
 ```
-﴿ Arabic ayah text in ornate brackets ﴾
+﴿ Arabic ayah text (API) ﴾
 سورة <Arabic surah name> · <Eastern-Arabic-numeral ref>
 
-<one-line AI-authored reflection — the ONLY AI text allowed>
-
-<dua, from the approved fixed list — currently a placeholder pool>
+<one reflection line, Arabic — PICKED from the user-approved list, no AI call>
 
 <one rotating CTA line, Arabic>
 
 ━━━━━━━━━━
 
-<English translation(s), quoted>
+<English translation exactly as the API returns it>
 Surah <English surah name> <ref>
+
+<same reflection line, English>
 
 <rotating CTA line, English>
 
-<5-8 hashtags, Arabic + English mixed>
-
 Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh International.
+
+<5-8 hashtags, Arabic + English mixed>
 ```
 
-The rotating CTA pool (reused verbatim from the Daily Post workflow's own earlier draft, just changed from "show all 3 every time" to "rotate one per post"):
-- 💾 Save this for the day you need it / احفظ المنشور لوقت تحتاجه
-- 📤 Share it as Sadaqa Jariya / انشره صدقة جارية
-- 👤 Tag someone who needs this today / شاركه مع من يحتاج هذه الآية اليوم
-
-Credit line is fixed, always present, and goes in the caption on both workflows (and is additionally written to a standalone `caption.txt` / `out/caption.txt` file by the Reel pipeline for easy reuse).
+- **No dua line** in captions (removed by the user; the duas live in the ayah rotation itself).
+- The ۞ marker is hidden in captions and on slides (display only; the stored text is unchanged).
+- The reflection list is 3 lines per theme (Mercy, Patience, Gratitude, Dua, Trust, Family & forgiveness, Parents & departed, Friday), chosen by day index. It lives in the `Build Caption` code of both workflows (keep them in sync). They were written once by Claude and approved once by the user; nothing is generated at publish time.
+- CTA pool (rotates, one per post): 💾 Save this for the day you need it / احفظ المنشور لوقت تحتاجه — 📤 Share it as Sadaqa Jariya / انشره صدقة جارية — 🏷️ Tag someone who needs this today / شاركه مع من يحتاج هذه الآية اليوم.
+- The credit line is fixed, appears ONCE after both language blocks, and is also written to `out/caption.txt` by the Reel pipeline.
 
 ---
 
