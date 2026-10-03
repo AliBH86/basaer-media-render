@@ -10,10 +10,15 @@ const fs = require('fs');
 function getJson(url) {
   return new Promise((resolve, reject) => {
     https.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
-      let data = '';
-      res.on('data', c => data += c);
+      // Collect raw Buffers and decode once at the end. Appending chunks to a string decoded each
+      // chunk separately, so a 2-byte Arabic character split across a chunk boundary became two
+      // U+FFFD replacement chars (seen as a broken "Allah" in 112:1 - the fatha was corrupted).
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
       res.on('end', () => {
+        const data = Buffer.concat(chunks).toString('utf8');
         if (res.statusCode !== 200) return reject(new Error(`${url} -> HTTP ${res.statusCode}: ${data.slice(0,200)}`));
+        if (data.includes('�')) return reject(new Error(`${url} -> response contains U+FFFD (corrupted text) - refusing to render`));
         try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
       });
     }).on('error', reject);
