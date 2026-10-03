@@ -260,10 +260,15 @@ async function main() {
   const qe = quietestPoint(chapterPath, clipEndAbs - 0.12, clipEndAbs, clipEndAbs);
   if (qe) { endRel = Math.min(timeline.durationSec, qe.sec - clipStartAbs); audioCut.end = { cutBeforeEndMs: Math.round((timeline.durationSec - endRel) * 1000), levelDb: qe.db }; }
   const fadeOutSec = 0.03;
-  const afadeIn = fadeInSec > 0 ? `,afade=t=in:st=${startRel.toFixed(3)}:d=${fadeInSec.toFixed(3)}` : '';
-  const afadeOut = `,afade=t=out:st=${Math.max(0, endRel - fadeOutSec).toFixed(3)}:d=${fadeOutSec.toFixed(3)}`;
+  // One explicit gain envelope: 0 before startRel, linear fade-in, 1, linear fade-out, 0 after endRel.
+  const fi = Math.max(fadeInSec, 0.001);
+  const gain = `if(lt(t,${startRel.toFixed(3)}),0,if(lt(t,${(startRel + fi).toFixed(3)}),(t-${startRel.toFixed(3)})/${fi.toFixed(3)},if(gt(t,${endRel.toFixed(3)}),0,if(gt(t,${(endRel - fadeOutSec).toFixed(3)}),(${endRel.toFixed(3)}-t)/${fadeOutSec.toFixed(3)},1))))`;
   console.log('Audio cut points:', JSON.stringify(audioCut));
-  sh(`ffmpeg -y -nostdin -i "${chapterPath}" -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -af "aformat=channel_layouts=stereo${afadeIn}${afadeOut}" -c:a aac -b:a 128k "${audioPath}"`);
+  sh(`ffmpeg -y -nostdin -i "${chapterPath}" -ss ${timeline.clipStartSec} -t ${timeline.durationSec} -af "aformat=channel_layouts=stereo,volume='${gain}':eval=frame" -c:a aac -b:a 128k "${audioPath}"`);
+  // Guard: the processed audio must not be silent (a broken filter once produced a silent Reel).
+  const processed = levelDb(audioPath, 0, timeline.durationSec);
+  console.log('Processed audio level:', JSON.stringify(processed));
+  if (!processed || processed.maxDb < -30) throw new Error('Processed audio is silent or far too quiet - refusing to render a Reel without sound');
 
   // 4. Background, with render-budget fallback
   const bgPath = path.join(workDir, 'bg.mp4');
