@@ -121,7 +121,9 @@ async function main() {
   const clipStartMs = firstWordStartMs - availableLeadInMs;
   const clipEndMs = lastTiming.timestamp_to;
   const needsFadeIn = availableLeadInMs < REQUESTED_LEAD_IN_MS;
-  const fadeInMs = needsFadeIn ? 80 : 0;
+  // 15 ms is enough to avoid a click when the clip starts at the very beginning of the source file (which starts in
+  // silence); the old 80 ms softened the first letter by up to ~19 dB.
+  const fadeInMs = needsFadeIn ? 15 : 0;
 
   const ayahs = includedAyahs.map(({ number, timing }) => {
     const key = `${surah}:${number}`;
