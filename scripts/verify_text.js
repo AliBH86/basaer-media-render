@@ -92,7 +92,10 @@ async function verifyRender(timelinePath, workDir, outDir) {
       if (!fs.existsSync(file)) { issues.push(`${ref}: overlay file ${path.basename(file)} is missing`); continue; }
       const found = checkOverlay(`${ref} overlay ${overlayIndex - 1}`, readOverlay(fs.readFileSync(file, 'utf8')), fresh);
       issues.push(...found);
-      if (found.length) break; // one broken overlay per ayah is enough to fail
+      if (found.length) { // one broken overlay per ayah is enough; keep the running index in step with the files
+        overlayIndex += ayah.wordTimings.length - w - 1;
+        break;
+      }
     }
   }
   const report = { ok: issues.length === 0, ayahs: refs, checkedOverlays: overlayIndex, issues, at: new Date().toISOString() };
