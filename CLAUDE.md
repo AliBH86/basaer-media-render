@@ -10,6 +10,7 @@
 - Secrets never go in chat, never in a file. Everything lives in n8n's credential store. If you ever receive a token/key in chat, store it via the credential system immediately and never echo it back.
 - Never touch anything prefixed "AH Brands —" on the shared n8n instance (workflows or credentials). Only "Basaer - ..." prefixed resources.
 - Instagram publish nodes stay disabled until the user explicitly says to enable them (review mode: manual approval for the first 5-7 days of going live).
+- Instagram calls go to `graph.instagram.com/v25.0` only (Instagram Login token), via HTTP Request + the httpQueryAuth credential whose Name is `access_token`. Never graph.facebook.com, never n8n's Facebook Graph API node. Account ID (`user_id`): `17841414160930384`.
 - Verify anything visual by actually downloading and looking at it. Upload success, ffprobe output, and stats JSON are not sufficient — this session had three separate bugs that looked fixed on paper and weren't.
 
 ## Architecture (one line each)

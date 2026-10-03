@@ -1,19 +1,26 @@
 # Basaer Media — Handoff
 
-Last updated: 2026-10-03 (end of day). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
+Last updated: 2026-10-03 (afternoon, after the Instagram credential fix). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
 
 ---
 
 ## PENDING / BLOCKERS
 
+### Resolved 2026-10-03 (afternoon)
+
+- **Instagram credential FIXED and verified.** Root cause: the httpQueryAuth credential's *Name* field was empty, so n8n sent the token with no parameter name and Instagram never received it (proved by comparing against a no-token request: identical `IGApiException` 190 response, while any real token string returns "Failed to decrypt"). Name is now `access_token`. Read-only `GET graph.instagram.com/v25.0/me?fields=user_id,username,account_type` returns 200: username `basaer.media.bh`, account_type `MEDIA_CREATOR`.
+- **Instagram account ID (`user_id`, the `<IG_ID>` used for publishing): `17841414160930384`.** Stored in the Reel workflow's Config node as `igUserId`. (The `/me` `id` field, 28886708307608776, is the app-scoped ID — do not use it for publishing.)
+- **Publish nodes rebuilt** on the Instagram API with Instagram Login (`graph.instagram.com/v25.0`, HTTP Request nodes, token as `access_token` query param): create container → wait 60s → check `status_code` → `media_publish`. **All still DISABLED.** The old Facebook Graph API nodes (graph.facebook.com / graph-video.facebook.com, linked to a since-deleted credential) were removed.
+- **Instagram token expires Tue Dec 1, 2026** (long-lived, Instagram Login). Needs a refresh/rotation plan before then.
+
 ### Needs the user
 
 | # | Item | Why it matters | Est. time | Blocks |
 |---|---|---|---|---|
-| 1 | GitHub PAT (fine-grained, repo=`basaer-media-render`, permissions: Actions read+write) attached to the "Dispatch Reel Render & Wait" node in n8n workflow **Basaer - Reel (Quran)** | Without it the n8n workflow cannot trigger GitHub Actions at all | 5 min | Any n8n-triggered Reel render |
-| 2 | Confirm which Telegram credential/chat to use for Basaer notifications | Two Telegram credentials exist on this **shared** n8n instance: "Telegram account" and "AH Brands Telegram Bot (@Ahbrands_bot)". Neither was attached to the Reel workflow's notification nodes — using the AH Brands one by mistake would violate the no-AH-Brands-access rule | 2 min | Review notifications, failure alerts |
-| 3 | Instagram Business Account ID for @basaer.media.bh | Needed in the two disabled "IG - Create Reel Container" / "IG - Publish Reel" nodes (currently `SET_IG_BUSINESS_ACCOUNT_ID` placeholder) | 2 min | Nothing yet — nodes stay disabled regardless |
-| 4 | Regenerate the Instagram access token and put the new one only in n8n | The token pasted into chat earlier today was stored immediately into the n8n credential "Basaer Media — Instagram Graph API" (id `xbA6KXbSCE7hfo1C`) and never echoed back or written to any file — but it passed through chat text, so treat it as potentially exposed and rotate it when convenient | 5 min | Nothing urgent — publishing nodes are disabled |
+| 1 | GitHub PAT — fine-grained, resource owner AliBH86, **only** repo `basaer-media-render`, 90-day expiry, repository permissions **Actions: Read and write** (+ Metadata: Read-only, auto-added by GitHub). Nothing else. The n8n node uses `workflow_dispatch` (`POST /actions/workflows/{id}/dispatches`), which needs only Actions: write — `repository_dispatch` (needs Contents: write) is NOT used. Attach as a "GitHub API" credential to "Dispatch Reel Render & Wait" | Without it the n8n workflow cannot trigger GitHub Actions at all | 5 min | Any n8n-triggered Reel render |
+| 2 | Attach the Basaer Telegram credential ("Basaer Media — Telegram Bot (Basaermedia_bot)", id `blya0LlxCW6TePBT`) to the review + failure notification nodes; review chat is `8704731927`, failure chat still to be chosen. Never use "AH Brands Telegram Bot (@Ahbrands_bot)" or "Telegram account" | Review notifications, failure alerts | 2 min | Review notifications, failure alerts |
+| 3 | **Rotate tokens again before go-live**: the Instagram token and the Telegram bot token both passed through chat text at some point. Generate fresh ones and paste them only into the n8n credential fields (Instagram: credential "Basaer Media — Instagram Login token", id `qxx0V2sGYu8YXpZM`, Name must stay `access_token`) | Treat chat-exposed tokens as potentially leaked | 10 min | Go-live |
+| 4 | Plan the Instagram token refresh before **Dec 1, 2026** expiry | Publishing stops when it expires | — | Go-live after Dec 1 |
 | 5 | Approve the reciter Arabic-name table (sent twice this session, API-sourced from alquran.cloud, never guessed) | Arabic reciter names are not yet used anywhere in renders — English only until approved | 5 min | Arabic reciter name display |
 | 6 | Approve the caption wording (dua pool placeholder, reflection-line draft, rotating CTA pool) | Current caption code reuses the same 3 placeholder duas already marked placeholder in the Daily Post workflow — a real approved dua list has never been provided | — | Final caption text |
 | 7 | Assign **Basaer - Reel Error Alerts** as the Error Workflow for **Basaer - Reel (Quran)** via Workflow Settings → Error Workflow in the n8n UI | No MCP tool can set this | 1 min | Failure notifications actually firing |
@@ -98,11 +105,11 @@ workflow.
 
 Fonts used here: Scheherazade (Arabic) + Inter (Latin), loaded from Cloudinary raw-upload URLs — a different font stack and hosting approach than the Reel workflow (see design spec). Not a bug, just worth knowing they diverge.
 
-### Basaer - Reel (Quran) — id `DDATobrIvVhVGmr0`, inactive, 7 nodes
+### Basaer - Reel (Quran) — id `DDATobrIvVhVGmr0`, inactive, 9 nodes
 
-`Manual Trigger (test)` → `Config` (surah/ayahStart/reciterId/style — **currently hardcoded to 112/1/7/stars for testing**, reviewChatId placeholder `SET_ME`) → `Dispatch Reel Render & Wait` (GitHub node, needs a PAT credential attached — see blockers) → `Build Caption` (Code, full template — see below) → `Send Review Notification` (Telegram, needs a credential attached — see blockers) → `IG - Create Reel Container (DISABLED)` → `IG - Publish Reel (DISABLED)`.
+`Manual Trigger (test)` → `Config` (surah/ayahStart/reciterId/style — **currently hardcoded to 112/1/7/stars for testing**; reviewChatId `8704731927`; `igUserId` `17841414160930384`; `igApiBase` `https://graph.instagram.com/v25.0`) → `Dispatch Reel Render & Wait` (GitHub node, `workflow_dispatch` + webhook callback via resumeUrl — no polling; needs a PAT credential attached — see blockers) → `Build Caption` (Code, full template — see below) → `Send Review Notification` (Telegram, needs a credential attached — see blockers) → `IG - Create Reel Container (DISABLED)` → `Wait for Processing (DISABLED)` → `IG - Check Container Status (DISABLED)` → `IG - Publish Reel (DISABLED)`.
 
-Both Instagram nodes have the Basaer Instagram credential attached already but are `disabled: true` and need a real IG Business Account ID (currently `SET_IG_BUSINESS_ACCOUNT_ID` placeholder).
+All four Instagram nodes are HTTP Request nodes on `graph.instagram.com/v25.0` using credential "Basaer Media — Instagram Login token" (httpQueryAuth, id `qxx0V2sGYu8YXpZM`), and are `disabled: true`. Endpoints (per Meta's "Instagram API with Instagram Login" content-publishing docs): `POST /{igUserId}/media` (media_type=REELS, video_url, caption) → `GET /{containerId}?fields=status_code` → `POST /{igUserId}/media_publish` (creation_id). Before enabling: add a retry loop + If gate so publish only runs when `status_code` = `FINISHED`.
 
 ### Basaer - Reel Error Alerts — id `oltrBGOHGXhdMXBY`, inactive, 3 nodes
 
@@ -226,5 +233,7 @@ The throughline worth remembering: **upload success and ffprobe/stats output are
 
 Nothing in this repo, nowhere in chat going forward, nowhere in any file Claude Code writes. All credentials live in n8n's credential store on the DigitalOcean droplet:
 
-- `Basaer Media — Instagram Graph API` (facebookGraphApi, id `xbA6KXbSCE7hfo1C`) — created this session, holds the Instagram access token the user pasted into chat. Recommend rotating it (see blockers item 4) since it passed through chat text even though it was never echoed back or written anywhere.
-- GitHub PAT, Telegram bot credential(s), and the Instagram Business Account ID are all still needed — see "PENDING / BLOCKERS" at the top.
+- `Basaer Media — Instagram Login token` (httpQueryAuth, id `qxx0V2sGYu8YXpZM`) — Instagram Login token (IGAA…), Name field `access_token`, works only on graph.instagram.com (not graph.facebook.com, and not with n8n's Facebook Graph API node). Expires Dec 1, 2026. Rotate before go-live (blockers item 3).
+- `Basaer Media — Telegram Bot (Basaermedia_bot)` (telegramApi, id `blya0LlxCW6TePBT`) — rotate before go-live.
+- The old `Basaer Media — Instagram Graph API` (facebookGraphApi, id `xbA6KXbSCE7hfo1C`) no longer exists.
+- GitHub PAT still needed — see "PENDING / BLOCKERS" at the top.
