@@ -20,6 +20,9 @@ on:
       resumeUrl:
         description: "n8n resumeUrl to POST results back to (optional - omitted on manual/standalone runs)"
         required: false
+      integrityTest:
+        description: "TEST ONLY: any value deliberately corrupts one diacritic, to prove the text-integrity guard blocks the render. Leave empty."
+        required: false
 
 jobs:
   render:
@@ -47,9 +50,13 @@ jobs:
           echo "No Chrome/Chromium binary found" >&2
           exit 1
 
+      - name: Integrity guard self-test (offline)
+        run: node scripts/verify_text.js --selftest
+
       - name: Render Reel
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          INTEGRITY_TEST_TAMPER: ${{ github.event.inputs.integrityTest }}
         run: |
           mkdir -p out
           node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId || '7' }}" "${{ github.event.inputs.style || 'stars' }}" out
@@ -84,6 +91,7 @@ jobs:
           cat out/uploads.json
 
       - name: Upload artifacts (backup, 7-day retention)
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: reel-general-outputs
@@ -103,3 +111,11 @@ jobs:
           curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" \
             -H "Content-Type: application/json" \
             -d @out/callback_payload.json
+
+      - name: Notify n8n of a FAILED render (resumeUrl callback, only if provided)
+        if: ${{ failure() && github.event.inputs.resumeUrl != '' }}
+        run: |
+          node scripts/notify_failure.js out "${{ github.run_id }}" "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}"
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" \
+            -H "Content-Type: application/json" \
+            -d @out/failure_payload.json

@@ -141,6 +141,18 @@ async function main() {
   sh(`node "${path.join(REPO_ROOT, 'scripts', 'fetch_timeline.js')}" ${surah} ${ayahStart} ${reciterId} "${timelinePath}"`);
   const timeline = JSON.parse(fs.readFileSync(timelinePath, 'utf8'));
 
+  // Test-only hook: set by the workflow's `integrityTest` input (never by n8n's normal dispatch). It corrupts
+  // one diacritic in the first ayah so the integrity guard below can be proven to block a bad render.
+  if (process.env.INTEGRITY_TEST_TAMPER) {
+    const fatha = String.fromCharCode(0x064E);
+    const words = timeline.ayahs[0].arabicWords;
+    const k = words.findIndex((w) => w.includes(fatha));
+    if (k >= 0) {
+      words[k] = words[k].replace(fatha, '');
+      console.log(`INTEGRITY TEST: removed one fatha from word ${k} of ayah ${timeline.ayahs[0].number}`);
+    }
+  }
+
   // 2. Reciter English name (from the same API list we verified for the mapping table)
   const RECITER_NAMES = {
     7: "Mishari Rashid al-`Afasy", 2: "AbdulBaset AbdulSamad (Murattal)", 1: "AbdulBaset AbdulSamad (Mujawwad)",
@@ -198,9 +210,19 @@ async function main() {
       progressFraction: spec.startSec / timeline.durationSec,
       handle,
     });
+    spec.html = html;
     spec.pngPath = path.join(workDir, `overlay_${i}.png`);
-    renderOverlayPng(html, spec.pngPath);
+    // Written now (not drawn yet) so the integrity guard can read back exactly what is about to be drawn.
+    fs.writeFileSync(spec.pngPath.replace(/\.png$/, '.html'), html);
   });
+
+  // 5b. ARABIC/ENGLISH INTEGRITY GUARD: compare every overlay's text with a fresh API copy, char by char.
+  // Any difference (or U+FFFD / mojibake) fails the render here, before a single frame is drawn.
+  // Writes out/integrity_report.json; exit code != 0 aborts the job (the workflow then tells n8n).
+  sh(`node "${path.join(REPO_ROOT, 'scripts', 'verify_text.js')}" "${timelinePath}" "${workDir}" "${outDir}"`);
+
+  // 5c. Draw the PNGs.
+  overlaySpecs.forEach((spec) => renderOverlayPng(spec.html, spec.pngPath));
 
   // 6. Build ffmpeg filter_complex dynamically: chain overlays, each gated by enable=between(t,start,end)
   const inputs = [`-i "${bgPath}"`, ...overlaySpecs.map(s => `-i "${s.pngPath}"`), `-i "${audioPath}"`].join(' ');
