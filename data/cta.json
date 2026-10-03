@@ -1,0 +1,19 @@
+{
+  "_comment": "Caption CTA lines, APPROVED by the user 2026-10-03: ONE save line + ONE share line, each Arabic then English. '{THIS}' is replaced by the wording below. Rotation: post number n uses save[n mod 3] and share[n mod 5], so consecutive posts never repeat a line. Texts are verbatim from the user.",
+  "save": [
+    { "ar": "💾 احفظه لوقتٍ تحتاجه", "en": "💾 Save it for a moment you need it." },
+    { "ar": "💾 احفظه لتعود إليه كلما احتجت", "en": "💾 Save it to come back to whenever you need." },
+    { "ar": "💾 احتفظ به، فقد تحتاجه في يومٍ ما", "en": "💾 Keep it; you may need it someday." }
+  ],
+  "share": [
+    { "ar": "📤 أرسله لمن تظنّ أنه يحتاج {THIS} اليوم.", "en": "📤 Send it to someone you think needs {THIS} today." },
+    { "ar": "📤 أرسله لمن قد تذكّره {THIS} بشيءٍ يعنيه.", "en": "📤 Send it to someone {THIS} might remind of something that matters to them." },
+    { "ar": "📤 شاركه، فقد يكون تذكيرًا لقلبٍ يحتاجه الآن.", "en": "📤 Share it; it may be the reminder a heart needs right now." },
+    { "ar": "📤 فكّر في شخصٍ تحبّه وأرسل له {THIS}.", "en": "📤 Think of someone you love and send them {THIS}." },
+    { "ar": "📤 انشره صدقة جارية", "en": "📤 Share it as Sadaqa Jariya." }
+  ],
+  "wording": {
+    "dailyPost": { "ar": "هذه الآية", "en": "this ayah", "arPlural": "هذه الآيات", "enPlural": "these ayahs" },
+    "reel": { "ar": "هذه التلاوة", "en": "this recitation", "arPlural": "هذه التلاوة", "enPlural": "this recitation" }
+  }
+}
