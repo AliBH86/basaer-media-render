@@ -57,7 +57,7 @@ function scan(issues, label, s, arabic) {
 // Reads the drawn text back out of an overlay HTML file (see buildOverlayHtml in render_reel.js).
 function readOverlay(html) {
   const a = html.match(/<div class="arabic" id="arabic">([\s\S]*?)<\/div>/);
-  const t = html.match(/<div class="translation">([\s\S]*?)<\/div>/);
+  const t = html.match(/<div class="translation"[^>]*>([\s\S]*?)<\/div>/);
   const words = a ? [...a[1].matchAll(/<span[^>]*>([^<]*)<\/span>/g)].map((m) => m[1]) : [];
   return { words, translation: t ? t[1] : '' };
 }
