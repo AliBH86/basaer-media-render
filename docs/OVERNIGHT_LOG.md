@@ -15,13 +15,13 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 | 5 | Re-tag 18:10-12 / 18:46 / 18:23-24 to Dua / Reminder / Trust; re-run 160-day simulation | done | data/reel_list.json + docs/REEL_CONTENT_LIST.md + live Pick Reel list updated; no Friday theme left; no theme 3x in a row. Simulation: 160 Reels 2026-10-11..2027-07-17, 0 problems (no Friday Reel, no shared surah with the Daily Post, 4 forced skips). Reminder has no approved lines: uses the Gratitude set; 3 draft Reminder lines parked in data/reflections.json (proposed). |
 | 6 | Token work | skipped (user rotates it) | |
 | 7 | Daily Post QA: all 76 ayahs, contact sheets | done | Runs 37178063015 + 37178258693 (~5 min). 76/76 integrity ok, 0 OVERFLOW, Arabic 62-100 px, English 27-30 px. Bug found+fixed: salawat sign ﷺ rendered as a box (57:9, 18:1) -> English font fallback to Scheherazade (live node + repo copy). 9 borderline (tight but inside the frame; 59:10 has 0 px spare and the first Arabic line sits close to the header). Table: docs/QA_DAILY_2026-10-04.md. Cloudinary qa-overnight: 4.47 MB + 4.62 MB. |
-| 8 | Reel QA: 10 Reels | todo | |
-| 9 | Prayer times research + SAMPLE cards | todo | |
-| 10 | Hadith (Thaqalayn) evaluation | todo | |
-| 11 | docs/QF_APPLICATION.md | todo | |
-| 12 | Go-live readiness checklist in HANDOFF | todo | |
+| 8 | Reel QA: 10 Reels | doing | Background batch, one at a time, cloudFolder=qa-overnight; results in the session scratch reelqa/<n>.txt. |
+| 9 | Prayer times research + SAMPLE cards | doing | Research done (docs/RESEARCH_2026-10-04.md: methods 8/0/7, 7-day Sunni vs Jafari table, terms). SAMPLE cards: scripts/sample_prayer_cards.js + qa-samples.yml, render after the Reel QA. |
+| 10 | Hadith (Thaqalayn) evaluation | done | docs/RESEARCH_2026-10-04.md: 39 books, fields, grading, terms (no licence published), 15 candidates, Sunni balance check (fawazahmed0/hadith-api). |
+| 11 | docs/QF_APPLICATION.md | done | Ready to paste; [YOUR CONTACT EMAIL] placeholder. |
+| 12 | Go-live readiness checklist in HANDOFF | done | New "GO-LIVE READINESS" table at the top of docs/HANDOFF.md (16 items, done/blocked), activation order, first-week routine, rollback. Privacy policy: not built (needs email). |
 | 13 | docs/MORNING_REPORT.md + one silent Telegram message | todo | |
 
 GitHub Actions minutes used tonight: ~5 so far (budget 200).
 
-Next step: item 8 (Reel QA).
+Next step: finish item 8 (Reel QA results + stills check), render item 9 SAMPLE cards, then item 13.

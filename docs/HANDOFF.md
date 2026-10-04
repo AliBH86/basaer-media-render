@@ -1,8 +1,41 @@
 # Basaer Media — Handoff
 
-Last updated: 2026-10-04 (early morning: Reel audio onset/end fix, bilingual first caption line, surah-name overrides, translation as one config value, weekday Reel schedule, FIRST LIVE POST). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
+Last updated: 2026-10-04 (overnight: PUBLISH_ENABLED hard switch, surah spellings, Al-Kahf Reels re-tagged, Daily Post + Reel QA, prayer-time and hadith research, Quran.Foundation application text, GO-LIVE READINESS table). Read this file first in any new session before touching the project. No secrets appear anywhere in this file; see "Secrets" at the bottom for where they actually live.
 
 ---
+
+## GO-LIVE READINESS (updated 2026-10-04, overnight)
+
+Status of everything needed before the first scheduled run. **DONE** = finished and checked; **BLOCKED (you)** = waiting on the owner; **TODO** = Claude can do it on request.
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Error alerts workflow "Basaer - Reel Error Alerts" active | **DONE** (active, tested) |
+| 2 | Instagram token monitor active (reminders 14/7/3/1 days, twice-daily read-only check) | **DONE** (active) |
+| 3 | Rotate the Instagram token (GO-LIVE CHECKLIST step 1), then set `TOKEN_EXPIRY_DATE` in the Token Monitor Config to the new date | **BLOCKED (you)**: you rotate it yourself; the monitor still holds 2026-12-01 |
+| 4 | Telegram bot token: revoke with @BotFather if it was ever pasted in chat, put the new one only in the n8n credential | **BLOCKED (you)** (if needed) |
+| 5 | `PUBLISH_ENABLED=false` hard switch before every Instagram container and publish step (Reel: Config; Draft Approval: node "Publish Switch"), Instagram nodes disabled | **DONE** (2026-10-04, wiring verified) |
+| 6 | REVIEW MODE: every Daily Post and Reel goes to Telegram first; Approve only marks the draft approved and never publishes | **DONE** (this is how the system works today; there is no separate REVIEW_MODE flag; the hard switch in item 5 is what keeps it in review mode) |
+| 7 | `status_code = FINISHED` gate in the production Instagram chains (needed only when publishing is switched on) | **TODO** before any "PUBLISH NOW" (the only working gate so far was in the one-off workflow that published the 94:6 post) |
+| 8 | Rotation and schedules: Daily Post day 1 = 2026-10-10 at 19:00; Reels Sun/Tue/Thu/Sat 20:00, first Reel Sunday 2026-10-11; before-start guards skip earlier runs | **DONE** (configured, tested in simulation and with real n8n runs) |
+| 9 | Activate "Basaer - Daily Post (Quran Image)" | **BLOCKED (you)**: say when. Safe any time before 2026-10-10 19:00 (the guard skips earlier days) |
+| 10 | Activate "Basaer - Reel (Quran)" | **BLOCKED (you)**: say when. Safe any time before 2026-10-11 20:00 |
+| 11 | Content approvals: reciters, Reel list, captions (layout, SAVE/SHARE, surah names), reflections | **DONE**, except the 3 draft "Reminder" lines for Reel 18:46 (it uses the Gratitude set until you approve them) |
+| 12 | QA: all 76 Daily Post slides and 10 Reels rendered and checked | **DONE** (see docs/QA_DAILY_2026-10-04.md and docs/MORNING_REPORT.md) |
+| 13 | Privacy policy page (Meta asks for one when the app leaves development mode) | **BLOCKED (you)**: not built; it needs your contact email |
+| 14 | Quran.Foundation production API access | **BLOCKED (you)**: text ready in docs/QF_APPLICATION.md, add your email and send |
+| 15 | GitHub token "Basaer - GitHub (render dispatch)" expires about 2027-01-01 | reminder for you |
+| 16 | Delete `New folder/instagram App Graph Api token.txt` from the project folder on C: after rotating the token | **BLOCKED (you)** |
+
+**Activation order** (each step only on your word): 1) Error Alerts, 2) Token Monitor, 3) Draft Approval (all three already active); 4) Daily Post; 5) Reel. Publishing stays off throughout (PUBLISH_ENABLED=false) until you write "PUBLISH NOW" for a named action.
+
+**First-week routine** (review mode, 5-7 days):
+- 19:00 every day: the Daily Post draft (image + caption + Approve/Reject) arrives on Telegram. Check the Arabic, the end-of-ayah number, the English, the reference line and the CTA lines; press Approve or Reject.
+- 20:00 Sun/Tue/Thu/Sat: the Reel review message (caption, Reel link, 4 stills). Watch the Reel once with sound: first word not cut, gold word follows the voice, end not abrupt.
+- Any "TEXT INTEGRITY CHECK FAILED", "render failed" or token alert: do nothing on Instagram; tell Claude.
+- Keep a tally (approved / rejected / voided); anything rejected or voided gets fixed before go-live.
+
+**Rollback** (any time): deactivate "Basaer - Daily Post" and/or "Basaer - Reel" (nothing else runs on its own); PUBLISH_ENABLED stays false; delete a wrong post in the Instagram app; n8n keeps version history for every node change (Claude can restore a previous version), and every code change is a commit in AliBH86/basaer-media-render (git revert).
 
 ## GO-LIVE CHECKLIST
 
