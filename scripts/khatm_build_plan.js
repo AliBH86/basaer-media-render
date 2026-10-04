@@ -151,7 +151,15 @@ function cost(d, mustAllowShort) {
         const stopCost = (w) => { const m = words[w - 1].text_uthmani.match(/[ۖۗۘۚ]/); return m ? STOP_COST[m[0]] : 2500; };
         const waqf = (w) => stopCost(w) < 2500;
         // DP over word boundaries: parts [p..q], cost by duration, small penalty when not ending at a waqf sign.
-        const partDur = (p, q) => (en(q) ?? t.timestamp_to) - (st(p) ?? t.timestamp_from) + (a === 1 && p === 1 ? bismMs : 0);
+        // Same rule as the renderer (scripts/fetch_timeline.js partInterval): recitation order, repeats kept, impossible jumps dropped;
+        // a part runs from the first time word p is recited until the reciter moves past word q.
+        const cleanSegs = (() => { const ss = t.segments.filter((x) => Array.isArray(x) && x.length >= 3 && x[0] >= 1).sort((x, y) => x[1] - y[1]); const o = []; let mx = 0; for (const x of ss) { if (x[0] > mx + 3) continue; o.push(x); mx = Math.max(mx, x[0]); } return o; })();
+        const partDur = (p, q) => {
+          let i0 = cleanSegs.findIndex((x) => x[0] === p); if (i0 < 0) i0 = cleanSegs.findIndex((x) => x[0] >= p);
+          let i1 = cleanSegs.findIndex((x, i) => i > i0 && x[0] > q); if (i1 < 0) i1 = cleanSegs.length;
+          const endMs = i1 >= cleanSegs.length ? t.timestamp_to : cleanSegs[i1 - 1][2];
+          return endMs - cleanSegs[i0][1] + (a === 1 && p === 1 ? bismMs : 0);
+        };
         const B = new Array(W + 1).fill(Infinity); const P = new Array(W + 1).fill(-1); B[0] = 0;
         for (let q = 1; q <= W; q++) {
           for (let p = q; p >= 1; p--) {

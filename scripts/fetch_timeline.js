@@ -44,6 +44,31 @@ function getJson(url) {
   });
 }
 
+// API word timings in recitation order. Reciters sometimes go back a few words and recite them again (waqf and
+// ibtida'); those repeats are kept so the highlight follows the voice. An entry far ahead of everything recited so far
+// is a data error (e.g. a "word 118" among words 30-40 of 2:282, Al-Shatri) and is dropped.
+function cleanSegments(segments, wordCount = Infinity) {
+  const segs = (segments || []).filter((s) => Array.isArray(s) && s.length >= 3 && s[0] >= 1 && s[0] <= wordCount).sort((a, b) => a[1] - b[1]);
+  const out = [];
+  let maxSeen = 0;
+  for (const s of segs) {
+    if (s[0] > maxSeen + 3) continue;
+    out.push(s);
+    maxSeen = Math.max(maxSeen, s[0]);
+  }
+  return out;
+}
+// A split part (words ws..we): from the first time word ws is recited until the reciter moves past word we.
+function partInterval(segs, ws, we) {
+  let i0 = segs.findIndex((s) => s[0] === ws);
+  if (i0 < 0) i0 = segs.findIndex((s) => s[0] >= ws);
+  if (i0 < 0) return null;
+  let i1 = segs.findIndex((s, i) => i > i0 && s[0] > we);
+  if (i1 < 0) i1 = segs.length;
+  const inside = segs.slice(i0, i1);
+  return { startMs: inside[0][1], endMs: inside[inside.length - 1][2], prevEndMs: i0 > 0 ? segs[i0 - 1][2] : null, nextStartMs: i1 < segs.length ? segs[i1][1] : null, inside };
+}
+
 // Footnote markers and any other HTML removed; same normalisation as scripts/verify_text.js.
 function cleanTranslation(text) {
   return text.replace(/<sup[^>]*>.*?<\/sup>/g, '').replace(/<[^>]+>/g, '').trim();
@@ -92,10 +117,8 @@ async function main() {
     accumulatedMs = includedAyahs[includedAyahs.length - 1].timing.timestamp_to - includedAyahs[0].timing.timestamp_from;
     if (WORD_START !== null && includedAyahs.length === 1) {
       // Duration of the word range only (the clip is cut to it further down).
-      const segs = includedAyahs[0].timing.segments.filter((s) => Array.isArray(s) && s.length >= 3);
-      const a = segs.find((s) => s[0] >= WORD_START);
-      const b = [...segs].reverse().find((s) => s[0] <= (WORD_END || Infinity));
-      if (a && b) accumulatedMs = b[2] - a[1];
+      const iv = partInterval(cleanSegments(includedAyahs[0].timing.segments), WORD_START, WORD_END || Infinity);
+      if (iv) accumulatedMs = iv.endMs - iv.startMs;
     }
     if (accumulatedMs > MAX_CAP_MS) {
       throw new Error(`passage ${surah}:${ayahStart}-${explicitEnd} is ${(accumulatedMs / 1000).toFixed(1)} s with reciter ${reciterId}: over the ${MAX_CAP_MS / 1000} s hard cap`);
@@ -133,19 +156,17 @@ async function main() {
   const REQUESTED_LEAD_IN_MS = 200;
   // Split ayah (Khatm): cut at the first/last word of the range. The lead-in never reaches back into the previous word.
   const partial = WORD_START !== null && includedAyahs.length === 1;
-  const firstSegs = firstTiming.segments.filter((s) => Array.isArray(s) && s.length >= 3);
+  const firstSegs = cleanSegments(firstTiming.segments);
   let firstWordStartMs = firstSegs[0][1]; // [wordNum, startMs, endMs]
   let leadInRoomMs = firstWordStartMs;
   let clipEndMs = lastTiming.timestamp_to;
+  let partIv = null;
   if (partial) {
-    const startSeg = firstSegs.find((s) => s[0] >= WORD_START);
-    const prevSeg = [...firstSegs].reverse().find((s) => s[0] < WORD_START);
-    const endSeg = [...firstSegs].reverse().find((s) => s[0] <= (WORD_END || Infinity));
-    if (!startSeg || !endSeg) throw new Error(`no word timings for ${surah}:${ayahStart} words ${WORD_START}-${WORD_END}`);
-    firstWordStartMs = startSeg[1];
-    leadInRoomMs = prevSeg ? Math.max(0, startSeg[1] - prevSeg[2]) : firstWordStartMs;
-    const lastWordNum = Math.max(...firstSegs.map((s) => s[0]));
-    if (WORD_END && WORD_END < lastWordNum) clipEndMs = endSeg[2];
+    partIv = partInterval(firstSegs, WORD_START, WORD_END || Infinity);
+    if (!partIv) throw new Error(`no word timings for ${surah}:${ayahStart} words ${WORD_START}-${WORD_END}`);
+    firstWordStartMs = partIv.startMs;
+    leadInRoomMs = partIv.prevEndMs !== null ? Math.max(0, partIv.startMs - partIv.prevEndMs) : firstWordStartMs;
+    if (partIv.nextStartMs !== null) clipEndMs = partIv.endMs; // the last part keeps the ayah's natural end
   }
   const availableLeadInMs = Math.min(REQUESTED_LEAD_IN_MS, leadInRoomMs);
   const clipStartMs = firstWordStartMs - availableLeadInMs;
@@ -164,10 +185,12 @@ async function main() {
     // Word range shown and timed: the whole ayah, or WORD_START..WORD_END for a split ayah (0-based inclusive).
     const from = partial ? WORD_START - 1 : 0;
     const to = partial ? Math.min((WORD_END || arabicWords.length), arabicWords.length) - 1 : arabicWords.length - 1;
-    const timed = new Map();
-    timing.segments
-      .filter(seg => Array.isArray(seg) && seg.length >= 3 && seg[0] - 1 < arabicWords.length)
-      .forEach(seg => { if (!timed.has(seg[0] - 1)) timed.set(seg[0] - 1, { startMs: seg[1], endMs: seg[2] }); });
+    // Recitation order, repeats kept, impossible jumps dropped (see cleanSegments). For a split part only the words
+    // recited inside its interval are timed.
+    const segsC = cleanSegments(timing.segments, arabicWords.length);
+    const inClip = partial ? partIv.inside : segsC;
+    const timed = new Map(); // first occurrence per word, used to place a word that has no timing at all
+    segsC.forEach(seg => { if (!timed.has(seg[0] - 1)) timed.set(seg[0] - 1, { startMs: seg[1], endMs: seg[2] }); });
     // A few ayahs have one word without a timing in the API (e.g. Alafasy 2:214). Fill it from its neighbours:
     // it gets the gap between the previous word's end and the next word's start (or an equal share of the
     // neighbours when they touch), so every word is highlighted in order. Only timings are filled; text never.
@@ -192,10 +215,15 @@ async function main() {
       filled.push(`${key} word ${i + 1}`);
     }
     if (filled.length) console.warn(`NOTE: word timing filled from neighbours: ${filled.join(', ')}`);
-    const wordTimings = [...timed.entries()]
-      .filter(([i]) => i >= from && i <= to)
-      .sort((x, y) => x[0] - y[0])
-      .map(([i, t]) => ({ wordIndex: i, startMs: t.startMs - clipStartMs, endMs: t.endMs - clipStartMs }));
+    // Every recitation of a shown word (repeats included), plus the filled ones, in time order; no two overlap.
+    const filledIdx = new Set(filled.map((f) => Number(f.split(' word ')[1]) - 1));
+    const list = inClip
+      .filter((s) => s[0] - 1 >= from && s[0] - 1 <= to)
+      .map((s) => ({ wordIndex: s[0] - 1, startMs: s[1], endMs: s[2] }));
+    for (const i of filledIdx) if (i >= from && i <= to) list.push({ wordIndex: i, ...timed.get(i) });
+    list.sort((x, y) => x.startMs - y.startMs);
+    for (let k = 1; k < list.length; k++) if (list[k].startMs < list[k - 1].endMs) list[k - 1].endMs = list[k].startMs;
+    const wordTimings = list.filter((t) => t.endMs > t.startMs).map((t) => ({ wordIndex: t.wordIndex, startMs: t.startMs - clipStartMs, endMs: t.endMs - clipStartMs }));
     return {
       number,
       arabicWords,

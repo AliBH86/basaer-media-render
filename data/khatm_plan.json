@@ -141,8 +141,8 @@
    "22:5-5 88.5s",
    "6:93-93 90s"
   ],
-  "within45to75": 1611,
-  "between25and45": 39,
+  "within45to75": 1612,
+  "between25and45": 38,
   "between75and90": 63,
   "under25": 5,
   "splitAyahs": 7,
@@ -229,7 +229,7 @@
     [
      27,
      44,
-     43
+     46
     ]
    ],
    "nonWaqfCuts": 1,
@@ -251,7 +251,7 @@
     [
      56,
      78,
-     26
+     27
     ]
    ],
    "nonWaqfCuts": 1,
@@ -273,7 +273,7 @@
     [
      26,
      48,
-     41
+     44
     ]
    ],
    "nonWaqfCuts": 0,
@@ -295,7 +295,7 @@
     [
      35,
      61,
-     45
+     51
     ]
    ],
    "nonWaqfCuts": 1,
@@ -317,7 +317,7 @@
     [
      39,
      69,
-     67
+     69
     ]
    ],
    "nonWaqfCuts": 0,
@@ -1639,7 +1639,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 4,
-   "estSec": 64.9,
+   "estSec": 65.5,
    "bismillah": false,
    "sajdah": false,
    "day": 119,
@@ -2362,7 +2362,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 7,
-   "estSec": 52.6,
+   "estSec": 52.7,
    "bismillah": false,
    "sajdah": false,
    "day": 184,
@@ -4438,7 +4438,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 6,
-   "estSec": 43.1,
+   "estSec": 46.3,
    "bismillah": false,
    "sajdah": false,
    "day": 372,
@@ -10958,7 +10958,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 2,
-   "estSec": 26.4,
+   "estSec": 27.1,
    "bismillah": false,
    "sajdah": false,
    "day": 964,
@@ -13221,7 +13221,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 6,
-   "estSec": 41.1,
+   "estSec": 43.8,
    "bismillah": false,
    "sajdah": false,
    "day": 1169,
@@ -13306,7 +13306,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 6,
-   "estSec": 45.3,
+   "estSec": 50.8,
    "bismillah": false,
    "sajdah": false,
    "day": 1176,
@@ -13358,7 +13358,7 @@
    "part": 2,
    "parts": 2,
    "reciterId": 6,
-   "estSec": 66.8,
+   "estSec": 68.6,
    "bismillah": false,
    "sajdah": false,
    "day": 1180,

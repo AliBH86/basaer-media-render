@@ -56,6 +56,26 @@ The Reel Config `CYCLE_START_DATE` was set to 2026-10-04 on 2026-10-04, so it ma
 
 Nothing else publishes.
 
+## REEL ✅/❌ FLOW and KHATM SERIES (2026-10-04 evening)
+
+**Reel approval (done and tested):**
+- The Reel workflow saves every rendered Reel as a `pending` draft (draft id contains `_reel_`) and sends the review message with ✅/❌.
+- Draft Approval sends Reel drafts to `Reel approved - Reel publishing OFF`: Approve only marks them `approved`.
+- **No Reel can publish:** the old Instagram nodes in the Reel workflow were removed, and the Daily Post chain refuses anything that isn't a Daily Post image.
+- Tests: a real run (exec 40647) plus the full press-logic test (approve, second press, reject, expired, other user). Details in docs/KHATM_PLAN.md section 0.
+
+**Khatm series (planning and test renders; review only; the curated 06:30 Reel continues until the owner approves the pilot):**
+- Plan: `data/khatm_plan.json`, 1,718 Reels, average 57 s, 7 split ayahs (all cut at real, measured pauses); about 4.7 years at 1/day, 2.4 at 2/day.
+- Renderer: `.github/workflows/khatm-reel.yml` with Khatm mode in `scripts/render_reel.js`:
+  - pages of up to 18 words, Arabic only;
+  - word ranges for split parts;
+  - the reciter's own Bismillah from his 1:1;
+  - a sajdah label;
+  - untimed words filled from their neighbours.
+- Research tools: `scripts/khatm_*.js`.
+- Everything else (reciter coverage, Bismillah, sajdah, QF storage terms, translation scan, caption, pre-render queue, open questions) is in **docs/KHATM_PLAN.md**.
+- The curated Reel renderer was regression-tested after the change (14:40-41, run 37216766352: identical layout, integrity OK).
+
 ## GO-LIVE READINESS (updated 2026-10-04, overnight)
 
 Status of everything needed before the first scheduled run. **DONE** = finished and checked; **BLOCKED (you)** = waiting on the owner; **TODO** = Claude can do it on request.
