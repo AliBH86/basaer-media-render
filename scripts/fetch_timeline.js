@@ -263,6 +263,7 @@ async function main() {
 
   const timeline = {
     bismillah,
+    partEndsMidAyah: !!(partial && partIv && partIv.nextStartMs !== null),
     surah: parseInt(surah, 10),
     surahNameArabic: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).ar || chapterInfo.chapter.name_arabic,
     surahNameEnglish: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).en || chapterInfo.chapter.name_simple,

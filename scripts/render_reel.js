@@ -301,6 +301,46 @@ function adjustEnd(timeline, chapterPath) {
   return { extendedMs: extMs, fadeOutMs: 40, levelAtApiEndDb: atEndDb, lowPointDb: env[k], speechDb };
 }
 
+// Khatm split parts: a cut inside an ayah must fall in the reciter's real pause, which can sit slightly before or after
+// the API word boundary. The start / end of a part is snapped to the quietest point of the source nearby.
+function snapSplitCuts(timeline, chapterPath) {
+  const a0 = timeline.ayahs[0];
+  if (!a0 || !a0.wordRange) return null;
+  const info = {};
+  if (a0.wordRange[0] > 0) {
+    const first = timeline.clipStartSec + Math.min(...a0.wordTimings.map((w) => w.startMs)) / 1000; // absolute
+    const q = quietestPoint(chapterPath, first - 0.25, first + 0.15, first - 0.02);
+    if (q) {
+      const newStart = Math.max(0, q.sec - 0.01);
+      const deltaMs = Math.round((timeline.clipStartSec - newStart) * 1000); // > 0: the clip now starts earlier
+      for (const a of timeline.ayahs) {
+        a.ayahStartMs += deltaMs; a.ayahEndMs += deltaMs;
+        for (const w of a.wordTimings) { w.startMs = Math.max(0, w.startMs + deltaMs); w.endMs += deltaMs; }
+      }
+      timeline.clipStartSec = round3(newStart);
+      timeline.durationSec = round3(timeline.clipEndSec - newStart);
+      timeline.availableLeadInMs = Math.max(0, Math.round((first - newStart) * 1000));
+      timeline.fadeInMs = 15;
+      info.start = { cutSec: round3(newStart), levelDb: q.db, movedMs: -deltaMs };
+    }
+  }
+  if (timeline.partEndsMidAyah) {
+    const end = timeline.clipEndSec;
+    const q = quietestPoint(chapterPath, end - 0.08, end + 0.25, end + 0.03);
+    if (q) {
+      const ext = Math.round((q.sec - end) * 1000);
+      timeline.clipEndSec = round3(q.sec);
+      timeline.durationSec = round3(q.sec - timeline.clipStartSec);
+      const last = timeline.ayahs[timeline.ayahs.length - 1];
+      last.ayahEndMs += ext;
+      const lw = last.wordTimings[last.wordTimings.length - 1];
+      lw.endMs = Math.max(lw.startMs + 50, lw.endMs + ext);
+      timeline.fadeOutMs = 40;
+      info.end = { cutSec: round3(q.sec), levelDb: q.db, movedMs: ext };
+    }
+  }
+  return info;
+}
 // Quietest 5 ms frame of the SOURCE audio in [fromSec, toSec]. Among frames within 1.5x of the minimum energy (or
 // below about -60 dBFS) the one closest to preferSec wins. Returns { sec, db } or null when nothing can be read.
 function quietestPoint(file, fromSec, toSec, preferSec) {
@@ -380,6 +420,8 @@ async function main() {
   //    point of the source, then fade out (40 ms at a low point, 100 ms if there is none).
   const onsetInfo = adjustStart(timeline, chapterPath);
   const endInfo = adjustEnd(timeline, chapterPath);
+  const splitCuts = snapSplitCuts(timeline, chapterPath);
+  if (splitCuts) console.log('Split cuts:', JSON.stringify(splitCuts));
   fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2)); // the guard and the stills read this file
   console.log('Voice onset:', JSON.stringify(onsetInfo));
   console.log('Natural end:', JSON.stringify(endInfo));
@@ -611,7 +653,7 @@ async function main() {
   const fileBytes = fs.statSync(outPath).size;
   fs.writeFileSync(path.join(outDir, 'timeline.json'), JSON.stringify(timeline, null, 2));
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify({
-    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope, voiceOnset: onsetInfo, naturalEnd: endInfo, bismillah: bismillahInfo,
+    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope, voiceOnset: onsetInfo, naturalEnd: endInfo, splitCuts, bismillah: bismillahInfo,
   }, null, 2));
 }
 
