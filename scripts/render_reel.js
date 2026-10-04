@@ -17,7 +17,7 @@ const TOTAL_BUDGET_SEC = Number(process.env.TOTAL_BUDGET_SEC || 180); // Khatm R
 const KHATM = process.env.KHATM === '1';
 const PAGE_MAX_WORDS = 18;
 const SAJDAH = String.fromCharCode(0x06E9);
-const BG_BUDGET_SEC = 60;
+const BG_BUDGET_SEC = Number(process.env.BG_BUDGET_SEC || 60); // Khatm Reels (up to 90 s) need more time for the animated backgrounds
 const FALLBACK_STYLE = 'mist';
 
 // Safe-zone-derived layout (1080x1920 canvas; top 270px / bottom 670px / sides 65px

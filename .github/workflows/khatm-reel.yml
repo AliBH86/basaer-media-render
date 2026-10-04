@@ -75,6 +75,7 @@ jobs:
           SOFT_CAP_SEC: "75"
           MAX_CAP_SEC: "95"
           TOTAL_BUDGET_SEC: "1200"
+          BG_BUDGET_SEC: "300"
           BISMILLAH: "auto"
           WORD_START: ${{ github.event.inputs.wordStart }}
           WORD_END: ${{ github.event.inputs.wordEnd }}

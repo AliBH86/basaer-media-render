@@ -363,13 +363,12 @@ All Reels below come from the final code and the final plan (v5). All passed the
 
 The curated Reel renderer passed a regression check after every change (tomorrow's 14:40-41: same layout, text check OK).
 
-## 11. Open questions for the owner
+## 11. Decisions (owner, 2026-10-04 late evening) and what is still open
 
-1. **Pilot approval** (watch the six tests in section 10). When you approve, the series replaces the curated 06:30 Reel. Which date is Day 1?
-2. **Translation** (section 6): keep Saheeh International, or switch the series (or everything) to Abdel Haleem?
-3. **Caption wording** (section 8), the over-limit rule, and the optional hashtags.
-4. **Sajdah:** label only the API's 14, or also 22:77? Add a school note?
-5. **Bismillah:** the reciter's own 1:1 is played before each surah (section 3). Confirm.
-6. **The four short Reels** under 25 s (section 7): OK as they are?
-8. **Khatm reciters:** the five who pause at ayah ends (my recommendation, section 7), or all nine (1,542 Reels, but 388 would end mid-recitation)?
-7. **Reel publishing:** stays off. When you want it, it will be built like the Daily Post (✅ on that Reel publishes it once), only after a written PUBLISH NOW for Reels.
+1. **Pilot approved. Day 1 = Monday 2026-10-05.** The Khatm replaced the curated 06:30 Reel. It is review only; Reel publishing stays off.
+2. **Caption** approved as in section 8.
+3. **Reciters: all 9.**  holds 1,542 Reels; the 5-reciter plan is kept in . With 9 reciters, 388 Reels end where the reciter runs on into the next ayah; the renderer then fades out over 100 ms.
+4. **Translation: leaning to Abdel Haleem, without a translator name if the licence allows. STILL OPEN.** Abdel Haleem's translation is published by Oxford University Press, and showing it daily is reproduction of a copyrighted text. The licence and any credit requirement must be confirmed first; the web lookup was unavailable on 2026-10-04. Until then the series uses Saheeh International with its credit line. Switching is one config value ( 85, plus ) in n8n and in .
+5. **Sajdah:** the label shows on the 14 ayahs Quran.com marks. 22:77 is a sajdah only in the Shafi'i and Hanbali count, so it gets no label by default.
+6. **Short Reels** under 25 s (four whole short surahs and 33:54): kept as they are.
+
