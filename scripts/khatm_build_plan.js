@@ -25,6 +25,20 @@ function getJson(url, tries = 4) {
   }).catch(async (e) => { if (tries > 1) { await sleep(3000); return getJson(url, tries - 1); } throw e; });
 }
 const sajdahKeys = new Set(scan.sajdah.map((x) => x.key));
+// Real pauses inside long ayahs, measured in the audio on GitHub (scripts/khatm_split_pauses.js): "key@rid" -> {q: [dB, ms]}
+const PAUSES = {};
+const LOG_DIR = process.env.KHATM_LOGS || __dirname;
+for (const f of fs.readdirSync(LOG_DIR).filter((x) => /^research_log.*\.txt$/.test(x))) {
+  for (const line of fs.readFileSync(path.join(LOG_DIR, f), 'utf8').split(/\r?\n/)) {
+    const m = line.match(/(\d+:\d+) \(reciter (\d+)\): boundaries at least 24 dB quieter than the peak \(60 ms\): (.*)$/);
+    if (!m) continue;
+    const b = {};
+    if (m[3].trim() !== 'none') for (const tok of m[3].trim().split(/\s+/)) { const t = tok.match(/^(\d+):(-?\d+)dB\/(\d+)ms$/); if (t) b[t[1]] = [Number(t[2]), Number(t[3])]; }
+    PAUSES[m[1] + '@' + m[2]] = b;
+  }
+}
+const goodPause = (key, rid, q) => { const b = PAUSES[key + '@' + rid]; const v = b && b[q]; return !!(v && v[0] <= -30 && v[1] >= 60); };
+const measured = (key, rid) => !!PAUSES[key + '@' + rid];
 
 // Cost of a passage of d ms: 0 inside 45-75 s, growing outside; impossible over the cap.
 function cost(d, mustAllowShort) {
@@ -40,13 +54,36 @@ function cost(d, mustAllowShort) {
   // 1) Reciter per surah: rotate, skipping reciters without full coverage of that surah.
   const assignment = {};
   const gaps = {};
+  const noPauseSurahs = {};
+  const longKeys = (ch, rid) => {
+    const s = cov.reciters[rid].surahs[ch.id];
+    const bismMs = ![1, 9].includes(ch.id) ? cov.reciters[rid].surahs[1].durations[0][1] + BISMILLAH_GAP : 0;
+    return s.durations.filter(([k, d]) => d + (k === ch.id + ':1' ? bismMs : 0) > CAP).map(([k]) => k);
+  };
+  // A long ayah is feasible when its measured pauses allow parts of at most 90 s (cut only at real pauses).
+  const pauseCutFeasible = (key, rid) => {
+    if (!measured(key, rid)) return false;
+    const [ch] = key.split(':').map(Number);
+    const total = Object.fromEntries(cov.reciters[rid].surahs[ch].durations)[key];
+    const qs = Object.keys(PAUSES[key + '@' + rid]).map(Number).filter((q) => goodPause(key, rid, q)).sort((a, b) => a - b);
+    // approximate positions by word share of the ayah duration is not needed: check gaps with the real word timings later;
+    // here: there must be at least ceil(total / CAP) - 1 pause cuts.
+    return qs.length >= Math.ceil(total / CAP) - 1;
+  };
+  const longAyahsFeasible = (ch, rid) => longKeys(ch, rid).every((k) => pauseCutFeasible(k, rid));
+  const infeasibleCount = (ch, rid) => longKeys(ch, rid).filter((k) => !pauseCutFeasible(k, rid)).length;
   let rot = 0;
   for (const ch of chapters) {
     let chosen = null;
     for (let k = 0; k < ROTATION.length; k++) {
       const rid = ROTATION[(rot + k) % ROTATION.length];
       const s = cov.reciters[rid].surahs[ch.id];
-      if (s && s.ok) { chosen = rid; rot = (rot + k + 1) % ROTATION.length; break; }
+      if (s && s.ok && longAyahsFeasible(ch, rid)) { chosen = rid; rot = (rot + k + 1) % ROTATION.length; break; }
+    }
+    if (!chosen) {
+      // no complete reciter can cut every long ayah at a real pause: the complete reciter with the fewest such ayahs
+      const c = ROTATION.filter((rid) => cov.reciters[rid].surahs[ch.id].ok).map((rid) => [rid, infeasibleCount(ch, rid)]).sort((a, b) => a[1] - b[1])[0];
+      if (c) { chosen = c[0]; noPauseSurahs[ch.id] = { reciterId: c[0], ayahsWithoutPauseCut: c[1] }; }
     }
     if (!chosen) {
       // nobody complete: fewest untimed words (renderer fills them from neighbours) - reported as a gap
@@ -120,7 +157,9 @@ function cost(d, mustAllowShort) {
           for (let p = q; p >= 1; p--) {
             const dd = partDur(p, q);
             if (dd > CAP) break;
-            const endPenalty = q === W ? 0 : stopCost(q); // a plain word boundary only if no stop sign fits
+            // Cut where the reciter really pauses (measured), preferably at a stop sign; a stop sign without a pause or a
+            // plain boundary only when nothing else keeps the parts under 90 s (then the renderer fades the cut).
+            const endPenalty = q === W ? 0 : (goodPause(key, rid, q) ? (waqf(q) ? 0 : 150) : 1500 + stopCost(q));
             const c = B[p - 1] + cost(dd, true) + endPenalty;
             if (c < B[q]) { B[q] = c; P[q] = p - 1; }
           }
@@ -129,8 +168,9 @@ function cost(d, mustAllowShort) {
         for (let q = W; q > 0; q = P[q]) parts.push([P[q] + 1, q]);
         parts.reverse();
         const nonWaqf = parts.slice(0, -1).filter(([, q]) => !waqf(q)).length;
+        const noPause = parts.slice(0, -1).filter(([, q]) => !goodPause(key, rid, q)).length;
         const english = String(v.translations[0].text).replace(/<sup[^>]*>.*?<\/sup>/g, '').replace(/<[^>]+>/g, '').trim();
-        splitAyahs.push({ key, reciterId: rid, totalSec: Math.round(d(a) / 1000), parts: parts.map(([p, q]) => [p, q, Math.round(partDur(p, q) / 1000)]), nonWaqfCuts: nonWaqf, englishChars: english.length, maxPartArabicChars: Math.max(...parts.map(([p, q]) => words.slice(p - 1, q).map((w) => w.text_uthmani).join(' ').length)) });
+        splitAyahs.push({ key, reciterId: rid, totalSec: Math.round(d(a) / 1000), parts: parts.map(([p, q]) => [p, q, Math.round(partDur(p, q) / 1000)]), nonWaqfCuts: nonWaqf, cutsWithoutPause: noPause, measured: measured(key, rid), englishChars: english.length, maxPartArabicChars: Math.max(...parts.map(([p, q]) => words.slice(p - 1, q).map((w) => w.text_uthmani).join(' ').length)) });
         parts.forEach(([p, q], k) => plan.push({ surah: ch.id, ayahStart: a, ayahEnd: a, wordStart: p, wordEnd: q, part: k + 1, parts: parts.length, reciterId: rid, estSec: Math.round(partDur(p, q) / 100) / 10, bismillah: bism && a === 1 && k === 0, sajdah: sajdahKeys.has(key) && k === parts.length - 1 }));
         await sleep(150);
       } else {
@@ -167,6 +207,8 @@ function cost(d, mustAllowShort) {
     yearsAt2PerDay: Math.round(plan.length / 2 / 365.25 * 10) / 10,
     reciterSurahCounts: Object.fromEntries(ROTATION.map((r) => [`${r} ${RN[String(r)].en}`, Object.values(assignment).filter((x) => x === r).length])),
     surahsWithoutCompleteReciter: gaps,
+    surahsWhereALongAyahCannotBeCutAtAPause: noPauseSurahs,
+    splitCutsWithoutPause: splitAyahs.reduce((x, y) => x + y.cutsWithoutPause, 0),
     under25Exceptions: exceptions,
   };
   const out = {

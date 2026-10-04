@@ -53,7 +53,7 @@ function envelope(file, fromSec, durSec) {
       for (let i = Math.max(0, Math.floor(a / 0.02)); i + 2 <= Math.min(env.length - 1, Math.ceil(b / 0.02)); i++) minRel = Math.min(minRel, Math.max(env[i], env[i + 1], env[i + 2]) - peak);
       boundaries[q] = [best * 20, Math.round(minRel)];
     }
-    result[sp.key] = { reciterId: sp.reciterId, peakDb: Math.round(peak), boundaries };
+    result[`${sp.key}@${sp.reciterId}`] = { reciterId: sp.reciterId, peakDb: Math.round(peak), boundaries };
     const pauses = Object.entries(boundaries).filter(([, v]) => v[1] <= -24).map(([q, v]) => `${q}:${v[1]}dB/${v[0]}ms`);
     console.log(`${sp.key} (reciter ${sp.reciterId}): boundaries at least 24 dB quieter than the peak (60 ms): ${pauses.join(' ') || 'none'}`);
   }
