@@ -9,7 +9,7 @@ Last updated: 2026-10-04 go-live (Daily Post LIVE with publish-on-Approve; see L
 On 2026-10-04 the user wrote, in their own message, "Confirmed: PUBLISH NOW for Daily Post drafts only".
 
 **Active workflows:**
-- Basaer - Daily Post (Quran Image): schedule 19:00 Asia/Bahrain.
+- Basaer - Daily Post (Quran Image): schedule **17:00** Asia/Bahrain (moved from 19:00 on 2026-10-04 at the user's request).
 - Basaer - Draft Approval (Telegram): publishing is **ON for Daily Post drafts only**.
 - Basaer - Reel Error Alerts.
 - Basaer - Instagram Token Monitor: `TOKEN_EXPIRY_DATE` = **2026-12-03** (token rotated by the user on 2026-10-04; the read-only `me` check returned 200 and user_id 17841414160930384).

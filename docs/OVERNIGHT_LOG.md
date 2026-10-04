@@ -35,7 +35,7 @@ The user confirmed in their own message: "Confirmed: PUBLISH NOW for Daily Post 
 | 1 | Token Monitor `TOKEN_EXPIRY_DATE` → 2026-12-03; read-only `GET /v25.0/me?fields=user_id` | 200, user_id 17841414160930384 (temporary webhook workflow, no token printed) |
 | 2 | Daily Post `CYCLE_START_DATE` → 2026-10-04 (`ENFORCE_START_DATE` = true) | Today = 70:5 (Patience). 400-day simulation: 0 problems (Friday = Al-Kahf only, no consecutive surah, no theme 3 days running). Reel start date unchanged (2026-10-11), Reel inactive |
 | 3 | Draft Approval publish chain enabled for Daily Post drafts | See HANDOFF "LIVE STATUS". Dry run first: container created and FINISHED on the first poll, no publish node; temp workflow deleted. No pending drafts existed at switch-on. `Publish Switch` = true, validated (0 errors) |
-| 4 | Daily Post activated (19:00 Asia/Bahrain, workflow timezone checked) | Order: Pick Ayah → integrity guard → Save Draft → Telegram draft + ✅/❌. First run today 19:00 |
+| 4 | Daily Post activated; schedule moved to 17:00 Asia/Bahrain at the user's request (workflow timezone checked) | Order: Pick Ayah → integrity guard → Save Draft → Telegram draft + ✅/❌. First run today 17:00 |
 | 5 | First live post | Pending the owner's ✅ |
 
 Rules that stay in force:
