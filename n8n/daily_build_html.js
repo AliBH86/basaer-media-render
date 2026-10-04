@@ -147,7 +147,7 @@ const BASE_STYLE = `
   .content { display:flex; flex-direction:column; align-items:center; width:100%; }
   .ayah { font-family:'Scheherazade',serif; line-height:1.9; color:#F5EDDC; direction:rtl; text-align:center; max-width:740px; }
   .divider { width:90px; height:3px; background:#C9A24B; margin-top:40px; }
-  .translation { font-family:'Inter',sans-serif; font-size:30px; line-height:1.6; color:#D9CFB8; text-align:center; max-width:720px; margin-top:32px; }
+  .translation { font-family:'Inter','Scheherazade',sans-serif; font-size:30px; line-height:1.6; color:#D9CFB8; text-align:center; max-width:720px; margin-top:32px; }
   .translator { font-family:'Inter',sans-serif; font-size:18px; color:#8a9bab; margin-top:16px; letter-spacing:1px; }
   .footer { flex:0 0 auto; text-align:center; padding-top:28px; } /* spacing guard: handle never touches the credit line */
   .progress { font-family:'Inter',sans-serif; font-size:20px; color:#8a9bab; margin-bottom:10px; }
