@@ -48,11 +48,14 @@ function envelope(file, fromSec, durSec) {
       for (let i = Math.max(0, Math.floor(a / 0.02)); i <= Math.min(env.length - 1, Math.ceil(b / 0.02)); i++) {
         if (env[i] <= quiet) { run++; best = Math.max(best, run); } else run = 0;
       }
-      boundaries[q] = best * 20;
+      // also the quietest 60 ms (3 steps) in the window, relative to the ayah peak (dB, negative = quieter)
+      let minRel = 0;
+      for (let i = Math.max(0, Math.floor(a / 0.02)); i + 2 <= Math.min(env.length - 1, Math.ceil(b / 0.02)); i++) minRel = Math.min(minRel, Math.max(env[i], env[i + 1], env[i + 2]) - peak);
+      boundaries[q] = [best * 20, Math.round(minRel)];
     }
     result[sp.key] = { reciterId: sp.reciterId, peakDb: Math.round(peak), boundaries };
-    const pauses = Object.entries(boundaries).filter(([, ms]) => ms >= 120).map(([q, ms]) => `${q}:${ms}`);
-    console.log(`${sp.key} (reciter ${sp.reciterId}): word boundaries with a pause >= 120 ms: ${pauses.join(' ') || 'none'}`);
+    const pauses = Object.entries(boundaries).filter(([, v]) => v[1] <= -24).map(([q, v]) => `${q}:${v[1]}dB/${v[0]}ms`);
+    console.log(`${sp.key} (reciter ${sp.reciterId}): boundaries at least 24 dB quieter than the peak (60 ms): ${pauses.join(' ') || 'none'}`);
   }
   fs.writeFileSync('out/split_pauses.json', JSON.stringify(result, null, 1));
   console.log('SPLIT_PAUSES_JSON ' + JSON.stringify(result));
