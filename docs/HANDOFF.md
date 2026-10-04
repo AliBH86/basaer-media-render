@@ -56,7 +56,7 @@ The Reel Config `CYCLE_START_DATE` was set to 2026-10-04 on 2026-10-04, so it ma
 
 Nothing else publishes.
 
-## FACEBOOK PAGE CROSS-POST (built 2026-10-05, switched OFF)
+## FACEBOOK PAGE CROSS-POST (LIVE from 2026-10-05: owner wrote PUBLISH NOW for Facebook; FB Switch = "true")
 
 Owner request: every Daily Post published on Instagram should also go to the Facebook Page.
 
