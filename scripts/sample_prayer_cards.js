@@ -62,15 +62,29 @@ td.lbl .ar{font-family:'Scheherazade',serif;font-size:34px;color:#F5EDDC;float:r
 const page = (inner) => `<!DOCTYPE html><html><head><meta charset="utf-8"><style>${STYLE}</style></head><body><div class="sample">SAMPLE</div><div class="frame">${inner}</div><script>document.fonts.ready.then(()=>{window.__done=true})</script></body></html>`;
 
 (async () => {
+  // One monthly-calendar call per method and month (the per-day endpoint got rate-limited from GitHub runners).
+  const cal = {};
+  const monthOf = (dmy) => { const [, m, y] = dmy.split('-').map(Number); return { m, y }; };
+  async function calendar(method, m, y) {
+    const key = `${method}-${y}-${m}`;
+    if (cal[key]) return cal[key];
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const j = await getJson(`https://api.aladhan.com/v1/calendar/${y}/${m}?latitude=${LAT}&longitude=${LON}&method=${method}&timezonestring=${TZ}`);
+      if (j && Array.isArray(j.data)) { cal[key] = j.data; return j.data; }
+      console.log(`aladhan calendar attempt ${attempt} failed: code ${j && j.code} status ${j && j.status}`);
+      await new Promise((r) => setTimeout(r, 4000 * attempt));
+    }
+    throw new Error('Aladhan calendar request failed 4 times');
+  }
   const days = [];
   for (let i = 0; i < 7; i++) {
     const d = dateAdd(start, i);
+    const { m, y } = monthOf(d);
     const row = { d };
-    for (const [k, m] of Object.entries(METHODS)) {
-      const j = await getJson(`https://api.aladhan.com/v1/timings/${d}?latitude=${LAT}&longitude=${LON}&method=${m}&timezonestring=${TZ}`);
-      row[k] = j.data.timings;
-      row.hijri = j.data.date.hijri;
-      row.greg = j.data.date.gregorian;
+    for (const [k, method] of Object.entries(METHODS)) {
+      const entry = (await calendar(method, m, y)).find((e) => e.date.gregorian.date === d);
+      if (!entry) throw new Error(`no calendar entry for ${d}`);
+      row[k] = entry.timings; row.hijri = entry.date.hijri; row.greg = entry.date.gregorian;
     }
     days.push(row);
   }
