@@ -1,8 +1,9 @@
 // PICK REEL - chooses the Reel for today from the approved list (data/reel_list.json).
 //
-// SCHEDULE (user, 2026-10-04): Reels go out on Sunday, Tuesday, Thursday and Saturday at 20:00 Asia/Bahrain, never on
-// Fridays. The first Reel is Sunday 2026-10-11 (Config.REEL_START_DATE). Config.REEL_WEEKDAYS lists the days as Luxon
-// weekday numbers (Mon=1 ... Sun=7): '7,2,4,6'. Friday (5) is always removed, even if someone adds it.
+// SCHEDULE (user, 2026-10-04 go-live): one Reel EVERY day at 06:30 Asia/Bahrain, review only. The first Reel is
+// Monday 2026-10-05 (Config.REEL_START_DATE). Config.REEL_WEEKDAYS lists the days as Luxon weekday numbers
+// (Mon=1 ... Sun=7): '1,2,3,4,5,6,7'. (Before go-live the user had chosen '7,2,4,6' at 20:00 with no Friday; the
+// user's later "every day" includes Friday, when the Daily Post is Al-Kahf and the surah rule below skips Al-Kahf Reels.)
 //
 // RULE (user, 2026-10-03): a Reel must NEVER use the same ayah or surah as that day's Daily Post. The Daily Post of
 // any date is computed with the same rotation as 'Basaer - Daily Post' > 'Pick Ayah' (dailyPostFor below is a copy
@@ -41,8 +42,8 @@ function dailyPostFor(day, start) {
 
 // ---- Reel days ----
 function parseWeekdays(s) {
-  const days = String(s || '7,2,4,6').split(',').map((x) => Number(x.trim())).filter((d) => d >= 1 && d <= 7 && d !== 5);
-  if (!days.length) throw new Error('Config.REEL_WEEKDAYS has no usable day (Friday is never allowed)');
+  const days = String(s || '1,2,3,4,5,6,7').split(',').map((x) => Number(x.trim())).filter((d) => d >= 1 && d <= 7);
+  if (!days.length) throw new Error('Config.REEL_WEEKDAYS has no usable day');
   return days;
 }
 function reelDates(reelStart, weekdays, count) {
@@ -86,7 +87,7 @@ function pickReelForConfig(cfg, todayDay) {
   if (!reelStart.isValid) throw new Error('Config.REEL_START_DATE (first Reel day) is missing or not a valid yyyy-MM-dd date');
   const weekdays = parseWeekdays(cfg.REEL_WEEKDAYS);
   if (todayDay < reelStart) throw new Error('Pick Reel ran before REEL_START_DATE (the before-start guard should have skipped this run)');
-  if (!weekdays.includes(todayDay.weekday)) return null; // not a Reel day (Fridays never are)
+  if (!weekdays.includes(todayDay.weekday)) return null; // not a Reel day
   let slot = 0;
   for (let d = reelStart; d < todayDay; d = d.plus({ days: 1 })) if (weekdays.includes(d.weekday)) slot++;
   const p = simulate(dailyStart, reelDates(reelStart, weekdays, slot + 1))[slot];

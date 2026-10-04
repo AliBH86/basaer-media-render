@@ -36,9 +36,10 @@ The user confirmed in their own message: "Confirmed: PUBLISH NOW for Daily Post 
 | 2 | Daily Post `CYCLE_START_DATE` → 2026-10-04 (`ENFORCE_START_DATE` = true) | Today = 70:5 (Patience). 400-day simulation: 0 problems (Friday = Al-Kahf only, no consecutive surah, no theme 3 days running). Reel start date unchanged (2026-10-11), Reel inactive |
 | 3 | Draft Approval publish chain enabled for Daily Post drafts | See HANDOFF "LIVE STATUS". Dry run first: container created and FINISHED on the first poll, no publish node; temp workflow deleted. No pending drafts existed at switch-on. `Publish Switch` = true, validated (0 errors) |
 | 4 | Daily Post activated; schedule moved to 17:00 Asia/Bahrain at the user's request (workflow timezone checked) | Order: Pick Ayah → integrity guard → Save Draft → Telegram draft + ✅/❌. First run today 17:00 |
-| 5 | First live post | Pending the owner's ✅ |
+| 5 | First live post | 70:5 published 14:01 UTC after the owner's ✅ (exec 40615): media 18109367042612244, https://www.instagram.com/p/DeEzNuqFjK6/ ; caption read back read-only and identical to the draft (575 chars). Fix after: the "Published" Telegram message now uses HTML parse mode (underscores in the draft id were read as italics) |
+| 6 | Schedules (user) | Daily Post moved to 17:00 Bahrain. Reel ACTIVATED review-only: every day 06:30 Bahrain from 2026-10-05 (first 14:40-41), Friday allowed (picker Friday filter removed), Reel CYCLE_START_DATE 2026-10-04; 200-day simulation 0 problems. Reel PUBLISH_ENABLED=false, IG nodes disabled |
 
 Rules that stay in force:
-- **Reels stay disabled** (inactive, Instagram nodes disabled, `PUBLISH_ENABLED=false`) until a Reel approval flow is built and tested.
+- **Reels never publish** (Instagram nodes disabled, `PUBLISH_ENABLED=false`) until a Reel approval flow is built and tested; since 2026-10-04 they run daily at 06:30 for review only.
 - No AH Brands access, no secrets printed or stored, nothing on the C: drive.
 - Telegram messages from the system are silent except the draft itself.

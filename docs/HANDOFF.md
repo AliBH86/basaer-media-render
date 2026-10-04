@@ -14,7 +14,16 @@ On 2026-10-04 the user wrote, in their own message, "Confirmed: PUBLISH NOW for 
 - Basaer - Reel Error Alerts.
 - Basaer - Instagram Token Monitor: `TOKEN_EXPIRY_DATE` = **2026-12-03** (token rotated by the user on 2026-10-04; the read-only `me` check returned 200 and user_id 17841414160930384).
 
-**Inactive:** Basaer - Reel (Quran). Its 4 Instagram nodes are disabled and its `PUBLISH_ENABLED` is false.
+**First live post:** 70:5 published on 2026-10-04 at 14:01 UTC (17:01 Bahrain) after the owner's ✅.
+- Media id 18109367042612244: https://www.instagram.com/p/DeEzNuqFjK6/
+- Draft `2026-10-04_70:5_40612`, now status `published`; Draft Approval execution 40615.
+- Read-only check afterwards: the live caption is identical to the draft (575 = 575 characters), media_type IMAGE, account basaer.media.bh.
+
+**Reel (Quran): ACTIVE in REVIEW-ONLY mode** (user, 2026-10-04).
+- One Reel every day at **06:30** Asia/Bahrain, Friday included; the first is Mon 2026-10-05, **14:40-41**.
+- Config: `REEL_START_DATE` = 2026-10-05, `REEL_WEEKDAYS` = 1,2,3,4,5,6,7, `CYCLE_START_DATE` = 2026-10-04 (matches the Daily Post, so the picker knows each day's Daily Post).
+- 200-day simulation: 0 problems (never the same surah as that day's Daily Post, no surah or reciter twice in a row; Al-Kahf Reels are skipped on Fridays).
+- `PUBLISH_ENABLED` = false and its 4 Instagram nodes are disabled: Reels only come to Telegram for review, nothing publishes.
 
 **Daily Post rotation:**
 - `CYCLE_START_DATE` = **2026-10-04** (was 2026-10-10). Day 0 = 70:5.
@@ -39,7 +48,7 @@ On 2026-10-04 the user wrote, in their own message, "Confirmed: PUBLISH NOW for 
 
 **Rule: Reels stay disabled** (workflow inactive, Instagram nodes disabled, `PUBLISH_ENABLED=false`) until a Reel approval flow exists and has been tested. The Reel chain today publishes right after the review message with no ✅ step.
 
-**Before activating Reels**, also set the Reel Config `CYCLE_START_DATE` to 2026-10-04 and re-run the picker simulation. The picker uses that date to know each day's Daily Post (for the no-same-surah rule), and it still says 2026-10-10.
+The Reel Config `CYCLE_START_DATE` was set to 2026-10-04 on 2026-10-04, so it matches the Daily Post.
 
 **To stop publishing at any time:**
 - set `Publish Switch` to false in Draft Approval (drafts keep arriving, Approve only marks them); or
