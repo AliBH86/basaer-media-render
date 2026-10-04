@@ -71,34 +71,33 @@ Checked through the Quran.com audio API (chapter audio + word timings), for the 
 
 **Safety net:** for any untimed word the renderer fills the highlight time from the neighbouring words (text is never touched), and logs a note. The text guard still requires every word to have a timing.
 
-**Reciter per surah** (plan v2; reciter IDs in brackets). The rotation skips a reciter if:
+**Reciter per surah (plan v5).** The Khatm rotates **the five reciters who pause at ayah ends:** Alafasy, Abdul Basit, Al-Husary, Al-Minshawi and Al-Shatri; one per surah, never mixed. A reciter is skipped for a surah if:
 - they lack complete word timings for that surah; or
-- a long ayah in that surah can't be cut at a real pause in their recording (see section 7).
+- a long ayah in it can't be cut at a real pause in their recording.
 
-- **Mishary Alafasy (7), 10:** 1, 3, 32, 53, 62, 78, 87, 95, 104, 113
-- **Abdul Basit Abdus-Samad (2), 13:** 12, 18, 24, 39, 47, 54, 63, 70, 79, 88, 96, 105, 114
-- **Mahmoud Khalil Al-Husary (6), 13:** 6, 13, 19, 25, 33, 40, 55, 64, 71, 80, 89, 97, 106
-- **Mohamed Siddiq Al-Minshawi (9), 12:** 7, 20, 26, 34, 41, 48, 56, 72, 81, 90, 98, 107
-- **Abdur-Rahman As-Sudais (3), 14:** 8, 14, 21, 27, 35, 42, 49, 57, 65, 73, 82, 91, 99, 108
-- **Yasser Al-Dosari (97), 14:** 9, 15, 22, 28, 36, 43, 50, 58, 66, 74, 83, 92, 100, 109
-- **Hani Ar-Rifai (5), 14:** 4, 10, 16, 29, 37, 44, 51, 59, 67, 75, 84, 93, 101, 110
-- **Abu Bakr Al-Shatri (4), 9:** 2, 30, 45, 60, 68, 76, 85, 102, 111
-- **Saud Ash-Shuraim (10), 15:** 5, 11, 17, 23, 31, 38, 46, 52, 61, 69, 77, 86, 94, 103, 112
+Why five and not nine: see section 7, "Ayah-end pauses". The other four stay in the curated Reels.
 
-## 2b. Exact word-timing recheck for the assigned reciters
+- **Mishary Alafasy (7), 25:** 1, 3, 4, 8, 11, 15, 19, 23, 27, 32, 36, 42, 46, 54, 59, 62, 74, 79, 84, 89, 94, 99, 104, 109, 114
+- **Abdul Basit Abdus-Samad (2), 23:** 9, 12, 16, 20, 22, 24, 28, 39, 43, 47, 50, 55, 63, 66, 70, 75, 80, 85, 90, 95, 100, 105, 110
+- **Mahmoud Khalil Al-Husary (6), 23:** 6, 13, 17, 21, 25, 29, 33, 37, 40, 44, 51, 56, 64, 67, 71, 76, 81, 86, 91, 96, 101, 106, 111
+- **Mohamed Siddiq Al-Minshawi (9), 24:** 5, 7, 10, 18, 26, 30, 34, 38, 41, 45, 48, 52, 57, 60, 68, 72, 77, 82, 87, 92, 97, 102, 107, 112
+- **Abu Bakr Al-Shatri (4), 19:** 2, 14, 31, 35, 49, 53, 58, 61, 65, 69, 73, 78, 83, 88, 93, 98, 103, 108, 113
 
-Checking each word *number* (not just the count of timing entries) for the reciter assigned to each surah finds **42 untimed words in 17 surahs**, out of about 77,000 words:
-- 2 (12)
-- 30 (4)
-- 22 (3)
-- 3, 4, 12, 13, 18, 42, 44, 59 and 73 (2 each)
-- 16, 32, 45, 53 and 60 (1 each)
+## 2b. Exact word-timing recheck for the assigned reciters (plan v5)
 
-No reciter is perfect by this stricter test; even Al-Dosari misses words in 3:135 and 22:63.
+Checking each word *number* (not just the count of timing entries) for the reciter assigned to each surah finds **63 untimed words in 22 surahs**, out of about 77,000 words:
+- 2 (14)
+- 4 (8)
+- 11 and 46 (4 each)
+- 5, 8, 14, 19 and 42 (3 each)
+- 9, 12, 13, 23 and 74 (2 each)
+- 22, 27, 32, 35, 36, 58, 65 and 68 (1 each)
 
-These words keep their text and position. Only their highlight time is filled from the neighbouring words, and the render log names each one. In the 2:282 test, word 56 was filled this way and the highlight stayed in order.
+No reciter is perfect by this stricter test. 2:282 with Al-Shatri contains one bogus entry, a "word 118" in the middle of the opening; it is dropped, and word 35 is filled in its place.
 
-The alternative, rotating to a different reciter per affected surah, would not remove the issue, because every reciter has some. Recommendation: keep the rotation and the filling, and list filled words in each review message.
+These words keep their text and position. Only their highlight time is filled from the neighbouring words, and the render log names each one. In the 2:282 test, word 35 was filled and the highlight stayed in order.
+
+Recommendation: keep the filling, and list filled words in each review message.
 
 ## 3. Bismillah
 
@@ -121,13 +120,13 @@ The API marks 14 ayahs:
 
 | Ayah | Plan entry | Ayah | Plan entry |
 |---|---|---|---|
-| 7:206 | 7:203-206 | 27:26 | 27:25-30 |
-| 13:15 | 13:14-15 | 32:15 | 32:13-15 |
-| 16:50 | 16:50-53 | 38:24 | 38:24-26 |
-| 17:109 | 17:107-111 | 41:38 | 41:37-39 |
-| 19:58 | 19:58 (alone) | 53:62 | 53:54-62 |
-| 22:18 | 22:18 (alone) | 84:21 | 84:16-25 |
-| 25:60 | 25:59-61 | 96:19 | 96:11-19 |
+| 7:206 | 7:203-206 | 27:26 | 27:24-27 |
+| 13:15 | 13:14-15 | 32:15 | 32:15-18 |
+| 16:50 | 16:48-51 | 38:24 | 38:23-24 |
+| 17:109 | 17:106-109 | 41:38 | 41:37-39 |
+| 19:58 | 19:55-58 | 53:62 | 53:43-62 |
+| 22:18 | 22:18-19 | 84:21 | 84:19-25 |
+| 25:60 | 25:59-61 | 96:19 | 96:14-19 |
 
 **Schools differ:**
 - The API does not mark 22:77, a sajdah in the Shafi'i and Hanbali count.
@@ -185,51 +184,83 @@ Scanned through the API on 2026-10-04; only counts and examples were kept.
 
 ## 7. The plan (`data/khatm_plan.json`)
 
-**Summary**
+**Summary (plan v5, `data/khatm_plan.json`)**
 
 | | |
 |---|---|
-| Reels | **1,718** (about 27.1 h of recitation) |
-| Average length | **57 s** |
-| 45–75 s | 1,611 |
-| 25–45 s | 39 |
-| 75–90 s | 63 |
-| Under 25 s | 5 (below) |
-| Shortest | 112:1-4 (12.5 s), 103:1-3 (15.5 s), 108:1-3 (16.8 s) |
-| Longest | 6:93 (90 s), 22:5 (88.5 s), 6:151 (87.4 s) |
-| Split ayahs | **7**, in 14 parts |
-| At 1 Reel a day | about **4.7 years** |
-| At 2 Reels a day | about **2.4 years** |
+| Reels | **1,938** (about 31.7 h of recitation) |
+| Average length | **59 s** |
+| 45–75 s | 1,678 |
+| 25–45 s | 95 |
+| 75–90 s | 161 |
+| Under 25 s | 4 (below) |
+| Shortest | 33:54 (17.1 s), 108:1-3 (18.5 s), 112:1-4 (19.9 s) |
+| Longest | 6:93 (90 s), 5:12 (90 s), 29:40-41 (89.6 s) |
+| Split ayahs | **12**, in 24 parts, all cut at real pauses |
+| Reels ending where the reciter does not pause | **51 of 1,938** |
+| At 1 Reel a day | about **5.3 years** |
+| At 2 Reels a day | about **2.7 years** |
 
 **Under 25 s:**
-- 94, 103, 108 and 112: the whole surah is shorter than 25 s, and passages never cross surahs. These lengths include the Bismillah.
-- 33:54 (17 s): it sits between the split ayah 33:53 and 33:55 (82 s); joining either would pass the 90 s cap.
+- 103, 108 and 112: the whole surah is shorter than 25 s, and passages never cross surahs. These lengths include the Bismillah.
+- 33:54: it sits between the split ayah 33:53 and 33:55; joining either would pass the 90 s cap.
 
 All are above Instagram's 3 s minimum.
 
-**Split ayahs: cut only where the reciter really pauses.**
+**Ayah-end pauses (measured over the whole Quran):** `scripts/khatm_ayah_end_pauses.js` (GitHub workflow `khatm-ayah-ends.yml`) measures every ayah end in the assigned reciter's audio.
+
+**The four reciters left out of the Khatm** often run straight on, or their recordings carry heavy echo. Ayah ends without a real pause (quieter than −24 dB, or at least 80 ms of quiet):
+
+| Reciter | Ayah ends without a pause |
+|---|---|
+| Hani Ar-Rifai | 881 |
+| Yasser Al-Dosari | 763 |
+| Saud Ash-Shuraim | 557 |
+| Abdur-Rahman As-Sudais | 458 |
+
+For example, Al-Dosari runs 9:3 straight into 9:4, so a Reel ending there stops mid-recitation.
+
+**The five chosen reciters** pause almost everywhere:
+
+| Reciter | Ayah ends without a pause |
+|---|---|
+| Al-Minshawi | 3 |
+| Al-Husary | 44 |
+| Abdul Basit | 55 |
+| Alafasy | 120 |
+| Al-Shatri | 250 |
+
+The plan prefers ending each Reel where the reciter pauses; the next Reel then also starts after that pause.
+
+| | 9 reciters (`data/khatm_plan_all9.json`) | **5 reciters (plan v5)** |
+|---|---|---|
+| Reels | 1,542 | **1,938** |
+| Average | 63 s | **59 s** |
+| 45–75 s | 1,147 | **1,678** |
+| 75–90 s | 332 | **161** |
+| Reels ending mid-recitation | 388 | **51** |
+| Years at 1/day | 4.2 | 5.3 |
+
+**Split ayahs:** cut only where the reciter really pauses.
 
 The first test showed that a stop sign alone isn't enough. As-Sudais reads 2:282 straight through its waqf signs, so part 1 ended mid-sound and part 2 started mid-sound.
 
-`scripts/khatm_split_pauses.js` (GitHub workflow `khatm-research.yml`) measures every word boundary of every long ayah in the reciter's own audio:
-- A cut is allowed only where the voice drops at least 30 dB below the ayah's loudest moment for at least 60 ms. That is a real pause.
+`scripts/khatm_split_pauses.js` (`khatm-research.yml`) measures every word boundary of each long ayah in the reciter's own audio:
+- A cut is allowed only where the voice drops at least 30 dB below the ayah's loudest moment for at least 60 ms.
 - Among those, a stop sign is preferred: ۘ / ۗ, then ۚ, then ۖ; never ۙ "do not stop" or ۜ.
-- The reciter for a surah with a long ayah is the first one in the rotation whose recording allows this for every long ayah.
-
-Measured for 2:282:
-- Abdul Basit pauses deeply (down to −56 dB for 340 ms), and Al-Husary and Al-Shatri pause clearly.
-- As-Sudais, Al-Dosari, Ar-Rifai and Ash-Shuraim read almost continuously (no boundary below −27 dB).
-- Surah 2 therefore went to Al-Shatri.
-
-Result: **all 7 split ayahs are cut at real pauses (0 cuts without a pause).**
-
-**Repeated words:** reciters sometimes go back a few words and recite them again (waqf and ibtida'). The API timings record those repeats, and the renderer keeps them, so the gold highlight follows the voice back. One API entry that jumps impossibly far ahead (a "word 118" among words 30–40 of 2:282, Al-Shatri) is a data error and is dropped. A split part runs from the first recitation of its first word until the reciter moves past its last word.
+- The renderer then snaps each cut to the quietest point of that pause. In 2:282 both parts meet at −50 dB.
+- An ayah of at most 95 s with no pause to cut at stays whole, up to 5 s over the cap, rather than being cut mid-recitation. 5:12 (90 s) is the one case.
 
 | Ayah | Reciter | Total | Parts (words, seconds) |
 |---|---|---|---|
 | 2:282 | Abu Bakr Al-Shatri | 142 s | 1–72 (77 s), 73–128 (65 s) |
 | 3:154 | Mishary Alafasy | 95 s | 1–28 (42 s), 29–75 (53 s) |
+| 4:12 | Mishary Alafasy | 101 s | 1–49 (51 s), 50–88 (50 s) |
+| 4:102 | Mishary Alafasy | 93 s | 1–27 (51 s), 28–62 (42 s) |
+| 5:3 | Mohamed Siddiq Al-Minshawi | 99 s | 1–30 (55 s), 31–61 (44 s) |
+| 5:6 | Mohamed Siddiq Al-Minshawi | 127 s | 1–21 (41 s), 22–61 (85 s) |
 | 6:99 | Mahmoud Khalil Al-Husary | 115 s | 1–26 (69 s), 27–44 (46 s) |
+| 22:5 | Abdul Basit Abdus-Samad | 119 s | 1–40 (72 s), 41–69 (47 s) |
 | 24:31 | Abdul Basit Abdus-Samad | 103 s | 1–55 (76 s), 56–78 (27 s) |
 | 33:37 | Mahmoud Khalil Al-Husary | 93 s | 1–25 (50 s), 26–48 (44 s) |
 | 33:50 | Mahmoud Khalil Al-Husary | 126 s | 1–34 (75 s), 35–61 (51 s) |
@@ -267,9 +298,9 @@ Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh Internati
 - Optional extra hashtags for you to approve: #ختمة_القرآن #QuranKhatm.
 
 **Length:**
-- 20 of the 1,718 Reels would exceed 2,200 characters with this template; the longest is 2:282 part 1, at about 2,624.
+- 9 of the 1,938 Reels would exceed 2,200 characters with this template; the longest is 2:282 part 1, at about 2,624.
 - **Rule:** first drop the save/share lines. If it is still over, leave the Arabic block out of the caption, since it is on screen in full and exact.
-- With that rule all 20 fit (the worst case drops to about 1,670).
+- With that rule all 9 fit (the worst case drops to about 1,670).
 - The English always stays complete and exact, and is never shortened.
 
 ## 9. Reliability: pre-render queue (proposal)
@@ -283,7 +314,54 @@ Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh Internati
 
 ## 10. Test Reels (review only)
 
-TESTS_PLACEHOLDER
+All Reels below come from the final code and the final plan (v5). All passed the text check against a fresh API copy, and I viewed the 4 stills of each.
+
+| Test | Passage | Reciter | Length | Size | Render | Audio start (first 100 ms, mean / max dB) | Audio end (last 300 ms, mean / max dB) |
+|---|---|---|---|---|---|---|---|
+| 1. Surah start with Bismillah | 2:1-5 | Abu Bakr Al-Shatri | 64.2 s | 4.0 MB | 262 s | -48.2 / -36.9 | -44.7 / -32.9 |
+| 2. Start of At-Tawbah | 9:1-3 | Abdul Basit Abdus-Samad | 69.0 s | 2.6 MB | 126 s | -62.7 / -46 | -48.5 / -39.3 |
+| 3. Very short ayahs | 55:1-11 | Abdul Basit Abdus-Samad | 61.6 s | 3.5 MB | 258 s | -52.9 / -42.3 | -47 / -33.5 |
+| 4. Ayat al-Kursi | 2:254-255 | Abu Bakr Al-Shatri | 82.6 s | 5.1 MB | 246 s | -91 / -91 | -33.9 / -20.3 |
+| 5a. Split ayah, part 1/2 | 2:282 words 1-72 | Abu Bakr Al-Shatri | 76.4 s | 5.6 MB | 264 s | -91 / -91 | -38.5 / -25.5 |
+| 5b. Split ayah, part 2/2 | 2:282 words 73-128 | Abu Bakr Al-Shatri | 65.6 s | 4.6 MB | 285 s | -26.3 / -10.3 | -34.3 / -24.2 |
+| 6. Sajdah | 96:14-19 | Mahmoud Khalil Al-Husary | 50.0 s | 2.7 MB | 180 s | -91 / -91 | -61.8 / -49.9 |
+
+**1. Surah start with Bismillah** (2:1-5): his own 1:1 (6.5 s) + 0.45 s pause, then 2:1; the Bismillah screen shows only the surah name.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37217595488.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37217595488.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37217595488.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37217595488.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37217595488.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37217595488.jpg
+
+**2. Start of At-Tawbah** (9:1-3): no Bismillah (text or audio); 9:3 in 3 Arabic-only pages; ends in a real pause.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37219442715.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37219442715.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37219442715.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37219442715.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37219442715.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37219442715.jpg
+
+**3. Very short ayahs** (55:1-11): his Bismillah, then 11 short ayahs with English.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37219450286.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37219450286.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37219450286.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37219450286.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37219450286.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37219450286.jpg
+
+**4. Ayat al-Kursi** (2:254-255): long ayahs in pages of up to 18 words, Arabic only (English in the caption).
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37217602033.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37217602033.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37217602033.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37217602033.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37217602033.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37217602033.jpg
+
+**5a. Split ayah, part 1/2** (2:282 words 1-72): ends in his measured pause (cut at -50 dB); header "2:282 (part 1/2)"; his word repeats are followed by the highlight; word 35 timing filled.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37218538889.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37218538889.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37218538889.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37218538889.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37218538889.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37218538889.jpg
+
+**5b. Split ayah, part 2/2** (2:282 words 73-128): starts in the same pause (-50 dB), so the two parts join cleanly; ends at the ayah end.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37218546022.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37218546022.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37218546022.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37218546022.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37218546022.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37218546022.jpg
+
+**6. Sajdah** (96:14-19): ۩ inside the last word of 96:19, plus the gold label "۩ آية سجدة · Ayah of prostration" under the handle.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/khatm-test/reel-37219456572.mp4
+- Stills: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_start-37219456572.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid1-37219456572.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_mid2-37219456572.png · https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/frame_end-37219456572.png
+- Tile: https://res.cloudinary.com/b72gfdzx/image/upload/khatm-test/stills-tile-37219456572.jpg
+
+The curated Reel renderer passed a regression check after every change (tomorrow's 14:40-41: same layout, text check OK).
 
 ## 11. Open questions for the owner
 
@@ -292,5 +370,6 @@ TESTS_PLACEHOLDER
 3. **Caption wording** (section 8), the over-limit rule, and the optional hashtags.
 4. **Sajdah:** label only the API's 14, or also 22:77? Add a school note?
 5. **Bismillah:** the reciter's own 1:1 is played before each surah (section 3). Confirm.
-6. **The five short Reels** under 25 s (section 7): OK as they are?
+6. **The four short Reels** under 25 s (section 7): OK as they are?
+8. **Khatm reciters:** the five who pause at ayah ends (my recommendation, section 7), or all nine (1,542 Reels, but 388 would end mid-recitation)?
 7. **Reel publishing:** stays off. When you want it, it will be built like the Daily Post (✅ on that Reel publishes it once), only after a written PUBLISH NOW for Reels.

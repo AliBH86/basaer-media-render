@@ -65,7 +65,7 @@ Nothing else publishes.
 - Tests: a real run (exec 40647) plus the full press-logic test (approve, second press, reject, expired, other user). Details in docs/KHATM_PLAN.md section 0.
 
 **Khatm series (planning and test renders; review only; the curated 06:30 Reel continues until the owner approves the pilot):**
-- Plan: `data/khatm_plan.json`, 1,718 Reels, average 57 s, 7 split ayahs (all cut at real, measured pauses); about 4.7 years at 1/day, 2.4 at 2/day.
+- Plan v5: `data/khatm_plan.json`, 1,938 Reels, average 59 s. Five reciters who pause at ayah ends; 12 split ayahs, all cut at real (measured) pauses; only 51 Reels end where the reciter runs on. About 5.3 years at 1/day, 2.7 at 2/day. A 9-reciter variant is kept for comparison.
 - Renderer: `.github/workflows/khatm-reel.yml` with Khatm mode in `scripts/render_reel.js`:
   - pages of up to 18 words, Arabic only;
   - word ranges for split parts;
