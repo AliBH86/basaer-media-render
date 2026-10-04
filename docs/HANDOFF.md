@@ -1,6 +1,6 @@
 # Basaer Media — Handoff
 
-Last updated: 2026-10-04 (overnight: PUBLISH_ENABLED hard switch, surah spellings, Al-Kahf Reels re-tagged, Daily Post + Reel QA, prayer-time and hadith research, Quran.Foundation application text, GO-LIVE READINESS table). Read this file first in any new session before touching the project. No secrets appear anywhere in this file; see "Secrets" at the bottom for where they actually live.
+Last updated: 2026-10-04 afternoon (ACTIVATION RUNBOOK for 10-11 Oct; Draft Approval publish path: FINISHED gate + no-double-publish guard; live Gotenberg check of 57:9 and 18:1; 59:10 spacing; Reel 42:25-26 replaced by 7:55-56; privacy policy draft). Earlier the same day (overnight): PUBLISH_ENABLED hard switch, surah spellings, Al-Kahf Reels re-tagged, Daily Post + Reel QA, prayer-time and hadith research, Quran.Foundation application text, GO-LIVE READINESS table. Read this file first in any new session before touching the project. No secrets appear anywhere in this file; see "Secrets" at the bottom for where they actually live.
 
 ---
 
@@ -16,13 +16,13 @@ Status of everything needed before the first scheduled run. **DONE** = finished 
 | 4 | Telegram bot token: revoke with @BotFather if it was ever pasted in chat, put the new one only in the n8n credential | **BLOCKED (you)** (if needed) |
 | 5 | `PUBLISH_ENABLED=false` hard switch before every Instagram container and publish step (Reel: Config; Draft Approval: node "Publish Switch"), Instagram nodes disabled | **DONE** (2026-10-04, wiring verified) |
 | 6 | REVIEW MODE: every Daily Post and Reel goes to Telegram first; Approve only marks the draft approved and never publishes | **DONE** (this is how the system works today; there is no separate REVIEW_MODE flag; the hard switch in item 5 is what keeps it in review mode) |
-| 7 | `status_code = FINISHED` gate in the production Instagram chains (needed only when publishing is switched on) | **TODO** before any "PUBLISH NOW" (the only working gate so far was in the one-off workflow that published the 94:6 post) |
+| 7 | `status_code = FINISHED` gate in the production Instagram chains (needed only when publishing is switched on) | **DONE for Daily Post** (Draft Approval, 2026-10-04: FINISHED gate + "do not publish twice" guard + "Mark Published"; still disabled). Reel chain: TODO before any Reel "PUBLISH NOW" |
 | 8 | Rotation and schedules: Daily Post day 1 = 2026-10-10 at 19:00; Reels Sun/Tue/Thu/Sat 20:00, first Reel Sunday 2026-10-11; before-start guards skip earlier runs | **DONE** (configured, tested in simulation and with real n8n runs) |
 | 9 | Activate "Basaer - Daily Post (Quran Image)" | **BLOCKED (you)**: say when. Safe any time before 2026-10-10 19:00 (the guard skips earlier days) |
 | 10 | Activate "Basaer - Reel (Quran)" | **BLOCKED (you)**: say when. Safe any time before 2026-10-11 20:00 |
 | 11 | Content approvals: reciters, Reel list, captions (layout, SAVE/SHARE, surah names), reflections | **DONE**, except the 3 draft "Reminder" lines for Reel 18:46 (it uses the Gratitude set until you approve them) |
 | 12 | QA: all 76 Daily Post slides and 10 Reels rendered and checked | **DONE** (see docs/QA_DAILY_2026-10-04.md and docs/MORNING_REPORT.md) |
-| 13 | Privacy policy page (Meta asks for one when the app leaves development mode) | **BLOCKED (you)**: not built; it needs your contact email |
+| 13 | Privacy policy page (Meta asks for one when the app leaves development mode) | **BLOCKED (you)**: text ready in docs/PRIVACY_POLICY_DRAFT.md (not published); it needs your contact email |
 | 14 | Quran.Foundation production API access | **BLOCKED (you)**: text ready in docs/QF_APPLICATION.md, add your email and send |
 | 15 | GitHub token "Basaer - GitHub (render dispatch)" expires about 2027-01-01 | reminder for you |
 | 16 | Delete `New folder/instagram App Graph Api token.txt` from the project folder on C: after rotating the token | **BLOCKED (you)** |
@@ -36,6 +36,59 @@ Status of everything needed before the first scheduled run. **DONE** = finished 
 - Keep a tally (approved / rejected / voided); anything rejected or voided gets fixed before go-live.
 
 **Rollback** (any time): deactivate "Basaer - Daily Post" and/or "Basaer - Reel" (nothing else runs on its own); PUBLISH_ENABLED stays false; delete a wrong post in the Instagram app; n8n keeps version history for every node change (Claude can restore a previous version), and every code change is a commit in AliBH86/basaer-media-render (git revert).
+
+## ACTIVATION RUNBOOK (Sat 10 Oct and Sun 11 Oct 2026)
+
+Activating a workflow is **not** publishing. Through all of this `PUBLISH_ENABLED=false` and every Instagram node stays disabled, so drafts come to Telegram and nothing reaches Instagram.
+
+**A. Evening before (Fri 9 Oct)**
+1. If you have not done it yet: rotate the Instagram token (GO-LIVE CHECKLIST step 1) and set `TOKEN_EXPIRY_DATE` in the Token Monitor.
+2. Write **"PRE-FLIGHT"**. Claude checks, read-only, and replies with one table:
+   - Active: Draft Approval, Reel Error Alerts and Token Monitor. Inactive: Daily Post and Reel.
+   - Daily Post Config: `CYCLE_START_DATE=2026-10-10`, `ENFORCE_START_DATE=true`.
+   - Reel Config: `CYCLE_START_DATE=2026-10-10`, `REEL_START_DATE=2026-10-11`, `REEL_WEEKDAYS=7,2,4,6`, `USE_PICKER=true`, `PUBLISH_ENABLED=false`, `integrityTest` empty.
+   - Draft Approval: "Publish Switch" = false; all Instagram nodes disabled (4 in Draft Approval, 4 in Reel, plus Log Posted Ayah).
+   - Error Workflow = "Basaer - Reel Error Alerts" on Daily Post, Reel and Draft Approval.
+   - Instagram token: read-only `me` check returns 200 and `user_id` 17841414160930384.
+   - Droplet RAM: at least ~500 MB available (Claude can read it; otherwise run `ssh root@68.183.138.209 'free -m'` yourself and look at the "available" column).
+3. What runs first: Sat 10 Oct, Daily Post day 1 = **70:5** (Patience). Sun 11 Oct, Daily Post **28:24** (Dua) and the first Reel, **14:40-41** (Al-Minshawi, gradient).
+
+**B. What you write** (one line, in your own message; Claude does nothing without it)
+- `ACTIVATE: Daily Post`: Claude activates "Basaer - Daily Post (Quran Image)" and confirms it is active and the 19:00 schedule is registered.
+- `ACTIVATE: Reel`: the same for "Basaer - Reel (Quran)" (Sun/Tue/Thu/Sat 20:00).
+- Publishing is a separate step for later (after the review week), and always starts with **PUBLISH NOW** plus the exact action:
+  - `PUBLISH NOW: publish draft <draft_id>`: one Daily Post draft, published once, then everything is switched off again.
+  - `PUBLISH NOW: enable Daily Post publishing on Approve`: Claude sets "Publish Switch" to true and enables the 4 Instagram nodes plus Log Posted Ayah in Draft Approval. From then on ✅ Approve publishes that draft.
+  - `PUBLISH NOW: publish Reel <date>`: one Reel, published once. Note that the Reel chain has no Approve button: enabling it would publish every Reel right after its review message, so keep Reels one at a time until a Reel approval step exists.
+
+**C. Order and timing**
+1. Draft Approval, Reel Error Alerts and Token Monitor are already active and stay active. Do not deactivate them.
+2. **Daily Post: activate on Sat 10 Oct before 19:00 Bahrain.** Best is 17:00-18:30; any time earlier is also safe, because the before-start guard skips quietly. Avoid 18:55-19:05.
+3. **Reel: activate on Sun 11 Oct before 20:00.** Best is after the 19:00 Daily Post draft has arrived (around 19:10-19:45); any time earlier is also safe. Avoid 19:55-20:05.
+4. One at a time: Claude confirms each activation before the next one.
+
+**D. What you should see in Telegram**
+- **Sat 19:00**:
+  - A photo with the caption "DRAFT (not published) · 70:5 · Patience".
+  - A second message with the full caption, the draft id and ✅ Approve / ❌ Reject buttons.
+  - Pressing ✅ shows the toast "Approved (publishing is still disabled)." plus a confirmation message. Nothing appears on Instagram.
+- **Sun 19:00**: the 28:24 draft, the same two messages.
+- **Sun about 20:05-20:10** (the render takes a few minutes): the Reel review message with the caption, the Reel link and 4 stills (start, two middle, end). It has no buttons; watch it once with sound.
+- **Never expected**:
+  - "TEXT INTEGRITY CHECK FAILED", "render failed", a workflow error alert or a token alert.
+  - Any message at another time.
+  - Anything new on Instagram.
+  - If one of these happens: do nothing on Instagram, and tell Claude.
+- **Silence at 19:00 or 20:00** (nothing arrived by 19:15 or 20:20): tell Claude. It will check the executions; do not re-run anything yourself.
+
+**E. Rollback**
+- **Wrong or unwanted drafts:** write `DEACTIVATE: Daily Post` and/or `DEACTIVATE: Reel`, or switch the toggle off in n8n yourself. Nothing else runs on its own.
+- **Something appeared on Instagram that you did not order:**
+  1. Write `STOP`.
+  2. Claude deactivates Daily Post, Reel and Draft Approval, checks that "Publish Switch" is false and that the Instagram nodes are disabled, and reports what ran.
+  3. You delete the post in the Instagram app.
+- **A change made things worse:** n8n keeps every version of every node (Claude restores the previous one), and code changes are commits in AliBH86/basaer-media-render (git revert).
+- **Re-activate** only after the cause is understood, with the same one-line instruction as in B.
 
 ## GO-LIVE CHECKLIST
 
@@ -57,7 +110,7 @@ Do these in order. **Nothing publishes to Instagram until step 4, and step 4 nee
 7. GitHub PAT "Basaer - GitHub (render dispatch)" expires about **2027-01-01** (90 days from 2026-10-03): put a reminder in your calendar.
 
 **2. One manual test post (needs the user's explicit go-ahead in chat for each post)**
-1. Claude first adds the `status_code = FINISHED` retry/If gate to the Instagram chain (it is not there yet).
+1. The `status_code = FINISHED` gate and the "do not publish twice" guard are in the Draft Approval chain (added 2026-10-04, still disabled). The Reel chain does not have them yet.
 2. The user picks one approved draft (for example the day-1 post, 70:5) and says "go" in chat.
 3. Claude enables only that chain for a single manual run, publishes that one draft, then disables the nodes again.
 4. The user looks at the live post: Arabic text and diacritics, translation, caption, hashtags, credit line, image framing. Delete the post if anything is wrong.
@@ -88,6 +141,38 @@ Never create an n8n API key with write access just to automate this. If the moni
 ---
 
 ## PENDING / BLOCKERS
+
+### Done 2026-10-04 afternoon (user's 8-item message)
+
+**1. 59:10 spacing**
+- The Daily Post fit-to-frame now keeps a 56 px reserve (was 16 px) in the live Build HTML and in `n8n/daily_build_html.js`.
+- 59:10 now renders at Arabic 58 px / English 26 px, with a clear gap under the header (viewed).
+- Full QA run 37199177266: 76/76 integrity OK, no OVERFLOW.
+- Tightest slides: 57:9, 11:123, 20:114, 2:186, 31:12, 65:3 and 40:8 have 1 px spare beyond the reserve, so about 57 px real room.
+- Slide: https://res.cloudinary.com/b72gfdzx/image/upload/qa-overnight/daily-49-59_10-1-37199177266.png
+
+**2. Reel 42:25-26 replaced by 7:55-56**
+- 42:25 alone is 8.6 s with reciter 10, so it was too short.
+- 7:55-56 (Mercy) is two ayahs from the approved Daily rotation; it lasts 18.8 s with Saud Ash-Shuraim on gradient.
+- Updated in the list row, the live Pick Reel and the content doc. Simulation clean.
+- Test render 37199272986: integrity OK, stills viewed.
+- Reel: https://res.cloudinary.com/b72gfdzx/video/upload/qa-overnight/reel-37199272986.mp4
+
+**3. 18:46** uses the Gratitude lines (alias `Reminder` → `Gratitude`) until the Reminder lines are approved.
+
+**4. Live production check (draft only)**
+- A temporary webhook copy of the Daily Post render path ran 57:9 (exec 40562) and 18:1 (exec 40563) through the droplet's Gotenberg. Its code segments were checked character for character against the production nodes before running.
+- Daily Post itself stayed inactive. The temporary workflow was deleted afterwards.
+- Both drafts went to Telegram with integrity OK.
+- ﷺ renders in Gotenberg; the 57:9 PNG is byte-identical to the GitHub render.
+- RAM available: 806 MB before, 809 MB during, 822 MB after.
+
+**5. Draft Approval publish path**
+- FINISHED gate, do-not-publish-twice guard, media-id check and Mark Published added; nothing enabled (see section 4).
+
+**6. ACTIVATION RUNBOOK** added (above).
+
+**7. Privacy policy** text in `docs/PRIVACY_POLICY_DRAFT.md` (not published; needs your contact email).
 
 ### Done 2026-10-04 (user's review of the Reels and captions)
 
@@ -231,9 +316,33 @@ Purpose: never send the user a draft, and never render a Reel, whose Arabic or E
 - **Test hook (leave empty!)**: the Reel workflow input `integrityTest` / env `INTEGRITY_TEST_TAMPER` removes one diacritic from ayah 1 to prove the guard blocks. n8n's Config has `integrityTest` = "" and must stay empty.
 - **Proven 2026-10-03**: Daily Post clean run (exec 40220: ok, 0 issues, draft sent) and tampered run (exec 40221: 4 issues, void row, alert, no draft). Reel render tampered (GitHub run 37136954534: blocked at the guard, no frame drawn) and through n8n (exec 40226: callback + alert, no caption built); clean (run 37137317936 / exec 40227: 15 overlays checked, passes); caption-only tamper (exec 40228: blocked, alert, no review message).
 
-### Basaer - Draft Approval (Telegram) — id `1E3k34CoG6qn7ZTj`, **ACTIVE** (it must be on to hear button presses), 17 nodes
+### Basaer - Draft Approval (Telegram) — id `1E3k34CoG6qn7ZTj`, **ACTIVE** (it must be on to hear button presses), 27 nodes
 
-`Telegram Trigger (button press)` → `Parse Button (owner only)` → `Get Draft` → `Validate Press` → `Answer Button` (Telegram toast) → `Valid Press?` → `Approved?` → `Mark Approved/Rejected (only if still pending)` → Telegram confirmation. Approve then continues into IG nodes that are all **DISABLED** (create container → wait → status → publish → `Log Posted Ayah (DISABLED)`); disabled nodes just pass data through, nothing is posted.
+`Telegram Trigger (button press)` → `Parse Button (owner only)` → `Get Draft` → `Validate Press` → `Answer Button` (Telegram toast) → `Valid Press?` → `Approved?` → `Mark Approved/Rejected (only if still pending)` → Telegram confirmation.
+
+**Publish path after ✅ Approve (checked 2026-10-04; every Instagram node DISABLED, Publish Switch = false):**
+1. `Publish Switch (PUBLISH_ENABLED=false)` (Set): the hard switch.
+2. `PUBLISH_ENABLED? (before container)`: false → `Publishing disabled (PUBLISH_ENABLED=false)` (NoOp; **this is where every Approve ends today**).
+3. `Re-read Draft (before publishing)`: a fresh data-table read.
+4. `Not published yet? (status = approved)`: the do-not-publish-twice guard; any other status → `Stopped - not published`.
+5. `IG - Create Image Container (DISABLED)`: `POST graph.instagram.com/v25.0/17841414160930384/media`, form fields `image_url` and `caption` from `Get Draft`.
+6. `Wait for Processing (DISABLED)`: 30 s.
+7. `IG - Check Container Status (DISABLED)`: `GET /v25.0/{container id}?fields=status_code`.
+8. `Container FINISHED?`: anything other than `FINISHED` → `Stopped - not published` (no retry; for an image 30 s has been enough).
+9. `PUBLISH_ENABLED? (before publish)`: the second check of the switch.
+10. `IG - Publish (DISABLED)`: `POST /v25.0/17841414160930384/media_publish` with `creation_id`.
+11. `Publish returned a media id?`: must be numeric, else `Stopped - not published`.
+12. `Mark Published (only if still approved)`: status → `published`, so the guard in step 4 refuses that draft forever after.
+13. `Log Posted Ayah (DISABLED)`.
+
+API version, endpoints, fields and the 30 s wait are the same as the one-off workflow that published the 94:6 post on 2026-10-03, and all three calls use credential "Basaer Media — Instagram Login token" (query auth `access_token`). A second ✅ press is also stopped earlier, by `Validate Press` (the draft must still be `pending`).
+
+The do-not-publish-twice guard (step 4) can stop a draft for three different reasons:
+- it was already published;
+- it was rejected or voided in the meantime;
+- `Mark Approved` did not update it.
+
+Disabled HTTP nodes just pass data through, so with `PUBLISH_ENABLED=false` the chain never even reaches them.
 
 Guards (all tested 2026-10-03):
 1. **Owner only**: presses from any Telegram user id other than `8704731927` are dropped at `Parse Button` — no reply, no data-table access.
