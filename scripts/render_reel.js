@@ -242,7 +242,8 @@ function adjustEnd(timeline, chapterPath) {
   const STEP = 0.01;
   const end = timeline.clipEndSec;
   const from = Math.max(timeline.clipStartSec, end - 0.5);
-  const env = envelopeDb(chapterPath, from, end + 0.25 - from, 10);
+  // Read 600 ms past the end (to see whether the recording itself stops there); search for a low point in the first 250.
+  const env = envelopeDb(chapterPath, from, end + 0.6 - from, 10);
   timeline.fadeOutMs = 100;
   if (!env || !env.length) return { extendedMs: 0, fadeOutMs: 100, reason: 'could not read the source' };
   const iEnd = Math.round((end - from) / STEP);
@@ -252,11 +253,12 @@ function adjustEnd(timeline, chapterPath) {
   const atEndDb = Math.max(...env.slice(Math.max(0, iEnd - 5), iEnd)); // last 50 ms before the API end
   if (lowPoint(atEndDb)) { timeline.fadeOutMs = 40; return { extendedMs: 0, fadeOutMs: 40, levelAtApiEndDb: atEndDb, reason: 'already quiet at the ayah end' }; }
   let k = -1;
-  for (let i = Math.max(0, iEnd - 5); i < env.length; i++) if (lowPoint(env[i])) { k = i; break; }
+  const iMax = Math.min(env.length, Math.round((end + 0.25 - from) / STEP));
+  for (let i = Math.max(0, iEnd - 5); i < iMax; i++) if (lowPoint(env[i])) { k = i; break; }
   if (k < 0) {
     // The recording itself ends inside the window while the voice is still sounding (e.g. the last ayah of a surah,
     // 3:200): keep everything up to the 250 ms limit / the file end, and let the 100 ms fade close it.
-    const expected = Math.round((end + 0.25 - from) / STEP);
+    const expected = Math.round((end + 0.6 - from) / STEP);
     if (env.length < expected - 2) {
       const cut = Math.min(end + 0.25, from + env.length * STEP - 0.02);
       const extMs = Math.max(0, Math.round((cut - end) * 1000));
