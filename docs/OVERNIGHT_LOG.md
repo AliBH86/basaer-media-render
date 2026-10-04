@@ -20,8 +20,8 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 | 10 | Hadith (Thaqalayn) evaluation | done | docs/RESEARCH_2026-10-04.md: 39 books, fields, grading, terms (no licence published), 15 candidates, Sunni balance check (fawazahmed0/hadith-api). |
 | 11 | docs/QF_APPLICATION.md | done | Ready to paste; [YOUR CONTACT EMAIL] placeholder. |
 | 12 | Go-live readiness checklist in HANDOFF | done | New "GO-LIVE READINESS" table at the top of docs/HANDOFF.md (16 items, done/blocked), activation order, first-week routine, rollback. Privacy policy: not built (needs email). |
-| 13 | docs/MORNING_REPORT.md + one silent Telegram message | todo | |
+| 13 | docs/MORNING_REPORT.md + one silent Telegram message | done | Report written; ONE silent Telegram message sent at the end (temporary send-only workflow, deleted). |
 
 GitHub Actions minutes used tonight: ~44 (16 runs; budget 200). Cloudinary qa-overnight: ~74 MB (Reels 64.7 MB, Daily sheets/slides 9.1 MB, samples 0.4 MB).
 
-Next step: item 13 (morning report + one silent Telegram message).
+Next step: none. All overnight items done; waiting for the user (decisions in docs/MORNING_REPORT.md).
