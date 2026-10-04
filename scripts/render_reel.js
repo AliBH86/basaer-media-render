@@ -253,7 +253,24 @@ function adjustEnd(timeline, chapterPath) {
   if (lowPoint(atEndDb)) { timeline.fadeOutMs = 40; return { extendedMs: 0, fadeOutMs: 40, levelAtApiEndDb: atEndDb, reason: 'already quiet at the ayah end' }; }
   let k = -1;
   for (let i = Math.max(0, iEnd - 5); i < env.length; i++) if (lowPoint(env[i])) { k = i; break; }
-  if (k < 0) return { extendedMs: 0, fadeOutMs: 100, levelAtApiEndDb: atEndDb, speechDb, reason: 'no natural low point within 250 ms (continuous recitation): 100 ms fade at the ayah end' };
+  if (k < 0) {
+    // The recording itself ends inside the window while the voice is still sounding (e.g. the last ayah of a surah,
+    // 3:200): keep everything up to the 250 ms limit / the file end, and let the 100 ms fade close it.
+    const expected = Math.round((end + 0.25 - from) / STEP);
+    if (env.length < expected - 2) {
+      const cut = Math.min(end + 0.25, from + env.length * STEP - 0.02);
+      const extMs = Math.max(0, Math.round((cut - end) * 1000));
+      if (extMs > 0) {
+        timeline.clipEndSec = round3(cut);
+        timeline.durationSec = round3(cut - timeline.clipStartSec);
+        const lastAyah = timeline.ayahs[timeline.ayahs.length - 1];
+        lastAyah.ayahEndMs += extMs;
+        lastAyah.wordTimings[lastAyah.wordTimings.length - 1].endMs += extMs;
+      }
+      return { extendedMs: extMs, fadeOutMs: 100, levelAtApiEndDb: atEndDb, speechDb, reason: 'the source recording ends while the voice still sounds: extended to the file end (max 250 ms) with a 100 ms fade' };
+    }
+    return { extendedMs: 0, fadeOutMs: 100, levelAtApiEndDb: atEndDb, speechDb, reason: 'no natural low point within 250 ms (the next ayah follows without a pause): 100 ms fade at the ayah end' };
+  }
   const cut = from + (k + 1) * STEP;
   const extMs = Math.max(0, Math.round((cut - end) * 1000));
   if (extMs > 0) {
