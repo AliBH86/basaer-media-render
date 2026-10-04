@@ -12,7 +12,11 @@ const { amiriQuranBase64, montserratBase64 } = require('./font_data');
 const REPO_ROOT = path.join(__dirname, '..');
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
 const W = 1080, H = 1920, FPS = 30;
-const TOTAL_BUDGET_SEC = 180;
+const TOTAL_BUDGET_SEC = Number(process.env.TOTAL_BUDGET_SEC || 180); // Khatm Reels (up to 90 s) get a larger budget via env
+// Khatm series (2026-10-04): long ayahs are shown in pages of at most PAGE_MAX_WORDS words, Arabic only.
+const KHATM = process.env.KHATM === '1';
+const PAGE_MAX_WORDS = 18;
+const SAJDAH = String.fromCharCode(0x06E9);
 const BG_BUDGET_SEC = 60;
 const FALLBACK_STYLE = 'mist';
 
@@ -26,7 +30,8 @@ function sh(cmd) {
   execSync(cmd, { stdio: 'inherit', shell: '/bin/bash' });
 }
 
-function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglish, reciterNameArabic, surahNumber, ayahNumber, arabicWords, highlightIndex, translation, progressFraction, handle }) {
+function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglish, reciterNameArabic, surahNumber, ayahNumber, arabicWords, highlightIndex, translation, progressFraction, handle, refText, sajdah }) {
+  const ref = refText !== undefined ? refText : `${surahNumber}:${ayahNumber}`;
   const spans = arabicWords.map((w, i) => {
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
@@ -75,6 +80,8 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   .content { position:absolute; top:556px; height:604px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:visible; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
   .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:70px; max-width:860px; line-height:1.4; }
+  .sajdah { margin-top:10px; font-family:'Montserrat Local',sans-serif; font-size:24px; color:#C9A24B; letter-spacing:1px; }
+  .sajdah-ar { font-family:'Amiri Quran Local',serif; font-size:30px; }
   .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
 </style></head>
 <body>
@@ -82,8 +89,8 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   <div class="progress-fill"></div>
   <div class="header">
     <div class="surah-ar">سورة ${surahNameArabic}</div>
-    <div class="surah-en">SURAH ${surahNameEnglish.toUpperCase()} &middot; ${surahNumber}:${ayahNumber}</div>
-    <div class="reciter"><span class="reciter-ar">${reciterNameArabic}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterNameEnglish}</span></div>
+    <div class="surah-en">SURAH ${surahNameEnglish.toUpperCase()}${ref ? ' &middot; ' + ref : ''}</div>
+    <div class="reciter"><span class="reciter-ar">${reciterNameArabic}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterNameEnglish}</span></div>${sajdah ? '<div class="sajdah"><span class="sajdah-ar">۩ آية سجدة</span> &middot; Ayah of prostration</div>' : ''}
   </div>
   <div class="content">
     <div class="arabic" id="arabic">${spans}</div>
@@ -141,7 +148,7 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
       document.body.setAttribute('data-fit', 'ar=' + ar.style.fontSize + ' en=' + tr.style.fontSize + ' total=' + total() + '/' + avail);
     }
     document.fonts.ready.then(() => {
-      fitBoth(document.getElementById('arabic'), document.getElementById('translation'), 604, 70);
+      fitBoth(document.getElementById('arabic'), document.getElementById('translation'), 604, document.getElementById('translation').textContent.trim() ? 70 : 0);
       requestAnimationFrame(() => requestAnimationFrame(() => {
         document.body.setAttribute('data-fonts-ready', '1');
       }));
@@ -359,7 +366,7 @@ async function main() {
   // 3. Audio: download chapter, trim to [clipStartSec, clipEndSec], optional fade-in
   const chapterPath = path.join(workDir, 'chapter.mp3');
   sh(`curl -sS -L "${timeline.audioUrl}" -o "${chapterPath}"`);
-  const audioPath = path.join(workDir, 'audio.m4a');
+  let audioPath = path.join(workDir, 'audio.m4a');
 
   // 3a. Voice onset and natural end (user, 2026-10-03). Silence trimming only: the recitation itself is never altered.
   //  - Start: the API's first-word time can be early (Minshawi 39:53: gold at 0.2 s, voice at 0.6 s). Find the real
@@ -402,6 +409,37 @@ async function main() {
   console.log('Processed audio level:', JSON.stringify(processed));
   if (!processed || processed.maxDb < -30) throw new Error('Processed audio is silent or far too quiet - refusing to render a Reel without sound');
 
+  // 3b. Bismillah (Khatm, surah start): the SAME reciter's 1:1 from his Al-Fatiha file (fetch_timeline.js explains why),
+  // then a short pause, then the passage. Every later timing moves by the Bismillah's length.
+  let bismillahInfo = null;
+  if (timeline.bismillah) {
+    const b = timeline.bismillah;
+    const fatPath = path.join(workDir, 'fatiha.mp3');
+    sh(`curl -sS -L "${b.audioUrl}" -o "${fatPath}"`);
+    const leadMs = Math.min(150, b.fromMs);
+    const bStartSec = (b.fromMs - leadMs) / 1000;
+    const bDurSec = (b.toMs - b.fromMs + leadMs) / 1000;
+    const GAP_SEC = 0.45;
+    const bPath = path.join(workDir, 'bismillah.m4a');
+    sh(`ffmpeg -y -nostdin -ss ${bStartSec.toFixed(3)} -t ${bDurSec.toFixed(3)} -i "${fatPath}" -vn -map 0:a:0 -af "aresample=44100,aformat=channel_layouts=stereo,afade=t=in:d=0.012,afade=t=out:st=${Math.max(0, bDurSec - 0.06).toFixed(3)}:d=0.06,apad=pad_dur=${GAP_SEC}" -c:a aac -b:a 128k "${bPath}"`);
+    const bLen = parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${bPath}"`, { shell: '/bin/bash', encoding: 'utf8' }));
+    const joined = path.join(workDir, 'audio_joined.m4a');
+    sh(`ffmpeg -y -nostdin -i "${bPath}" -i "${audioPath}" -filter_complex "[0:a]aresample=44100,aformat=channel_layouts=stereo[a0];[1:a]aresample=44100,aformat=channel_layouts=stereo[a1];[a0][a1]concat=n=2:v=0:a=1[a]" -map "[a]" -c:a aac -b:a 128k "${joined}"`);
+    audioPath = joined;
+    const offMs = Math.round(bLen * 1000);
+    for (const a of timeline.ayahs) {
+      a.ayahStartMs += offMs; a.ayahEndMs += offMs;
+      for (const w of a.wordTimings) { w.startMs += offMs; w.endMs += offMs; }
+    }
+    timeline.durationSec += bLen;
+    const base = b.fromMs - leadMs;
+    b.wordTimings = b.wordTimingsAbs.map((w) => ({ wordIndex: w.wordIndex, startMs: w.startMs - base, endMs: w.endMs - base }));
+    b.durationMs = offMs;
+    bismillahInfo = { source: 'reciter ' + timeline.reciterId + ' Al-Fatiha 1:1', clipSec: round3(bDurSec), withPauseSec: round3(bLen) };
+    console.log('Bismillah:', JSON.stringify(bismillahInfo));
+    fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2));
+  }
+
   // 4. Background, with render-budget fallback
   const bgPath = path.join(workDir, 'bg.mp4');
   const bgScript = path.join(REPO_ROOT, 'scripts', 'generate_background.sh');
@@ -416,18 +454,59 @@ async function main() {
 
   // 5. Overlay PNGs - one per word, across all ayahs
   const overlaySpecs = [];
+  // Khatm: an ayah longer than PAGE_MAX_WORDS words is shown in pages (preferably ending on a word with a waqf sign),
+  // Arabic only; its full English goes into the caption. Curated Reels (KHATM unset) are unchanged: one page, English shown.
+  const WAQF = /[ۖ-ۜ]/;
+  const pageRanges = (from, to, words) => {
+    const n = to - from + 1;
+    if (!KHATM || n <= PAGE_MAX_WORDS) return [[from, to]];
+    const target = Math.ceil(n / Math.ceil(n / PAGE_MAX_WORDS));
+    const out = [];
+    let s = from;
+    while (s <= to) {
+      let e = Math.min(to, s + target - 1);
+      if (e < to) {
+        let best = -1;
+        for (let k = Math.max(s + 5, e - 4); k <= Math.min(to - 1, e + 3, s + PAGE_MAX_WORDS - 1); k++) {
+          if (WAQF.test(words[k]) && (best < 0 || Math.abs(k - e) < Math.abs(best - e))) best = k;
+        }
+        if (best >= 0) e = best;
+        if (to - e < 4) e = to; // never leave a tiny last page
+      }
+      out.push([s, e]);
+      s = e + 1;
+    }
+    return out;
+  };
+  if (timeline.bismillah && timeline.bismillah.wordTimings) {
+    timeline.bismillah.wordTimings.forEach((wt) => {
+      overlaySpecs.push({ startSec: wt.startMs / 1000, endSec: wt.endMs / 1000, arabicWords: timeline.bismillah.words, highlightIndex: wt.wordIndex, translation: '', ayahNumber: 0, refText: '' });
+    });
+  }
   timeline.ayahs.forEach(ayah => {
+    const [from, to] = ayah.wordRange || [0, ayah.arabicWords.length - 1];
+    const pages = pageRanges(from, to, ayah.arabicWords);
+    const showTranslation = !KHATM || (!ayah.wordRange && pages.length === 1 && (to - from + 1) <= 24 && ayah.translation.length <= 300);
+    ayah.pages = pages;
+    ayah.showTranslation = showTranslation;
+    const sajdah = KHATM && ayah.arabicWords.some((w) => w.includes(SAJDAH));
+    const refText = ayah.wordRange && process.env.PART_LABEL ? `${timeline.surah}:${ayah.number} (part ${process.env.PART_LABEL})` : undefined;
     ayah.wordTimings.forEach(wt => {
+      const pg = pages.find(([a, b]) => wt.wordIndex >= a && wt.wordIndex <= b);
       overlaySpecs.push({
         startSec: wt.startMs / 1000,
         endSec: wt.endMs / 1000,
-        arabicWords: ayah.arabicWords,
-        highlightIndex: wt.wordIndex,
-        translation: ayah.translation,
+        arabicWords: ayah.arabicWords.slice(pg[0], pg[1] + 1),
+        highlightIndex: wt.wordIndex - pg[0],
+        translation: showTranslation ? ayah.translation : '',
         ayahNumber: ayah.number,
+        refText,
+        sajdah,
       });
     });
   });
+  fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2)); // pages + showTranslation, read by the guard
+  console.log('Pages:', JSON.stringify(timeline.ayahs.map((a) => ({ ayah: a.number, pages: a.pages, english: a.showTranslation }))));
 
   overlaySpecs.forEach((spec, i) => {
     const html = buildOverlayHtml({
@@ -440,6 +519,8 @@ async function main() {
       arabicWords: spec.arabicWords,
       highlightIndex: spec.highlightIndex,
       translation: spec.translation,
+      refText: spec.refText,
+      sajdah: spec.sajdah,
       progressFraction: spec.startSec / timeline.durationSec,
       handle,
     });
@@ -527,7 +608,7 @@ async function main() {
   const fileBytes = fs.statSync(outPath).size;
   fs.writeFileSync(path.join(outDir, 'timeline.json'), JSON.stringify(timeline, null, 2));
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify({
-    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope, voiceOnset: onsetInfo, naturalEnd: endInfo,
+    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope, voiceOnset: onsetInfo, naturalEnd: endInfo, bismillah: bismillahInfo,
   }, null, 2));
 }
 

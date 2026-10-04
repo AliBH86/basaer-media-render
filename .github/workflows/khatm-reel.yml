@@ -1,0 +1,136 @@
+name: Khatm Reel (sequential series)
+
+# Renders one entry of the Khatm series (data/khatm_plan.json): consecutive ayahs of one surah, or one part of a
+# long ayah split at waqf signs. Review only: nothing here publishes. Khatm settings: soft cap 75 s, hard cap 90 s,
+# long ayahs paged and shown in Arabic only, the reciter's own Bismillah (from his Al-Fatiha 1:1) before a surah's
+# first passage (not Al-Fatiha, not At-Tawbah), a sajdah label on sajdah ayahs.
+on:
+  workflow_dispatch:
+    inputs:
+      surah:
+        description: "Surah number"
+        required: true
+      ayahStart:
+        description: "First ayah"
+        required: true
+      ayahEnd:
+        description: "Last ayah (same as ayahStart for a single ayah or a split part)"
+        required: true
+      reciterId:
+        description: "Reciter ID (one reciter per surah, from the plan)"
+        required: true
+      style:
+        description: "Background style"
+        default: "gradient"
+        required: false
+      wordStart:
+        description: "Split ayah only: first word (1-based)"
+        required: false
+      wordEnd:
+        description: "Split ayah only: last word (1-based)"
+        required: false
+      partLabel:
+        description: "Split ayah only: part label shown in the header, e.g. 1/3"
+        required: false
+      cloudFolder:
+        description: "Cloudinary folder (default khatm-test)"
+        default: "khatm-test"
+        required: false
+      resumeUrl:
+        description: "n8n resumeUrl to POST results back to (optional)"
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then
+              echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "No Chrome/Chromium binary found" >&2
+          exit 1
+
+      - name: Integrity guard self-test (offline)
+        run: node scripts/verify_text.js --selftest
+
+      - name: Render Khatm Reel
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          KHATM: "1"
+          SOFT_CAP_SEC: "75"
+          MAX_CAP_SEC: "95"
+          TOTAL_BUDGET_SEC: "1200"
+          BISMILLAH: "auto"
+          WORD_START: ${{ github.event.inputs.wordStart }}
+          WORD_END: ${{ github.event.inputs.wordEnd }}
+          PART_LABEL: ${{ github.event.inputs.partLabel }}
+          TRANSLATION_ID: "20"
+          TRANSLATION_NAME: "Saheeh International"
+        run: |
+          mkdir -p out
+          node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId }}" "${{ github.event.inputs.style || 'gradient' }}" out "${{ github.event.inputs.ayahEnd }}"
+
+      - name: Extract the 4 review stills
+        run: |
+          REEL_FILE=$(ls out/reel_*.mp4)
+          node scripts/pick_review_stills.js out | while read -r name seconds; do
+            ffmpeg -y -nostdin -ss "$seconds" -i "$REEL_FILE" -frames:v 1 "out/${name}.png"
+          done
+
+      - name: Upload Reel + stills to Cloudinary
+        run: |
+          F="${{ github.event.inputs.cloudFolder || 'khatm-test' }}"
+          REEL_FILE=$(ls out/reel_*.mp4)
+          node scripts/upload_cloudinary.js "$REEL_FILE" "$F/reel-${{ github.run_id }}" video out reelUrl
+          for f in out/frame_start.png out/frame_mid1.png out/frame_mid2.png out/frame_end.png; do
+            name=$(basename "$f" .png); part=${name#frame_}
+            node scripts/upload_cloudinary.js "$f" "$F/${name}-${{ github.run_id }}" image out "frame${part^}Url"
+          done
+          ffmpeg -y -nostdin -i out/frame_start.png -i out/frame_mid1.png -i out/frame_mid2.png -i out/frame_end.png -filter_complex "[0:v][1:v]hstack=2[t];[2:v][3:v]hstack=2[b];[t][b]vstack=2,scale=1080:-2" out/stills_tile.jpg
+          node scripts/upload_cloudinary.js out/stills_tile.jpg "$F/stills-tile-${{ github.run_id }}" image out stillsTileUrl
+
+      - name: Spec check
+        run: |
+          REEL_FILE=$(ls out/reel_*.mp4)
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=width,height,codec_name,avg_frame_rate,sample_rate -of default=noprint_wrappers=1 "$REEL_FILE"
+          cat out/uploads.json
+
+      - name: Upload artifacts (7-day retention)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: khatm-reel-outputs
+          path: out/
+          retention-days: 7
+
+      - name: Notify n8n (resumeUrl callback, only if provided)
+        if: ${{ github.event.inputs.resumeUrl != '' }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const uploads = JSON.parse(fs.readFileSync('out/uploads.json', 'utf8'));
+            const stats = JSON.parse(fs.readFileSync('out/render_stats.json', 'utf8'));
+            fs.writeFileSync('out/callback_payload.json', JSON.stringify({ ...uploads, stats, runId: '${{ github.run_id }}' }));
+          "
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" -H "Content-Type: application/json" -d @out/callback_payload.json
+
+      - name: Notify n8n of a FAILED render (only if provided)
+        if: ${{ failure() && github.event.inputs.resumeUrl != '' }}
+        run: |
+          node scripts/notify_failure.js out "${{ github.run_id }}" "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}"
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" -H "Content-Type: application/json" -d @out/failure_payload.json

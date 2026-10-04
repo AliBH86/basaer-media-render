@@ -62,8 +62,12 @@ async function main() {
   const ayahStart = parseInt(ayahStartArg, 10);
   const explicitEnd = ayahEndArg && String(ayahEndArg).trim() !== '' ? parseInt(ayahEndArg, 10) : null;
   const MIN_TARGET_MS = 15000;
-  const SOFT_CAP_MS = 40000;
-  const MAX_CAP_MS = 45000;
+  // Khatm series (2026-10-04): longer passages (target 45-75 s, hard cap 90 s) via env; curated Reels keep 40/45 s.
+  const SOFT_CAP_MS = Number(process.env.SOFT_CAP_SEC || 40) * 1000;
+  const MAX_CAP_MS = Number(process.env.MAX_CAP_SEC || 45) * 1000;
+  // Khatm split ayahs: WORD_START..WORD_END (1-based, inclusive) of a single ayah. Only valid with ayahEnd = ayahStart.
+  const WORD_START = process.env.WORD_START ? parseInt(process.env.WORD_START, 10) : null;
+  const WORD_END = process.env.WORD_END ? parseInt(process.env.WORD_END, 10) : null;
 
   const chapterInfo = await getJson(`https://api.quran.com/api/v4/chapters/${surah}?language=en`);
   const audioInfo = await getJson(`https://api.qurancdn.com/api/qdc/audio/reciters/${reciterId}/audio_files?chapter=${surah}&segments=true`);
@@ -86,6 +90,13 @@ async function main() {
       includedAyahs.push({ number: n, timing });
     }
     accumulatedMs = includedAyahs[includedAyahs.length - 1].timing.timestamp_to - includedAyahs[0].timing.timestamp_from;
+    if (WORD_START !== null && includedAyahs.length === 1) {
+      // Duration of the word range only (the clip is cut to it further down).
+      const segs = includedAyahs[0].timing.segments.filter((s) => Array.isArray(s) && s.length >= 3);
+      const a = segs.find((s) => s[0] >= WORD_START);
+      const b = [...segs].reverse().find((s) => s[0] <= (WORD_END || Infinity));
+      if (a && b) accumulatedMs = b[2] - a[1];
+    }
     if (accumulatedMs > MAX_CAP_MS) {
       throw new Error(`passage ${surah}:${ayahStart}-${explicitEnd} is ${(accumulatedMs / 1000).toFixed(1)} s with reciter ${reciterId}: over the ${MAX_CAP_MS / 1000} s hard cap`);
     }
@@ -120,10 +131,24 @@ async function main() {
 
   // Lead-in: pull 200ms of audio from BEFORE the first word if available in the source.
   const REQUESTED_LEAD_IN_MS = 200;
-  const firstWordStartMs = firstTiming.segments[0][1]; // [wordNum, startMs, endMs]
-  const availableLeadInMs = Math.min(REQUESTED_LEAD_IN_MS, firstWordStartMs);
+  // Split ayah (Khatm): cut at the first/last word of the range. The lead-in never reaches back into the previous word.
+  const partial = WORD_START !== null && includedAyahs.length === 1;
+  const firstSegs = firstTiming.segments.filter((s) => Array.isArray(s) && s.length >= 3);
+  let firstWordStartMs = firstSegs[0][1]; // [wordNum, startMs, endMs]
+  let leadInRoomMs = firstWordStartMs;
+  let clipEndMs = lastTiming.timestamp_to;
+  if (partial) {
+    const startSeg = firstSegs.find((s) => s[0] >= WORD_START);
+    const prevSeg = [...firstSegs].reverse().find((s) => s[0] < WORD_START);
+    const endSeg = [...firstSegs].reverse().find((s) => s[0] <= (WORD_END || Infinity));
+    if (!startSeg || !endSeg) throw new Error(`no word timings for ${surah}:${ayahStart} words ${WORD_START}-${WORD_END}`);
+    firstWordStartMs = startSeg[1];
+    leadInRoomMs = prevSeg ? Math.max(0, startSeg[1] - prevSeg[2]) : firstWordStartMs;
+    const lastWordNum = Math.max(...firstSegs.map((s) => s[0]));
+    if (WORD_END && WORD_END < lastWordNum) clipEndMs = endSeg[2];
+  }
+  const availableLeadInMs = Math.min(REQUESTED_LEAD_IN_MS, leadInRoomMs);
   const clipStartMs = firstWordStartMs - availableLeadInMs;
-  const clipEndMs = lastTiming.timestamp_to;
   const needsFadeIn = availableLeadInMs < REQUESTED_LEAD_IN_MS;
   // 15 ms is enough to avoid a click when the clip starts at the very beginning of the source file (which starts in
   // silence); the old 80 ms softened the first letter by up to ~19 dB.
@@ -136,13 +161,41 @@ async function main() {
     const translation = cleanTranslation(verse.translations[0].text);
     // Segments are [wordNumber(1-based), startMs, endMs]. Some reciters also time the end-of-ayah marker as an
     // extra "word"; it is not drawn, so its segment is dropped.
-    const wordTimings = timing.segments
-      .filter(seg => seg[0] - 1 < arabicWords.length)
-      .map(seg => ({
-        wordIndex: seg[0] - 1,
-        startMs: seg[1] - clipStartMs,
-        endMs: seg[2] - clipStartMs,
-      }));
+    // Word range shown and timed: the whole ayah, or WORD_START..WORD_END for a split ayah (0-based inclusive).
+    const from = partial ? WORD_START - 1 : 0;
+    const to = partial ? Math.min((WORD_END || arabicWords.length), arabicWords.length) - 1 : arabicWords.length - 1;
+    const timed = new Map();
+    timing.segments
+      .filter(seg => Array.isArray(seg) && seg.length >= 3 && seg[0] - 1 < arabicWords.length)
+      .forEach(seg => { if (!timed.has(seg[0] - 1)) timed.set(seg[0] - 1, { startMs: seg[1], endMs: seg[2] }); });
+    // A few ayahs have one word without a timing in the API (e.g. Alafasy 2:214). Fill it from its neighbours:
+    // it gets the gap between the previous word's end and the next word's start (or an equal share of the
+    // neighbours when they touch), so every word is highlighted in order. Only timings are filled; text never.
+    const filled = [];
+    for (let i = from; i <= to; i++) {
+      if (timed.has(i)) continue;
+      let p = i - 1; while (p >= 0 && !timed.has(p)) p--;
+      let n = i + 1; while (n < arabicWords.length && !timed.has(n)) n++;
+      const prevEnd = p >= 0 ? timed.get(p).endMs : timing.timestamp_from;
+      const nextStart = n < arabicWords.length ? timed.get(n).startMs : timing.timestamp_to;
+      const missing = n - p - 1;
+      let a = prevEnd, b = nextStart;
+      if (b - a < 150 * missing) { // neighbours touch: borrow time from them
+        const left = p >= 0 ? timed.get(p) : null, right = n < arabicWords.length ? timed.get(n) : null;
+        a = left ? left.startMs + (left.endMs - left.startMs) / 2 : a;
+        b = right ? right.startMs + (right.endMs - right.startMs) / 2 : b;
+        if (left) left.endMs = a;
+        if (right) right.startMs = b;
+      }
+      const step = (b - a) / missing;
+      for (let k = 0; k < missing; k++) timed.set(p + 1 + k, { startMs: Math.round(a + k * step), endMs: Math.round(a + (k + 1) * step) });
+      filled.push(`${key} word ${i + 1}`);
+    }
+    if (filled.length) console.warn(`NOTE: word timing filled from neighbours: ${filled.join(', ')}`);
+    const wordTimings = [...timed.entries()]
+      .filter(([i]) => i >= from && i <= to)
+      .sort((x, y) => x[0] - y[0])
+      .map(([i, t]) => ({ wordIndex: i, startMs: t.startMs - clipStartMs, endMs: t.endMs - clipStartMs }));
     return {
       number,
       arabicWords,
@@ -150,10 +203,38 @@ async function main() {
       ayahStartMs: timing.timestamp_from - clipStartMs,
       ayahEndMs: timing.timestamp_to - clipStartMs,
       wordTimings,
+      ...(partial ? { wordRange: [from, to] } : {}),
+      ...(filled.length ? { filledTimings: filled } : {}),
     };
   });
 
+  // Bismillah (Khatm, BISMILLAH=auto; checked 2026-10-04): the chapter files of the approved reciters start directly
+  // with ayah 1 (the first word is timed from ~0 ms and has its normal length), so they do NOT contain the Bismillah.
+  // For a surah's first Reel (not Al-Fatiha, where it IS ayah 1, and not At-Tawbah, which has none) the SAME reciter's
+  // Bismillah is taken from his Al-Fatiha file (1:1) with its own word timings and placed before ayah 1. The text is
+  // the API's 1:1 text, fetched fresh. If the reciter has no timed 1:1, no Bismillah is shown or played.
+  let bismillah = null;
+  if (process.env.BISMILLAH === 'auto' && ayahStart === 1 && !partial && ![1, 9].includes(parseInt(surah, 10))) {
+    const fat = await getJson(`https://api.qurancdn.com/api/qdc/audio/reciters/${reciterId}/audio_files?chapter=1&segments=true`);
+    const f1 = fat.audio_files && fat.audio_files[0];
+    const t11 = f1 && f1.verse_timings.find((v) => v.verse_key === '1:1');
+    const segs11 = t11 ? t11.segments.filter((s) => Array.isArray(s) && s.length >= 3) : [];
+    const b = (await getJson(`https://api.quran.com/api/v4/verses/by_key/1:1?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
+    const words = wordsFromApi(b);
+    if (f1 && f1.audio_url && segs11.length >= words.length) {
+      bismillah = {
+        audioUrl: f1.audio_url,
+        fromMs: segs11[0][1], toMs: t11.timestamp_to, // absolute in the Al-Fatiha file
+        words,
+        wordTimingsAbs: segs11.slice(0, words.length).map((s) => ({ wordIndex: s[0] - 1, startMs: s[1], endMs: s[2] })),
+      };
+    } else {
+      console.warn(`NOTE: reciter ${reciterId} has no fully timed 1:1 - no Bismillah will be shown`);
+    }
+  }
+
   const timeline = {
+    bismillah,
     surah: parseInt(surah, 10),
     surahNameArabic: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).ar || chapterInfo.chapter.name_arabic,
     surahNameEnglish: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).en || chapterInfo.chapter.name_simple,

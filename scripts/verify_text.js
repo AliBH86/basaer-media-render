@@ -65,9 +65,10 @@ function readOverlay(html) {
 }
 
 // Pure check of one overlay against the fresh API copy. fresh = { arabic, words, english }.
-function checkOverlay(label, drawn, fresh) {
+function checkOverlay(label, drawn, fresh, opts = {}) {
   const issues = [];
-  const wantWords = (fresh.words || fresh.arabic.trim().split(/\s+/)).map(norm);
+  const allWords = (fresh.words || fresh.arabic.trim().split(/\s+/)).map(norm);
+  const wantWords = opts.from !== undefined ? allWords.slice(opts.from, opts.to + 1) : allWords;
   const drawnWords = drawn.words.map(norm);
   same(issues, `${label} Arabic`, wantWords.join(' '), drawnWords.join(' '));
   if (drawnWords.length !== wantWords.length) {
@@ -77,20 +78,25 @@ function checkOverlay(label, drawn, fresh) {
     if (k >= 0 && wantWords.join(' ') === drawnWords.join(' ')) issues.push(`${label} Arabic: word ${k + 1} is split differently from the API`);
   }
   scan(issues, `${label} Arabic`, drawn.words.join(' '), true);
-  same(issues, `${label} English`, fresh.english, drawn.translation);
-  scan(issues, `${label} English`, drawn.translation, false);
+  if (opts.hideEnglish) {
+    // Khatm Arabic-only screen: the English must be absent (it is in the caption), never a shortened or altered copy.
+    if (String(drawn.translation || '').trim() !== '') issues.push(`${label} English: expected no English on this screen, found text`);
+  } else {
+    same(issues, `${label} English`, fresh.english, drawn.translation);
+    scan(issues, `${label} English`, drawn.translation, false);
+  }
   return issues;
 }
 
 // Every word must have a highlight timing, and timings must point at real words.
-function checkTimings(label, wordCount, wordTimings) {
+function checkTimings(label, wordCount, wordTimings, from = 0, to = wordCount - 1) {
   const issues = [];
   const seen = new Set();
   for (const wt of wordTimings) {
-    if (!(wt.wordIndex >= 0 && wt.wordIndex < wordCount)) issues.push(`${label}: a timing points at word ${wt.wordIndex + 1}, but there are only ${wordCount} words`);
+    if (!(wt.wordIndex >= from && wt.wordIndex <= to && wt.wordIndex < wordCount)) issues.push(`${label}: a timing points at word ${wt.wordIndex + 1}, but there are only ${wordCount} words`);
     seen.add(wt.wordIndex);
   }
-  for (let i = 0; i < wordCount; i++) if (!seen.has(i)) { issues.push(`${label}: word ${i + 1} of ${wordCount} has no highlight timing`); break; }
+  for (let i = from; i <= to; i++) if (!seen.has(i)) { issues.push(`${label}: word ${i + 1} of ${wordCount} has no highlight timing`); break; }
   return issues;
 }
 
@@ -109,6 +115,20 @@ async function verifyRender(timelinePath, workDir, outDir) {
   const issues = [];
   const refs = [];
   let overlayIndex = 0;
+  if (timeline.bismillah && timeline.bismillah.wordTimings) {
+    // Bismillah screens (Khatm surah start): the API's 1:1 text, Arabic only, every word timed.
+    const fresh = await freshAyah(1, 1, timeline.translationId || 20);
+    issues.push(...fresh.apiIssues);
+    issues.push(...checkOverlay('Bismillah (1:1) timeline', { words: timeline.bismillah.words, translation: '' }, fresh, { hideEnglish: true }));
+    issues.push(...checkTimings('Bismillah (1:1)', fresh.words.length, timeline.bismillah.wordTimings));
+    refs.push('Bismillah (1:1)');
+    for (let w = 0; w < timeline.bismillah.wordTimings.length; w++) {
+      const file = path.join(workDir, `overlay_${overlayIndex}.html`);
+      overlayIndex++;
+      if (!fs.existsSync(file)) { issues.push(`Bismillah: overlay file ${path.basename(file)} is missing`); continue; }
+      issues.push(...checkOverlay(`Bismillah overlay ${overlayIndex - 1}`, readOverlay(fs.readFileSync(file, 'utf8')), fresh, { hideEnglish: true }));
+    }
+  }
   for (const ayah of timeline.ayahs) {
     const ref = `${timeline.surah}:${ayah.number}`;
     refs.push(ref);
@@ -116,12 +136,17 @@ async function verifyRender(timelinePath, workDir, outDir) {
     issues.push(...fresh.apiIssues);
     // The timeline data itself must equal the fresh copy too, and every word must have a highlight timing.
     issues.push(...checkOverlay(`${ref} timeline`, { words: ayah.arabicWords, translation: ayah.translation }, fresh));
-    issues.push(...checkTimings(ref, fresh.words.length, ayah.wordTimings));
+    const [rFrom, rTo] = ayah.wordRange || [0, fresh.words.length - 1];
+    issues.push(...checkTimings(ref, fresh.words.length, ayah.wordTimings, rFrom, rTo));
+    const pages = ayah.pages || [[rFrom, rTo]];
+    const hideEnglish = ayah.showTranslation === false;
     for (let w = 0; w < ayah.wordTimings.length; w++) {
       const file = path.join(workDir, `overlay_${overlayIndex}.html`);
       overlayIndex++;
       if (!fs.existsSync(file)) { issues.push(`${ref}: overlay file ${path.basename(file)} is missing`); continue; }
-      const found = checkOverlay(`${ref} overlay ${overlayIndex - 1}`, readOverlay(fs.readFileSync(file, 'utf8')), fresh);
+      const wi = ayah.wordTimings[w].wordIndex;
+      const pg = pages.find(([a, b]) => wi >= a && wi <= b) || [rFrom, rTo];
+      const found = checkOverlay(`${ref} overlay ${overlayIndex - 1}`, readOverlay(fs.readFileSync(file, 'utf8')), fresh, { from: pg[0], to: pg[1], hideEnglish });
       issues.push(...found);
       if (found.length) { // one broken overlay per ayah is enough; keep the running index in step with the files
         overlayIndex += ayah.wordTimings.length - w - 1;
@@ -153,9 +178,13 @@ function selftest() {
     ['English letter changed', drawn(clean.words, fresh.english.replace('One', 'Ond')), true],
     ['a word split in two (misaligned highlight)', drawn([w[0], w[1], '\u0671\u0644\u0644\u0651\u064E', '\u0647\u064F', w[3]], fresh.english), true],
   ];
+  cases.push(['page of words 2-3 matches the slice', { ...drawn(w.slice(1, 3), fresh.english), opts: { from: 1, to: 2 } }, false]);
+  cases.push(['page with a wrong word', { ...drawn([w[1], w[3]], fresh.english), opts: { from: 1, to: 2 } }, true]);
+  cases.push(['Arabic-only screen without English', { ...drawn(w.slice(), ''), opts: { hideEnglish: true } }, false]);
+  cases.push(['Arabic-only screen that still shows English', { ...drawn(w.slice(), fresh.english), opts: { hideEnglish: true } }, true]);
   let failed = 0;
   for (const [name, d, shouldFail] of cases) {
-    const issues = checkOverlay('selftest', d, fresh);
+    const issues = checkOverlay('selftest', d, fresh, d.opts || {});
     const caught = issues.length > 0;
     const pass = caught === shouldFail;
     if (!pass) failed++;

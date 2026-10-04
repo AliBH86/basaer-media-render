@@ -11,6 +11,7 @@ const tl = JSON.parse(fs.readFileSync(path.join(outDir, 'timeline.json'), 'utf8'
 // Every highlighted word, in time order. The overlay for a word is on screen from its start to its end
 // (the last word stays until the end of the Reel).
 const spans = [];
+if (tl.bismillah && tl.bismillah.wordTimings) tl.bismillah.wordTimings.forEach((wt) => spans.push({ s: wt.startMs / 1000, e: wt.endMs / 1000 }));
 tl.ayahs.forEach((a) => a.wordTimings.forEach((wt) => spans.push({ s: wt.startMs / 1000, e: wt.endMs / 1000 })));
 spans.sort((a, b) => a.s - b.s);
 if (!spans.length) throw new Error('no word timings in timeline.json');
