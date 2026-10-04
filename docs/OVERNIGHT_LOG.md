@@ -14,7 +14,7 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 | 4 | Keep 20:114, 25:74, 9:129 | done | No change needed (they stay in the rotation). |
 | 5 | Re-tag 18:10-12 / 18:46 / 18:23-24 to Dua / Reminder / Trust; re-run 160-day simulation | done | data/reel_list.json + docs/REEL_CONTENT_LIST.md + live Pick Reel list updated; no Friday theme left; no theme 3x in a row. Simulation: 160 Reels 2026-10-11..2027-07-17, 0 problems (no Friday Reel, no shared surah with the Daily Post, 4 forced skips). Reminder has no approved lines: uses the Gratitude set; 3 draft Reminder lines parked in data/reflections.json (proposed). |
 | 6 | Token work | skipped (user rotates it) | |
-| 7 | Daily Post QA: all 76 ayahs, contact sheets | todo | |
+| 7 | Daily Post QA: all 76 ayahs, contact sheets | doing | n8n/daily_build_html.js = byte-exact copy of the live Build HTML node (verified by exact-match probes). Runner: .github/workflows/qa-daily.yml + scripts/qa_daily.js (GitHub, headless Chrome; droplet untouched). Dry run: 76 slides, 0 integrity failures. |
 | 8 | Reel QA: 10 Reels | todo | |
 | 9 | Prayer times research + SAMPLE cards | todo | |
 | 10 | Hadith (Thaqalayn) evaluation | todo | |
