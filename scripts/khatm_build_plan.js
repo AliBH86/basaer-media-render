@@ -11,7 +11,8 @@ const path = require('path');
 const cov = require(process.env.KHATM_COVERAGE || './coverage.json');
 const scan = require(process.env.KHATM_SCAN || './scan_translation.json');
 
-const ROTATION = [7, 2, 6, 9, 3, 97, 5, 4, 10]; // approved reciters (data/reciters.json), Alafasy first
+// Approved reciters (data/reciters.json), Alafasy first. KHATM_ROTATION overrides (e.g. only reciters who pause at ayah ends).
+const ROTATION = (process.env.KHATM_ROTATION || '7,2,6,9,3,97,5,4,10').split(',').map(Number);
 const STYLES = ['gradient', 'stars', 'rays', 'mist', 'lattice'];
 const T_MIN = 25000, T_LO = 45000, T_HI = 75000, CAP = 90000;
 const BISMILLAH_GAP = 450;
@@ -37,6 +38,17 @@ for (const f of fs.readdirSync(LOG_DIR).filter((x) => /^research_log.*\.txt$/.te
     PAUSES[m[1] + '@' + m[2]] = b;
   }
 }
+// Pause at every ayah end, measured for the assigned reciter (scripts/khatm_ayah_end_pauses.js): surah -> {k: [depthDb, ms]}
+const AYAH_ENDS = {};
+for (const f of fs.readdirSync(LOG_DIR).filter((x) => /^ayah_end_pauses_.*\.json$/.test(x))) {
+  for (const [s, v] of Object.entries(JSON.parse(fs.readFileSync(path.join(LOG_DIR, f), 'utf8')))) AYAH_ENDS[s] = v;
+}
+const END_PEN = 600; // a Reel that ends (and the next one that starts) where the reciter runs on without a pause
+const ayahEndPauses = (s, k, rid) => {
+  const v = AYAH_ENDS[s];
+  if (!v || v.reciterId !== rid || !v.ends[k]) return true; // not measured: no penalty
+  return v.ends[k][0] <= -24 || v.ends[k][1] >= 80;
+};
 const goodPause = (key, rid, q) => { const b = PAUSES[key + '@' + rid]; const v = b && b[q]; return !!(v && v[0] <= -30 && v[1] >= 60); };
 const measured = (key, rid) => !!PAUSES[key + '@' + rid];
 
@@ -121,7 +133,9 @@ function cost(d, mustAllowShort) {
         if (sum > CAP) break;
         // a short passage is only acceptable when it cannot be helped (whole short surah, or squeezed by split ayahs)
         const boundedByLongOrEnds = (j === 1 || isLong(j - 1)) && (i === n || isLong(i + 1));
-        const c = best[j - 1] + cost(sum, surahTotal < T_MIN || boundedByLongOrEnds);
+        // prefer ending where the reciter really pauses (the next Reel then also starts after a pause)
+        const endPen = i < n && !ayahEndPauses(ch.id, i, rid) ? END_PEN : 0;
+        const c = best[j - 1] + cost(sum, surahTotal < T_MIN || boundedByLongOrEnds) + endPen;
         if (c < best[i]) { best[i] = c; prev[i] = j - 1; }
       }
     }
@@ -217,6 +231,8 @@ function cost(d, mustAllowShort) {
     surahsWithoutCompleteReciter: gaps,
     surahsWhereALongAyahCannotBeCutAtAPause: noPauseSurahs,
     splitCutsWithoutPause: splitAyahs.reduce((x, y) => x + y.cutsWithoutPause, 0),
+    ayahEndsMeasured: Object.keys(AYAH_ENDS).length + " surahs",
+    reelEndsWithoutPause: plan.filter((e) => !e.parts && e.ayahEnd < chapters.find((c) => c.id === e.surah).verses && !ayahEndPauses(e.surah, e.ayahEnd, e.reciterId)).length,
     under25Exceptions: exceptions,
   };
   const out = {
