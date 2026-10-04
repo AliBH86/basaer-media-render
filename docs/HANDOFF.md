@@ -1,8 +1,51 @@
 # Basaer Media — Handoff
 
-Last updated: 2026-10-04 afternoon (ACTIVATION RUNBOOK for 10-11 Oct; Draft Approval publish path: FINISHED gate + no-double-publish guard; live Gotenberg check of 57:9 and 18:1; 59:10 spacing; Reel 42:25-26 replaced by 7:55-56; privacy policy draft). Earlier the same day (overnight): PUBLISH_ENABLED hard switch, surah spellings, Al-Kahf Reels re-tagged, Daily Post + Reel QA, prayer-time and hadith research, Quran.Foundation application text, GO-LIVE READINESS table. Read this file first in any new session before touching the project. No secrets appear anywhere in this file; see "Secrets" at the bottom for where they actually live.
+Last updated: 2026-10-04 go-live (Daily Post LIVE with publish-on-Approve; see LIVE STATUS). Before that, 2026-10-04 afternoon (ACTIVATION RUNBOOK for 10-11 Oct; Draft Approval publish path: FINISHED gate + no-double-publish guard; live Gotenberg check of 57:9 and 18:1; 59:10 spacing; Reel 42:25-26 replaced by 7:55-56; privacy policy draft). Earlier the same day (overnight): PUBLISH_ENABLED hard switch, surah spellings, Al-Kahf Reels re-tagged, Daily Post + Reel QA, prayer-time and hadith research, Quran.Foundation application text, GO-LIVE READINESS table. Read this file first in any new session before touching the project. No secrets appear anywhere in this file; see "Secrets" at the bottom for where they actually live.
 
 ---
+
+## LIVE STATUS — Daily Post went live on 2026-10-04 (read this first)
+
+On 2026-10-04 the user wrote, in their own message, "Confirmed: PUBLISH NOW for Daily Post drafts only".
+
+**Active workflows:**
+- Basaer - Daily Post (Quran Image): schedule 19:00 Asia/Bahrain.
+- Basaer - Draft Approval (Telegram): publishing is **ON for Daily Post drafts only**.
+- Basaer - Reel Error Alerts.
+- Basaer - Instagram Token Monitor: `TOKEN_EXPIRY_DATE` = **2026-12-03** (token rotated by the user on 2026-10-04; the read-only `me` check returned 200 and user_id 17841414160930384).
+
+**Inactive:** Basaer - Reel (Quran). Its 4 Instagram nodes are disabled and its `PUBLISH_ENABLED` is false.
+
+**Daily Post rotation:**
+- `CYCLE_START_DATE` = **2026-10-04** (was 2026-10-10). Day 0 = 70:5.
+- Next days: 10-05 → 28:24, 10-06 → 25:58, 10-07 → 42:28, 10-08 → 2:152, **10-09 (Fri) → 18:1**, 10-10 → 29:60, 10-11 → 57:9.
+- A 400-day simulation found 0 problems: Fridays are always Al-Kahf, Al-Kahf never falls on another day, no surah two days running, no theme three days running.
+
+**PUBLISH_ENABLED scope:**
+- `Publish Switch` = true in Draft Approval only.
+- A post goes out only after the owner presses ✅ Approve on that specific draft.
+- Flow after the press:
+  1. Re-read the draft.
+  2. **Check Draft**: it must be one row with status `approved`, a Daily Post draft id, a single ayah, a Cloudinary *image* (png/jpg) and a caption of 2,200 characters or fewer. A Reel or video can never pass.
+  3. **Lock** `approved` → `publishing` (a conditional update, so a second run matches nothing).
+  4. Create the container.
+  5. Poll every 10 s, up to 12 times, until `FINISHED`.
+  6. Second switch check.
+  7. `media_publish`, once, with no retry.
+  8. Check that a numeric media id came back.
+  9. Mark `published`, log the posted ayah, fetch the permalink, send a silent Telegram "Published" message.
+- Any failure goes to `Build Publish Alert`: the draft becomes `publish_failed` (if it was locked), a silent Telegram alert names the step, and nothing is retried.
+- Dry run before go-live: a container was created and reached FINISHED on the first poll, through a temporary workflow with no publish node, deleted afterwards.
+
+**Rule: Reels stay disabled** (workflow inactive, Instagram nodes disabled, `PUBLISH_ENABLED=false`) until a Reel approval flow exists and has been tested. The Reel chain today publishes right after the review message with no ✅ step.
+
+**Before activating Reels**, also set the Reel Config `CYCLE_START_DATE` to 2026-10-04 and re-run the picker simulation. The picker uses that date to know each day's Daily Post (for the no-same-surah rule), and it still says 2026-10-10.
+
+**To stop publishing at any time:**
+- set `Publish Switch` to false in Draft Approval (drafts keep arriving, Approve only marks them); or
+- deactivate Daily Post (no new drafts).
+
+Nothing else publishes.
 
 ## GO-LIVE READINESS (updated 2026-10-04, overnight)
 
@@ -316,7 +359,7 @@ Purpose: never send the user a draft, and never render a Reel, whose Arabic or E
 - **Test hook (leave empty!)**: the Reel workflow input `integrityTest` / env `INTEGRITY_TEST_TAMPER` removes one diacritic from ayah 1 to prove the guard blocks. n8n's Config has `integrityTest` = "" and must stay empty.
 - **Proven 2026-10-03**: Daily Post clean run (exec 40220: ok, 0 issues, draft sent) and tampered run (exec 40221: 4 issues, void row, alert, no draft). Reel render tampered (GitHub run 37136954534: blocked at the guard, no frame drawn) and through n8n (exec 40226: callback + alert, no caption built); clean (run 37137317936 / exec 40227: 15 overlays checked, passes); caption-only tamper (exec 40228: blocked, alert, no review message).
 
-### Basaer - Draft Approval (Telegram) — id `1E3k34CoG6qn7ZTj`, **ACTIVE** (it must be on to hear button presses), 27 nodes
+### Basaer - Draft Approval (Telegram) — id `1E3k34CoG6qn7ZTj`, **ACTIVE** (it must be on to hear button presses), 43 nodes. **Since the 2026-10-04 go-live the publish chain is ENABLED for Daily Post drafts.** See LIVE STATUS at the top for the current chain; the 13-step description below is the earlier, disabled version, kept for history.
 
 `Telegram Trigger (button press)` → `Parse Button (owner only)` → `Get Draft` → `Validate Press` → `Answer Button` (Telegram toast) → `Valid Press?` → `Approved?` → `Mark Approved/Rejected (only if still pending)` → Telegram confirmation.
 
