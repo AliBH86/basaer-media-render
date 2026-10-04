@@ -14,7 +14,7 @@ const scan = require(process.env.KHATM_SCAN || './scan_translation.json');
 // Approved reciters (data/reciters.json), Alafasy first. KHATM_ROTATION overrides (e.g. only reciters who pause at ayah ends).
 const ROTATION = (process.env.KHATM_ROTATION || '7,2,6,9,3,97,5,4,10').split(',').map(Number);
 const STYLES = ['gradient', 'stars', 'rays', 'mist', 'lattice'];
-const T_MIN = 25000, T_LO = 45000, T_HI = 75000, CAP = 90000;
+const T_MIN = 25000, T_LO = 45000, T_HI = 75000, CAP = 90000, CAP_SINGLE = 95000;
 const BISMILLAH_GAP = 450;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function getJson(url, tries = 4) {
@@ -54,7 +54,8 @@ const measured = (key, rid) => !!PAUSES[key + '@' + rid];
 
 // Cost of a passage of d ms: 0 inside 45-75 s, growing outside; impossible over the cap.
 function cost(d, mustAllowShort) {
-  if (d > CAP) return Infinity;
+  if (d > CAP_SINGLE) return Infinity;
+  if (d > CAP) return 5000 + ((d - CAP) / 1000) ** 2; // only a single ayah without a pause to cut at
   if (d >= T_LO && d <= T_HI) return 0;
   if (d > T_HI) return ((d - T_HI) / 1000) ** 2;
   if (d >= T_MIN) return ((T_LO - d) / 1000) ** 2;
@@ -119,7 +120,9 @@ function cost(d, mustAllowShort) {
     const bismMs = bism ? (cov.reciters[rid].surahs[1].durations[0][1] + BISMILLAH_GAP) : 0;
     const d = (a) => dur[`${ch.id}:${a}`];
     // Long ayahs (alone over the cap) become their own split entries.
-    const isLong = (a) => d(a) + (a === 1 ? bismMs : 0) > CAP;
+    // An ayah over the cap is split - except one of at most 95 s that has no real pause to cut at: it stays whole
+    // (up to 5 s over the cap) rather than being cut mid-recitation.
+    const isLong = (a) => { const t = d(a) + (a === 1 ? bismMs : 0); return t > CAP && !(t <= CAP_SINGLE && !pauseCutFeasible(`${ch.id}:${a}`, rid)); };
     // DP over ayahs: best[i] = min cost to cover ayahs 1..i.
     const best = new Array(n + 1).fill(Infinity); const prev = new Array(n + 1).fill(-1);
     best[0] = 0;
@@ -130,7 +133,7 @@ function cost(d, mustAllowShort) {
       for (let j = i; j >= 1; j--) {
         if (isLong(j)) break;
         sum += d(j) + (j === 1 ? bismMs : 0);
-        if (sum > CAP) break;
+        if (sum > CAP && !(j === i && sum <= CAP_SINGLE)) break;
         // a short passage is only acceptable when it cannot be helped (whole short surah, or squeezed by split ayahs)
         const boundedByLongOrEnds = (j === 1 || isLong(j - 1)) && (i === n || isLong(i + 1));
         // prefer ending where the reciter really pauses (the next Reel then also starts after a pause)
