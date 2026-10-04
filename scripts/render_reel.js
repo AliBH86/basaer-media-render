@@ -70,7 +70,9 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   .reciter-en { font-family:'Montserrat Local',sans-serif; font-size:28px; }
   /* Fixed text area 520..1160 px (640 px tall): below the header, above the @handle (1190) and clear of the
      bottom 670 px that Instagram's UI covers. The script below fits Arabic + English TOGETHER into it. */
-  .content { position:absolute; top:520px; height:640px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  /* top 556 (was 520): the first Arabic line's upper marks rise above its box; 36 px keeps them clear of the
+     reciter line (seen on 40:9 and 21:88 in the 2026-10-04 QA). The bottom edge stays at 1160 px. */
+  .content { position:absolute; top:556px; height:604px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:visible; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
   .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:70px; max-width:860px; line-height:1.4; }
   .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
@@ -112,7 +114,7 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
       el.style.fontSize = best + 'px';
       void el.offsetHeight;
     }
-    // Fit Arabic and English TOGETHER into the 640 px text area. Order of preference: biggest Arabic that fits
+    // Fit Arabic and English TOGETHER into the 604 px text area. Order of preference: biggest Arabic that fits
     // its own box, English at 46 px; if the pair is too tall, shrink the English (floor 30 px); only if it is still
     // too tall shrink the Arabic further (floor 46 px). Every step is a binary search (see the note above).
     function fitBoth(ar, tr, avail, gap) {
@@ -139,7 +141,7 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
       document.body.setAttribute('data-fit', 'ar=' + ar.style.fontSize + ' en=' + tr.style.fontSize + ' total=' + total() + '/' + avail);
     }
     document.fonts.ready.then(() => {
-      fitBoth(document.getElementById('arabic'), document.getElementById('translation'), 640, 70);
+      fitBoth(document.getElementById('arabic'), document.getElementById('translation'), 604, 70);
       requestAnimationFrame(() => requestAnimationFrame(() => {
         document.body.setAttribute('data-fonts-ready', '1');
       }));
