@@ -178,14 +178,14 @@ function levelDb(file, startSec, durSec) {
 
 // Peak level (dBFS) per 20 ms step over [startSec, startSec + durSec] of an audio/video file. Used to compare the final
 // file with the source around the cut: shows whether a fade or cut touches a letter. Steps before time 0 are skipped.
-function envelopeDb(file, startSec, durSec) {
+function envelopeDb(file, startSec, durSec, stepMs = 20) {
   const from = Math.max(0, startSec);
   const PRE = Math.min(0.15, from); // decoder warm-up after a seek
   let buf;
   try {
     buf = execSync(`ffmpeg -v error -nostdin -ss ${(from - PRE).toFixed(3)} -t ${(durSec + PRE).toFixed(3)} -i "${file}" -vn -ac 1 -ar 16000 -f s16le -`, { shell: '/bin/bash', maxBuffer: 64 * 1024 * 1024 });
   } catch (e) { return null; }
-  const STEP = 320; // 20 ms
+  const STEP = 16 * stepMs; // samples per step at 16 kHz
   const out = [];
   for (let i = Math.round(PRE * 16000 / STEP) * STEP; i + STEP <= buf.length / 2; i += STEP) {
     let peak = 0;
@@ -193,6 +193,78 @@ function envelopeDb(file, startSec, durSec) {
     out.push(Math.round(20 * Math.log10(Math.max(peak, 1) / 32768)));
   }
   return out;
+}
+
+const round3 = (x) => Math.round(x * 1000) / 1000;
+
+// 3a (start). Mutates the timeline: trims leading silence to ~150 ms before the real voice onset and shifts every
+// word timing by the same amount; the first word never starts before the onset. Returns a report for the stats.
+function adjustStart(timeline, chapterPath) {
+  const STEP = 0.01;
+  const apiFirst = timeline.clipStartSec + timeline.availableLeadInMs / 1000; // absolute source time of word 1 (API)
+  const from = Math.max(0, apiFirst - 0.4);
+  const env = envelopeDb(chapterPath, from, apiFirst + 1.6 - from, 10);
+  if (!env || !env.length) return { applied: false, reason: 'could not read the source' };
+  const iApi = Math.min(env.length, Math.round((apiFirst - from) / STEP));
+  const pre = env.slice(0, iApi);
+  const sorted = (pre.length ? pre : env.slice(0, 5)).slice().sort((a, b) => a - b);
+  const floorDb = sorted[Math.floor(sorted.length / 2)];
+  const thresholdDb = Math.max(floorDb + 12, -45);
+  const report = { apiFirstWordMs: Math.round((apiFirst - timeline.clipStartSec) * 1000), noiseFloorDb: floorDb, thresholdDb };
+  const before = env.slice(Math.max(0, iApi - 10), iApi); // the 100 ms before the API's first-word time
+  if (before.length && Math.max(...before) >= thresholdDb) return { ...report, applied: false, reason: 'voice already sounding before the first word (continuous recitation): API timing kept' };
+  let k = -1;
+  for (let i = Math.max(0, iApi - 10); i < env.length - 1; i++) if (env[i] >= thresholdDb && env[i + 1] >= thresholdDb - 6) { k = i; break; }
+  if (k < 0) return { ...report, applied: false, reason: 'no voice onset found within 1.6 s of the first word' };
+  const onset = from + k * STEP;
+  const oldStart = timeline.clipStartSec;
+  const newStart = Math.max(oldStart, onset - 0.15);
+  const deltaMs = Math.round((newStart - oldStart) * 1000);
+  const onsetMs = Math.round((onset - newStart) * 1000);
+  for (const a of timeline.ayahs) {
+    a.ayahStartMs = Math.max(0, a.ayahStartMs - deltaMs);
+    a.ayahEndMs -= deltaMs;
+    for (const w of a.wordTimings) { w.startMs = Math.max(0, w.startMs - deltaMs); w.endMs -= deltaMs; }
+  }
+  const first = timeline.ayahs[0].wordTimings[0];
+  const firstWordApiMs = first.startMs;
+  if (first.startMs < onsetMs) first.startMs = Math.min(onsetMs, first.endMs - 50);
+  timeline.clipStartSec = round3(newStart);
+  timeline.durationSec = round3(timeline.clipEndSec - newStart);
+  timeline.availableLeadInMs = onsetMs;
+  return { ...report, applied: true, voiceOnsetMsInSource: Math.round((onset - oldStart) * 1000), trimmedMs: deltaMs, leadInBeforeOnsetMs: onsetMs, firstWordMsBefore: firstWordApiMs, firstWordMsAfter: first.startMs };
+}
+
+// 3a (end). If the voice is still sounding at the API's ayah end, extend by up to 250 ms to the first natural low
+// point (25 dB below the recitation level of the last 0.5 s, or below -45 dBFS); fade out 40 ms there, or 100 ms at
+// the original end when the source has no low point in reach. Mutates the timeline; returns a report.
+function adjustEnd(timeline, chapterPath) {
+  const STEP = 0.01;
+  const end = timeline.clipEndSec;
+  const from = Math.max(timeline.clipStartSec, end - 0.5);
+  const env = envelopeDb(chapterPath, from, end + 0.25 - from, 10);
+  timeline.fadeOutMs = 100;
+  if (!env || !env.length) return { extendedMs: 0, fadeOutMs: 100, reason: 'could not read the source' };
+  const iEnd = Math.round((end - from) / STEP);
+  const speechDb = Math.max(...env.slice(0, iEnd));
+  const lowDb = Math.min(speechDb - 25, -30);
+  const lowPoint = (db) => db <= lowDb || db <= -45;
+  const atEndDb = Math.max(...env.slice(Math.max(0, iEnd - 5), iEnd)); // last 50 ms before the API end
+  if (lowPoint(atEndDb)) { timeline.fadeOutMs = 40; return { extendedMs: 0, fadeOutMs: 40, levelAtApiEndDb: atEndDb, reason: 'already quiet at the ayah end' }; }
+  let k = -1;
+  for (let i = Math.max(0, iEnd - 5); i < env.length; i++) if (lowPoint(env[i])) { k = i; break; }
+  if (k < 0) return { extendedMs: 0, fadeOutMs: 100, levelAtApiEndDb: atEndDb, speechDb, reason: 'no natural low point within 250 ms (continuous recitation): 100 ms fade at the ayah end' };
+  const cut = from + (k + 1) * STEP;
+  const extMs = Math.max(0, Math.round((cut - end) * 1000));
+  if (extMs > 0) {
+    timeline.clipEndSec = round3(cut);
+    timeline.durationSec = round3(cut - timeline.clipStartSec);
+    const lastAyah = timeline.ayahs[timeline.ayahs.length - 1];
+    lastAyah.ayahEndMs += extMs;
+    lastAyah.wordTimings[lastAyah.wordTimings.length - 1].endMs += extMs;
+  }
+  timeline.fadeOutMs = 40;
+  return { extendedMs: extMs, fadeOutMs: 40, levelAtApiEndDb: atEndDb, lowPointDb: env[k], speechDb };
 }
 
 // Quietest 5 ms frame of the SOURCE audio in [fromSec, toSec]. Among frames within 1.5x of the minimum energy (or
@@ -264,6 +336,19 @@ async function main() {
   const chapterPath = path.join(workDir, 'chapter.mp3');
   sh(`curl -sS -L "${timeline.audioUrl}" -o "${chapterPath}"`);
   const audioPath = path.join(workDir, 'audio.m4a');
+
+  // 3a. Voice onset and natural end (user, 2026-10-03). Silence trimming only: the recitation itself is never altered.
+  //  - Start: the API's first-word time can be early (Minshawi 39:53: gold at 0.2 s, voice at 0.6 s). Find the real
+  //    voice onset in the source, trim leading silence to 150 ms before it, shift all word timings by the same amount,
+  //    and never start the first highlight before the onset. Skipped when the reciter runs straight in from the
+  //    previous ayah (no silence before the first word), where the API time is the only usable boundary.
+  //  - End: if the voice is still sounding at the API's ayah end, extend by up to 250 ms to the first natural low
+  //    point of the source, then fade out (40 ms at a low point, 100 ms if there is none).
+  const onsetInfo = adjustStart(timeline, chapterPath);
+  const endInfo = adjustEnd(timeline, chapterPath);
+  fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2)); // the guard and the stills read this file
+  console.log('Voice onset:', JSON.stringify(onsetInfo));
+  console.log('Natural end:', JSON.stringify(endInfo));
   // Clean cuts: in recitations that run ayah into ayah (no pause) the cut falls inside sound, which gives a click or
   // the tail of the previous ayah. So the cut is moved to the quietest 5 ms of the SOURCE near the boundary:
   //  - start: inside the lead-in (before the first word); everything before it is muted, 12 ms fade-in
@@ -278,10 +363,9 @@ async function main() {
     const q = quietestPoint(chapterPath, firstWordAbs - 0.2, firstWordAbs - 0.01, firstWordAbs - 0.01);
     if (q) { startRel = Math.max(0, q.sec - clipStartAbs); fadeInSec = 0.012; audioCut.start = { cutOffsetMs: Math.round(startRel * 1000), levelDb: q.db }; }
   }
-  let endRel = timeline.durationSec;
-  const qe = quietestPoint(chapterPath, clipEndAbs - 0.12, clipEndAbs, clipEndAbs);
-  if (qe) { endRel = Math.min(timeline.durationSec, qe.sec - clipStartAbs); audioCut.end = { cutBeforeEndMs: Math.round((timeline.durationSec - endRel) * 1000), levelDb: qe.db }; }
-  const fadeOutSec = 0.03;
+  const endRel = timeline.durationSec; // the end point was chosen by adjustEnd (3a)
+  audioCut.end = endInfo;
+  const fadeOutSec = timeline.fadeOutMs / 1000;
   // One explicit gain envelope: 0 before startRel, linear fade-in, 1, linear fade-out, 0 after endRel.
   const fi = Math.max(fadeInSec, 0.001);
   const gain = `if(lt(t,${startRel.toFixed(3)}),0,if(lt(t,${(startRel + fi).toFixed(3)}),(t-${startRel.toFixed(3)})/${fi.toFixed(3)},if(gt(t,${endRel.toFixed(3)}),0,if(gt(t,${(endRel - fadeOutSec).toFixed(3)}),(${endRel.toFixed(3)}-t)/${fadeOutSec.toFixed(3)},1))))`;
@@ -395,7 +479,7 @@ async function main() {
   const fileDur = parseFloat(probe);
   const audioLevels = {
     first50ms: levelDb(outPath, 0, 0.05), first250ms: levelDb(outPath, 0, 0.25),
-    last250ms: levelDb(outPath, fileDur - 0.25, 0.25), last50ms: levelDb(outPath, fileDur - 0.05, 0.05),
+    last300ms: levelDb(outPath, fileDur - 0.3, 0.3), last250ms: levelDb(outPath, fileDur - 0.25, 0.25), last50ms: levelDb(outPath, fileDur - 0.05, 0.05),
   };
   const before = timeline.clipStartSec >= 0.1 ? levelDb(chapterPath, timeline.clipStartSec - 0.1, 0.1) : null;
   const after = levelDb(chapterPath, timeline.clipEndSec, 0.1);
@@ -417,7 +501,7 @@ async function main() {
   const fileBytes = fs.statSync(outPath).size;
   fs.writeFileSync(path.join(outDir, 'timeline.json'), JSON.stringify(timeline, null, 2));
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify({
-    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope,
+    elapsedSec: elapsed, requestedStyle: style, actualStyle, ...timeline, reciterName, reciterNameArabic, fileBytes, fileDurationSec: fileDur, audioLevels, sourceLevels, audioCut, envelope, voiceOnset: onsetInfo, naturalEnd: endInfo,
   }, null, 2));
 }
 
