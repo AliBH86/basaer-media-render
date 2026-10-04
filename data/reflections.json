@@ -1,17 +1,138 @@
 {
-  "_comment": "Reflection lines: Mercy, Patience, Gratitude, Dua, Trust, Family & forgiveness, Parents & departed, Friday are APPROVED by the user (2026-10-03). 'Faith' and 'Unity' are DRAFTS awaiting approval (used only by Reels 96:1-5, 112:1-4 and 49:13). Mirror of the REFLECTIONS table in the n8n 'Build Caption' nodes; scripts/preview_caption.js is checked against the real n8n output.",
+  "_comment": "Reflection lines, all APPROVED by the user: Mercy, Patience, Gratitude, Dua, Trust, Family & forgiveness, Parents & departed, Friday (2026-10-03); Faith (one line) and Unity (three lines) given verbatim by the user on 2026-10-04. Mirror of the REFLECTIONS table in the n8n Build Caption nodes.",
   "approved": {
-    "Mercy": [{ "ar": "مهما ثقلت الأخطاء، يبقى باب الرحمة مفتوحًا لمن يعود.", "en": "However heavy our mistakes, the door of mercy stays open for whoever returns." }, { "ar": "رحمة الله أوسع من كل ما نخشاه.", "en": "Allah's mercy is wider than anything we fear." }, { "ar": "خطوة صادقة واحدة نحو الله تكفي لتبدأ من جديد.", "en": "One sincere step toward Allah is enough to begin again." }],
-    "Patience": [{ "ar": "الصبر ليس انتظارًا صامتًا، بل ثقةٌ تمشي معك في الطريق.", "en": "Patience is not silent waiting; it is trust that walks with you." }, { "ar": "ما تحمله اليوم بصبر، لا يضيع عند الله.", "en": "What you carry patiently today is never lost with Allah." }, { "ar": "بعد كل ضيق مُتَّسَع، وإن طال الطريق.", "en": "After every hardship comes room to breathe, even if the road is long." }],
-    "Gratitude": [{ "ar": "النِّعَم الصغيرة التي اعتدناها هي أكثر ما يستحق الشكر.", "en": "The small blessings we have grown used to are the ones most worth thanking for." }, { "ar": "قل الحمد لله على ما تراه، وعلى ما لا تراه.", "en": "Say Alhamdulillah for what you see, and for what you do not see." }, { "ar": "الشكر يجعل القليل كثيرًا في القلب.", "en": "Gratitude makes a little feel like a lot in the heart." }],
-    "Dua": [{ "ar": "لا تستصغر دعاءً صادقًا، فالله قريب.", "en": "Never underestimate a sincere dua; Allah is near." }, { "ar": "ارفع يديك بما في قلبك، حتى لو لم تجد الكلمات.", "en": "Raise your hands with what is in your heart, even when words fail you." }, { "ar": "اجعل لدعائك وقتًا ثابتًا كل يوم، ولو دقيقة.", "en": "Give your dua a fixed moment every day, even a single minute." }],
-    "Trust": [{ "ar": "افعل ما عليك، ثم اترك النتائج لله.", "en": "Do your part, then leave the outcome to Allah." }, { "ar": "حين تتوكل على الله يخفّ حمل القلب.", "en": "When you rely on Allah, the heart's load grows lighter." }, { "ar": "ثق أن تدبير الله لك خيرٌ من تدبيرك لنفسك.", "en": "Trust that Allah's plan for you is better than your own." }],
-    "Family & forgiveness": [{ "ar": "ادعُ لأهلك كما تدعو لنفسك.", "en": "Pray for your family as you pray for yourself." }, { "ar": "سامِح، واطلب المغفرة؛ فكلّنا نحتاجها.", "en": "Forgive, and ask for forgiveness; we all need it." }, { "ar": "بيتٌ يُذكَر فيه الله بيتٌ تملؤه السكينة.", "en": "A home where Allah is remembered is a home filled with calm." }],
-    "Parents & departed": [{ "ar": "برّ الوالدين لا ينتهي برحيلهما؛ دعاؤك لهما يبقى.", "en": "Kindness to parents does not end when they pass; your dua for them continues." }, { "ar": "تذكّر من سبقونا، وادعُ لهم بالرحمة والمغفرة.", "en": "Remember those who went before us, and pray for mercy and forgiveness for them." }, { "ar": "قل اليوم لوالديك كلمةً طيبة، أو ادعُ لهما إن رحلا.", "en": "Say a kind word to your parents today, or make dua for them if they have passed." }],
-    "Friday": [{ "ar": "يوم الجمعة فرصة لوقفة هادئة مع القرآن.", "en": "Friday is a chance for a quiet pause with the Quran." }, { "ar": "اجعل جمعتك بداية أسبوعٍ أقرب إلى الله.", "en": "Let this Friday begin a week closer to Allah." }, { "ar": "أكثِر من ذكر الله في هذا اليوم المبارك.", "en": "Remember Allah often on this blessed day." }]
+    "Mercy": [
+      {
+        "ar": "مهما ثقلت الأخطاء، يبقى باب الرحمة مفتوحًا لمن يعود.",
+        "en": "However heavy our mistakes, the door of mercy stays open for whoever returns."
+      },
+      {
+        "ar": "رحمة الله أوسع من كل ما نخشاه.",
+        "en": "Allah's mercy is wider than anything we fear."
+      },
+      {
+        "ar": "خطوة صادقة واحدة نحو الله تكفي لتبدأ من جديد.",
+        "en": "One sincere step toward Allah is enough to begin again."
+      }
+    ],
+    "Patience": [
+      {
+        "ar": "الصبر ليس انتظارًا صامتًا، بل ثقةٌ تمشي معك في الطريق.",
+        "en": "Patience is not silent waiting; it is trust that walks with you."
+      },
+      {
+        "ar": "ما تحمله اليوم بصبر، لا يضيع عند الله.",
+        "en": "What you carry patiently today is never lost with Allah."
+      },
+      {
+        "ar": "بعد كل ضيق مُتَّسَع، وإن طال الطريق.",
+        "en": "After every hardship comes room to breathe, even if the road is long."
+      }
+    ],
+    "Gratitude": [
+      {
+        "ar": "النِّعَم الصغيرة التي اعتدناها هي أكثر ما يستحق الشكر.",
+        "en": "The small blessings we have grown used to are the ones most worth thanking for."
+      },
+      {
+        "ar": "قل الحمد لله على ما تراه، وعلى ما لا تراه.",
+        "en": "Say Alhamdulillah for what you see, and for what you do not see."
+      },
+      {
+        "ar": "الشكر يجعل القليل كثيرًا في القلب.",
+        "en": "Gratitude makes a little feel like a lot in the heart."
+      }
+    ],
+    "Dua": [
+      {
+        "ar": "لا تستصغر دعاءً صادقًا، فالله قريب.",
+        "en": "Never underestimate a sincere dua; Allah is near."
+      },
+      {
+        "ar": "ارفع يديك بما في قلبك، حتى لو لم تجد الكلمات.",
+        "en": "Raise your hands with what is in your heart, even when words fail you."
+      },
+      {
+        "ar": "اجعل لدعائك وقتًا ثابتًا كل يوم، ولو دقيقة.",
+        "en": "Give your dua a fixed moment every day, even a single minute."
+      }
+    ],
+    "Trust": [
+      {
+        "ar": "افعل ما عليك، ثم اترك النتائج لله.",
+        "en": "Do your part, then leave the outcome to Allah."
+      },
+      {
+        "ar": "حين تتوكل على الله يخفّ حمل القلب.",
+        "en": "When you rely on Allah, the heart's load grows lighter."
+      },
+      {
+        "ar": "ثق أن تدبير الله لك خيرٌ من تدبيرك لنفسك.",
+        "en": "Trust that Allah's plan for you is better than your own."
+      }
+    ],
+    "Family & forgiveness": [
+      {
+        "ar": "ادعُ لأهلك كما تدعو لنفسك.",
+        "en": "Pray for your family as you pray for yourself."
+      },
+      {
+        "ar": "سامِح، واطلب المغفرة؛ فكلّنا نحتاجها.",
+        "en": "Forgive, and ask for forgiveness; we all need it."
+      },
+      {
+        "ar": "بيتٌ يُذكَر فيه الله بيتٌ تملؤه السكينة.",
+        "en": "A home where Allah is remembered is a home filled with calm."
+      }
+    ],
+    "Parents & departed": [
+      {
+        "ar": "برّ الوالدين لا ينتهي برحيلهما؛ دعاؤك لهما يبقى.",
+        "en": "Kindness to parents does not end when they pass; your dua for them continues."
+      },
+      {
+        "ar": "تذكّر من سبقونا، وادعُ لهم بالرحمة والمغفرة.",
+        "en": "Remember those who went before us, and pray for mercy and forgiveness for them."
+      },
+      {
+        "ar": "قل اليوم لوالديك كلمةً طيبة، أو ادعُ لهما إن رحلا.",
+        "en": "Say a kind word to your parents today, or make dua for them if they have passed."
+      }
+    ],
+    "Friday": [
+      {
+        "ar": "يوم الجمعة فرصة لوقفة هادئة مع القرآن.",
+        "en": "Friday is a chance for a quiet pause with the Quran."
+      },
+      {
+        "ar": "اجعل جمعتك بداية أسبوعٍ أقرب إلى الله.",
+        "en": "Let this Friday begin a week closer to Allah."
+      },
+      {
+        "ar": "أكثِر من ذكر الله في هذا اليوم المبارك.",
+        "en": "Remember Allah often on this blessed day."
+      }
+    ],
+    "Faith": [
+      {
+        "ar": "اجعل لقلبك نصيبًا من ذكر الله كل يوم.",
+        "en": "Give your heart its share of Allah's remembrance every day."
+      }
+    ],
+    "Unity": [
+      {
+        "ar": "خلقنا الله شعوبًا وقبائل لنتعارف.",
+        "en": "Allah made us peoples and tribes that we may know one another."
+      },
+      {
+        "ar": "أكرمكم عند الله أتقاكم.",
+        "en": "The most honoured among you with Allah is the most mindful of you."
+      },
+      {
+        "ar": "ابدأ بكلمة طيبة لمن يختلف عنك.",
+        "en": "Start with a kind word to someone different from you."
+      }
+    ]
   },
-  "draft": {
-    "Faith": [{ "ar": "الإيمان نورٌ يهدي القلب في كل طريق.", "en": "Faith is a light that guides the heart on every road." }, { "ar": "ما أجمل أن تبدأ يومك بذكر الله.", "en": "How beautiful it is to begin your day by remembering Allah." }, { "ar": "ابدأ باسم ربك، فكل بداية تُبارَك بذكره.", "en": "Begin in the name of your Lord; every start is blessed by remembering Him." }],
-    "Unity": [{ "ar": "خلقنا الله شعوبًا وقبائل لنتعارف، لا لنتنافر.", "en": "Allah made us peoples and tribes to know one another, not to be divided." }, { "ar": "أكرمنا عند الله أتقانا، لا أكثرنا مالًا ولا نسبًا.", "en": "The most honoured with Allah is the most mindful, not the richest or best-born." }, { "ar": "ابدأ بكلمة طيبة مع من يختلف عنك.", "en": "Start with a kind word to someone different from you." }]
-  }
+  "draft": {}
 }

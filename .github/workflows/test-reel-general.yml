@@ -23,6 +23,14 @@ on:
       resumeUrl:
         description: "n8n resumeUrl to POST results back to (optional - omitted on manual/standalone runs)"
         required: false
+      translationId:
+        description: "Quran.com translation resource id (one config value in n8n: Config.TRANSLATION_ID). 20 = Saheeh International."
+        default: "20"
+        required: false
+      translationName:
+        description: "Translation name for the credit line (n8n Config.TRANSLATION_NAME)."
+        default: "Saheeh International"
+        required: false
       integrityTest:
         description: "TEST ONLY: any value deliberately corrupts one diacritic, to prove the text-integrity guard blocks the render. Leave empty."
         required: false
@@ -60,6 +68,8 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
           INTEGRITY_TEST_TAMPER: ${{ github.event.inputs.integrityTest }}
+          TRANSLATION_ID: ${{ github.event.inputs.translationId || '20' }}
+          TRANSLATION_NAME: ${{ github.event.inputs.translationName || 'Saheeh International' }}
         run: |
           mkdir -p out
           node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId || '7' }}" "${{ github.event.inputs.style || 'stars' }}" out "${{ github.event.inputs.ayahEnd }}"

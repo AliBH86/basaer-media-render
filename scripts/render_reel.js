@@ -212,7 +212,7 @@ function adjustStart(timeline, chapterPath) {
   const thresholdDb = Math.max(floorDb + 12, -45);
   const report = { apiFirstWordMs: Math.round((apiFirst - timeline.clipStartSec) * 1000), noiseFloorDb: floorDb, thresholdDb };
   const before = env.slice(Math.max(0, iApi - 10), iApi); // the 100 ms before the API's first-word time
-  if (before.length && Math.max(...before) >= thresholdDb) return { ...report, applied: false, reason: 'voice already sounding before the first word (continuous recitation): API timing kept' };
+  if (floorDb >= -40 || (before.length && Math.max(...before) >= thresholdDb)) return { ...report, applied: false, reason: 'voice already sounding before the first word (continuous recitation): API timing kept' };
   let k = -1;
   for (let i = Math.max(0, iApi - 10); i < env.length - 1; i++) if (env[i] >= thresholdDb && env[i + 1] >= thresholdDb - 6) { k = i; break; }
   if (k < 0) return { ...report, applied: false, reason: 'no voice onset found within 1.6 s of the first word' };
@@ -349,7 +349,7 @@ async function main() {
   const reciterName = reciterInfo.en;
   const reciterNameArabic = reciterInfo.ar;
   const handle = '@basaer.media.bh';
-  const credit = 'Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh International.';
+  const credit = `Text and recitation: Quran.com / Quran Foundation. Translation: ${process.env.TRANSLATION_NAME || 'Saheeh International'}.`;
 
   // 3. Audio: download chapter, trim to [clipStartSec, clipEndSec], optional fade-in
   const chapterPath = path.join(workDir, 'chapter.mp3');

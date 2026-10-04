@@ -16,6 +16,10 @@ const https = require('https');
 const fs = require('fs');
 
 const REPLACEMENT_CHAR = String.fromCharCode(0xFFFD);
+// Translation resource id: ONE config value (n8n Config.TRANSLATION_ID -> workflow input -> env). 20 = Saheeh International.
+const TRANSLATION_ID = Number(process.env.TRANSLATION_ID) || 20;
+// Approved surah display-name overrides (data/surah_names.json, section 'approved' only).
+const SURAH_NAMES = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'surah_names.json'), 'utf8')).approved;
 const HIZB_MARKER = String.fromCharCode(0x06DE);
 // The per-word texts of the API carry two small tajweed marks (U+06ED, U+06E2) that the verse-level text does not
 // have. The Reel shows the verse-level form (identical to the Daily Post and the captions), so they are removed
@@ -107,7 +111,7 @@ async function main() {
   const verseMap = {};
   for (const a of includedAyahs) {
     const key = `${surah}:${a.number}`;
-    const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${key}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=20`);
+    const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${key}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`);
     verseMap[key] = r.verse;
   }
 
@@ -151,8 +155,9 @@ async function main() {
 
   const timeline = {
     surah: parseInt(surah, 10),
-    surahNameArabic: chapterInfo.chapter.name_arabic,
-    surahNameEnglish: chapterInfo.chapter.name_simple,
+    surahNameArabic: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).ar || chapterInfo.chapter.name_arabic,
+    surahNameEnglish: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).en || chapterInfo.chapter.name_simple,
+    translationId: TRANSLATION_ID,
     reciterId: parseInt(reciterId, 10),
     audioUrl,
     explicitRange: explicitEnd !== null,

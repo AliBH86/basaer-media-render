@@ -22,8 +22,12 @@ const CTA = readJson('data/cta.json');
 const REFL = readJson('data/reflections.json');
 const ROT = readJson('data/daily_rotation.json');
 const REEL = readJson('data/reel_list.json').list;
-const REFLECTIONS = { ...REFL.approved, ...REFL.draft };
+const REFLECTIONS = { ...REFL.approved, ...(REFL.draft || {}) };
+const SURAH_NAMES = readJson('data/surah_names.json').approved;
+const arName = (n, api) => (SURAH_NAMES[String(n)] || {}).ar || api;
+const enName = (n, api) => (SURAH_NAMES[String(n)] || {}).en || api;
 const THEME_ALIAS = { 'Family & parents': 'Parents & departed', 'Friday (Al-Kahf)': 'Friday' };
+const TRANSLATION_ID = 20; // = n8n Config.TRANSLATION_ID
 const CREDIT = 'Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh International.';
 const HASHTAGS = '#القرآن_الكريم #آية_اليوم #تدبر #صدقة_جارية #Quran #QuranVerses #QuranReflection';
 const EASTERN = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -53,7 +57,7 @@ async function chapter(n) {
 }
 const verseCache = {};
 async function verse(key) {
-  if (!verseCache[key]) verseCache[key] = (await getJson(`https://api.quran.com/api/v4/verses/by_key/${key}?words=true&word_fields=text_uthmani&fields=text_uthmani&translations=20`)).verse;
+  if (!verseCache[key]) verseCache[key] = (await getJson(`https://api.quran.com/api/v4/verses/by_key/${key}?words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
   return verseCache[key];
 }
 
@@ -77,7 +81,7 @@ function loadPicker() {
   const reel = REEL.map((e) => ({ ref: e.ref, surah: e.surah, ayahStart: e.ayahStart, ayahEnd: e.ayahEnd, theme: e.theme, reciterId: e.reciterId, style: e.style }));
   const src = fs.readFileSync(path.join(root, 'n8n/pick_reel.js'), 'utf8')
     .replace('__REEL_LIST__', JSON.stringify(reel)).replace('__DAILY__', JSON.stringify(ROT.daily)).replace('__FRIDAY__', JSON.stringify(ROT.friday))
-    + '\nreturn { simulate, LIST };';
+    + '\nreturn { simulate, reelDates, parseWeekdays, LIST };';
   return new Function('DateTime', src)(DateTime);
 }
 
@@ -87,12 +91,15 @@ function ctaFor(n, thisWording) {
   return { save, share: { ar: raw.ar.replace('{THIS}', thisWording.ar), en: raw.en.replace('{THIS}', thisWording.en) } };
 }
 
-function assemble({ arabic, refLineAr, english, refLineEn, reflection, save, share }) {
-  const ar = [`﴿${arabic}﴾`, refLineAr, '', reflection.ar, '', save.ar, share.ar].join('\n');
-  const en = [english, refLineEn, '', reflection.en, '', save.en, share.en].join('\n');
+// Layout approved 2026-10-04: line 1 = bilingual reference; Arabic ayah; Arabic reflection; Arabic SAVE + SHARE;
+// divider; English ayah; English reflection; English SAVE + SHARE; credit; hashtags. No reference lines inside the blocks.
+function assemble({ arabic, refAr, english, refEn, reflection, save, share }) {
+  const head = `${refAr} | ${refEn}`;
+  const ar = [head, `﴿${arabic}﴾`, '', reflection.ar, '', save.ar, share.ar].join('\n');
+  const en = [english, '', reflection.en, '', save.en, share.en].join('\n');
   const caption = `${ar}\n\n━━━━━━━━━━\n\n${en}\n\n${CREDIT}\n\n${HASHTAGS}`;
   // Instagram shows roughly the first 125 characters before '... more'.
-  const headLen = (`﴿${arabic}﴾\n${refLineAr}`).length;
+  const headLen = head.length;
   return { caption, length: caption.length, headLen, referenceVisible: headLen <= 125 };
 }
 
@@ -106,15 +113,18 @@ async function dailyCaption(key, opts = {}) {
   const { save, share } = ctaFor(slot.postNumber, CTA.wording.dailyPost);
   return { slot, ...assemble({
     arabic: strip(v.text_uthmani, HIZB).replace(/\s+/g, ' ').trim(),
-    refLineAr: `سورة ${ch.name_arabic} · ${toEastern(s)}:${toEastern(a)}`,
-    english: clean(v.translations[0].text), refLineEn: `Surah ${ch.name_simple} ${s}:${a}`, reflection, save, share,
+    refAr: `سورة ${arName(s, ch.name_arabic)} · ${toEastern(s)}:${toEastern(a)}`,
+    english: clean(v.translations[0].text), refEn: `Surah ${enName(s, ch.name_simple)} ${s}:${a}`, reflection, save, share,
   }) };
 }
 
 async function reelCaption(entry, opts = {}) {
+  const s = entry.surah;
   let slot = opts.day, theme = opts.theme || entry.theme;
   if (slot === undefined) {
-    const sim = loadPicker().simulate(START, 1, 400).find((p) => p.entry.ref === entry.ref);
+    const pk = loadPicker();
+    const reelStart = DateTime.fromISO('2026-10-11', { zone: 'Asia/Bahrain' }).startOf('day');
+    const sim = pk.simulate(START, pk.reelDates(reelStart, pk.parseWeekdays('7,2,4,6'), 400)).find((p) => p.entry.ref === entry.ref);
     slot = sim.slot;
   }
   const ch = await chapter(entry.surah);
@@ -130,8 +140,8 @@ async function reelCaption(entry, opts = {}) {
   const multi = entry.ayahEnd > entry.ayahStart;
   return { slot, theme, ...assemble({
     arabic: strip(words.join(' ۝ '), HIZB).trim(),
-    refLineAr: `سورة ${ch.name_arabic} · ${multi ? `${toEastern(entry.surah)}:${toEastern(entry.ayahStart)}-${toEastern(entry.ayahEnd)}` : `${toEastern(entry.surah)}:${toEastern(entry.ayahStart)}`}`,
-    english: tr.join(' '), refLineEn: `Surah ${ch.name_simple} ${entry.surah}:${entry.ayahStart}${multi ? '-' + entry.ayahEnd : ''}`, reflection, save, share,
+    refAr: `سورة ${arName(s, ch.name_arabic)} · ${multi ? `${toEastern(entry.surah)}:${toEastern(entry.ayahStart)}-${toEastern(entry.ayahEnd)}` : `${toEastern(entry.surah)}:${toEastern(entry.ayahStart)}`}`,
+    english: tr.join(' '), refEn: `Surah ${enName(s, ch.name_simple)} ${entry.surah}:${entry.ayahStart}${multi ? '-' + entry.ayahEnd : ''}`, reflection, save, share,
   }) };
 }
 
@@ -185,12 +195,12 @@ async function audit() {
   const [cmd, ref, ...rest] = process.argv.slice(2);
   const opt = (name) => { const i = rest.indexOf(name); return i >= 0 ? rest[i + 1] : undefined; };
   if (cmd === 'audit') return audit();
-  if (cmd === 'daily') { const c = await dailyCaption(ref); console.log(c.caption); console.log(`\n[${c.length} chars; ayah+reference line = ${c.headLen} chars, ${c.referenceVisible ? 'both' : 'only the ayah'} visible before "more"; post number ${c.slot.postNumber}, theme ${c.slot.theme}]`); return; }
+  if (cmd === 'daily') { const c = await dailyCaption(ref); console.log(c.caption); console.log(`\n[${c.length} chars; reference line = ${c.headLen} chars, ${c.referenceVisible ? 'visible' : 'NOT visible'} before "more"; post number ${c.slot.postNumber}, theme ${c.slot.theme}]`); return; }
   if (cmd === 'reel') {
     const r = parseRef(ref);
     const entry = REEL.find((e) => e.surah === r.surah && e.ayahStart === r.ayahStart && e.ayahEnd === r.ayahEnd) || { ...r, ref, theme: opt('--theme') || 'Mercy' };
     const c = await reelCaption(entry, { day: opt('--day') !== undefined ? Number(opt('--day')) : undefined, theme: opt('--theme') });
-    console.log(c.caption); console.log(`\n[${c.length} chars; ayah+reference line = ${c.headLen} chars, ${c.referenceVisible ? 'both' : 'only the ayah'} visible before "more"; slot ${c.slot}, theme ${c.theme}]`); return;
+    console.log(c.caption); console.log(`\n[${c.length} chars; reference line = ${c.headLen} chars, ${c.referenceVisible ? 'visible' : 'NOT visible'} before "more"; slot ${c.slot}, theme ${c.theme}]`); return;
   }
   console.error('usage: node scripts/preview_caption.js daily <s:a> | reel <s:a[-b]> [--day n --theme T] | audit');
   process.exit(2);

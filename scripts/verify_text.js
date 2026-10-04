@@ -94,8 +94,8 @@ function checkTimings(label, wordCount, wordTimings) {
   return issues;
 }
 
-async function freshAyah(surah, number) {
-  const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${surah}:${number}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=20`);
+async function freshAyah(surah, number, translationId = 20) {
+  const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${surah}:${number}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${translationId}`);
   const v = r.verse;
   if (v.text_uthmani.includes('\uFFFD')) throw new Error(`API response for ${surah}:${number} itself contains U+FFFD`);
   const words = v.words.filter((w) => w.char_type_name === 'word').map((w) => norm(w.text_uthmani)).filter(Boolean);
@@ -112,7 +112,7 @@ async function verifyRender(timelinePath, workDir, outDir) {
   for (const ayah of timeline.ayahs) {
     const ref = `${timeline.surah}:${ayah.number}`;
     refs.push(ref);
-    const fresh = await freshAyah(timeline.surah, ayah.number);
+    const fresh = await freshAyah(timeline.surah, ayah.number, timeline.translationId || 20);
     issues.push(...fresh.apiIssues);
     // The timeline data itself must equal the fresh copy too, and every word must have a highlight timing.
     issues.push(...checkOverlay(`${ref} timeline`, { words: ayah.arabicWords, translation: ayah.translation }, fresh));

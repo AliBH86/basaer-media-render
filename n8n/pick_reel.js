@@ -1,11 +1,16 @@
 // PICK REEL - chooses the Reel for today from the approved list (data/reel_list.json).
 //
+// SCHEDULE (user, 2026-10-04): Reels go out on Sunday, Tuesday, Thursday and Saturday at 20:00 Asia/Bahrain, never on
+// Fridays. The first Reel is Sunday 2026-10-11 (Config.REEL_START_DATE). Config.REEL_WEEKDAYS lists the days as Luxon
+// weekday numbers (Mon=1 ... Sun=7): '7,2,4,6'. Friday (5) is always removed, even if someone adds it.
+//
 // RULE (user, 2026-10-03): a Reel must NEVER use the same ayah or surah as that day's Daily Post. The Daily Post of
 // any date is computed with the same rotation as 'Basaer - Daily Post' > 'Pick Ayah' (dailyPostFor below is a copy
-// of that logic; data/daily_rotation.json holds the lists). Comparing surahs covers "same ayah" too.
+// of that logic; data/daily_rotation.json holds the lists; day 0 = Config.CYCLE_START_DATE). Comparing surahs covers
+// "same ayah" too.
 //
-// How it works: the Reel schedule is simulated slot by slot from CYCLE_START_DATE (slot 0 = start date; one slot
-// every REEL_EVERY_N_DAYS days, default 1). For every slot the first not-yet-used list entry that
+// How it works: the Reel days are enumerated from REEL_START_DATE (slot 0 = first Reel day). For every slot the first
+// not-yet-used list entry that
 //   (hard) is not from the same surah as that day's Daily Post, and
 //   (soft) is not from the same surah, the same reciter or the same background as the previous Reel
 // is taken. If no entry satisfies the soft rules the first one that satisfies the hard rule is used. Entries
@@ -34,15 +39,26 @@ function dailyPostFor(day, start) {
   return { ayahKey: e[0], theme: e[1] };
 }
 
+// ---- Reel days ----
+function parseWeekdays(s) {
+  const days = String(s || '7,2,4,6').split(',').map((x) => Number(x.trim())).filter((d) => d >= 1 && d <= 7 && d !== 5);
+  if (!days.length) throw new Error('Config.REEL_WEEKDAYS has no usable day (Friday is never allowed)');
+  return days;
+}
+function reelDates(reelStart, weekdays, count) {
+  const out = [];
+  for (let d = reelStart; out.length < count; d = d.plus({ days: 1 })) if (weekdays.includes(d.weekday)) out.push(d);
+  return out;
+}
+
 // ---- Reel schedule ----
-function simulate(start, everyN, slots, list) {
+function simulate(dailyStart, dates, list) {
   const L = list || LIST;
   const used = new Array(L.length).fill(false);
   const picks = [];
   let prev = null;
-  for (let s = 0; s < slots; s++) {
-    const day = start.plus({ days: s * everyN });
-    const post = dailyPostFor(day, start);
+  dates.forEach((day, s) => {
+    const post = dailyPostFor(day, dailyStart);
     const postSurah = Number(post.ayahKey.split(':')[0]);
     const hardOk = (e) => e.surah !== postSurah;
     const softOk = (e) => !prev || (e.surah !== prev.surah && e.reciterId !== prev.reciterId && e.style !== prev.style);
@@ -55,23 +71,25 @@ function simulate(start, everyN, slots, list) {
     for (let i = 0; i < idx; i++) if (!used[i] && !hardOk(L[i])) skippedForRule.push(L[i].ref);
     used[idx] = true;
     prev = L[idx];
-    picks.push({ slot: s, date: day.toFormat('yyyy-MM-dd'), entry: L[idx], dailyPostRef: post.ayahKey, dailyPostSurah: postSurah, skippedForRule });
+    picks.push({ slot: s, date: day.toFormat('yyyy-MM-dd'), weekday: day.toFormat('ccc'), entry: L[idx], dailyPostRef: post.ayahKey, dailyPostSurah: postSurah, skippedForRule });
     if (used.every(Boolean)) used.fill(false);
-  }
+  });
   return picks;
 }
 
 function pickReelForConfig(cfg, todayDay) {
   const usePicker = String(cfg.USE_PICKER === undefined ? 'true' : cfg.USE_PICKER).toLowerCase() !== 'false';
   if (!usePicker) return { ...cfg, reel_source: 'manual override (Config values)', dayIndex: Number(cfg.dayIndex) || 0 };
-  const start = DateTime.fromISO(String(cfg.CYCLE_START_DATE || ''), { zone: Z }).startOf('day');
-  if (!start.isValid) throw new Error('Config.CYCLE_START_DATE is missing or not a valid yyyy-MM-dd date');
-  const everyN = Math.max(1, Number(cfg.REEL_EVERY_N_DAYS) || 1);
-  const d = Math.round(todayDay.diff(start, 'days').days);
-  if (d < 0) throw new Error('Pick Reel ran before CYCLE_START_DATE (the before-start guard should have skipped this run)');
-  if (d % everyN !== 0) return null; // not a Reel day
-  const slot = d / everyN;
-  const p = simulate(start, everyN, slot + 1)[slot];
+  const dailyStart = DateTime.fromISO(String(cfg.CYCLE_START_DATE || ''), { zone: Z }).startOf('day');
+  if (!dailyStart.isValid) throw new Error('Config.CYCLE_START_DATE (Daily Post day 0) is missing or not a valid yyyy-MM-dd date');
+  const reelStart = DateTime.fromISO(String(cfg.REEL_START_DATE || ''), { zone: Z }).startOf('day');
+  if (!reelStart.isValid) throw new Error('Config.REEL_START_DATE (first Reel day) is missing or not a valid yyyy-MM-dd date');
+  const weekdays = parseWeekdays(cfg.REEL_WEEKDAYS);
+  if (todayDay < reelStart) throw new Error('Pick Reel ran before REEL_START_DATE (the before-start guard should have skipped this run)');
+  if (!weekdays.includes(todayDay.weekday)) return null; // not a Reel day (Fridays never are)
+  let slot = 0;
+  for (let d = reelStart; d < todayDay; d = d.plus({ days: 1 })) if (weekdays.includes(d.weekday)) slot++;
+  const p = simulate(dailyStart, reelDates(reelStart, weekdays, slot + 1))[slot];
   return {
     ...cfg,
     reel_source: 'picker',
