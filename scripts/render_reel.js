@@ -500,7 +500,7 @@ async function main() {
   const probe = execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${outPath}"`, { shell: '/bin/bash', encoding: 'utf8' });
   const fileDur = parseFloat(probe);
   const audioLevels = {
-    first50ms: levelDb(outPath, 0, 0.05), first250ms: levelDb(outPath, 0, 0.25),
+    first50ms: levelDb(outPath, 0, 0.05), first100ms: levelDb(outPath, 0, 0.1), first250ms: levelDb(outPath, 0, 0.25),
     last300ms: levelDb(outPath, fileDur - 0.3, 0.3), last250ms: levelDb(outPath, fileDur - 0.25, 0.25), last50ms: levelDb(outPath, fileDur - 0.05, 0.05),
   };
   const before = timeline.clipStartSec >= 0.1 ? levelDb(chapterPath, timeline.clipStartSec - 0.1, 0.1) : null;

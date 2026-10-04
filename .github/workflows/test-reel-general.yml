@@ -31,6 +31,10 @@ on:
         description: "Translation name for the credit line (n8n Config.TRANSLATION_NAME)."
         default: "Saheeh International"
         required: false
+      cloudFolder:
+        description: "Cloudinary folder for the Reel and stills (default reel-test; overnight QA uses qa-overnight)"
+        default: "reel-test"
+        required: false
       integrityTest:
         description: "TEST ONLY: any value deliberately corrupts one diacritic, to prove the text-integrity guard blocks the render. Leave empty."
         required: false
@@ -85,12 +89,15 @@ jobs:
       - name: Upload Reel + stills to Cloudinary
         run: |
           REEL_FILE=$(ls out/reel_*.mp4)
-          node scripts/upload_cloudinary.js "$REEL_FILE" "reel-test/reel-${{ github.run_id }}" video out reelUrl
+          node scripts/upload_cloudinary.js "$REEL_FILE" "${{ github.event.inputs.cloudFolder || 'reel-test' }}/reel-${{ github.run_id }}" video out reelUrl
           for f in out/frame_start.png out/frame_mid1.png out/frame_mid2.png out/frame_end.png; do
             name=$(basename "$f" .png)
             part=${name#frame_}
-            node scripts/upload_cloudinary.js "$f" "reel-test/${name}-${{ github.run_id }}" image out "frame${part^}Url"
+            node scripts/upload_cloudinary.js "$f" "${{ github.event.inputs.cloudFolder || 'reel-test' }}/${name}-${{ github.run_id }}" image out "frame${part^}Url"
           done
+          # 2x2 review tile of the four stills (start, middle 1 / middle 2, end), for a quick visual check
+          ffmpeg -y -nostdin -i out/frame_start.png -i out/frame_mid1.png -i out/frame_mid2.png -i out/frame_end.png -filter_complex "[0:v][1:v]hstack=2[t];[2:v][3:v]hstack=2[b];[t][b]vstack=2,scale=1080:-2" out/stills_tile.jpg
+          node scripts/upload_cloudinary.js out/stills_tile.jpg "${{ github.event.inputs.cloudFolder || 'reel-test' }}/stills-tile-${{ github.run_id }}" image out stillsTileUrl
 
       - name: Spec check
         run: |
