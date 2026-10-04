@@ -1,12 +1,31 @@
 {
-  "_comment": "Display-name overrides for surah names (key = surah number). Only 'approved' entries are applied (Daily Post slide + caption, Reel overlay + caption); everything else shows the Quran.com API name unchanged. 'proposed' entries wait for the user's approval and are NOT applied. The ayah text itself is never changed. Scan of all 45 surahs used in the Daily Post and Reel lists: 2026-10-04.",
+  "_comment": "Display-name overrides for surah names (key = surah number). Only 'approved' entries are applied (Daily Post slide + caption via the SURAH_NAMES map in the n8n Build HTML / Build Caption nodes, Reel overlay + caption via scripts/fetch_timeline.js). Everything else shows the Quran.com API name unchanged. The ayah text itself is never changed. All four English spellings approved by the user 2026-10-04 (3 = \"Aal 'Imran\", not \"Al 'Imran\").",
   "approved": {
-    "14": { "ar": "إبراهيم", "apiAr": "ابراهيم", "approvedOn": "2026-10-04" }
+    "3": {
+      "en": "Aal 'Imran",
+      "apiEn": "Ali 'Imran",
+      "approvedOn": "2026-10-04"
+    },
+    "14": {
+      "ar": "إبراهيم",
+      "apiAr": "ابراهيم",
+      "approvedOn": "2026-10-04"
+    },
+    "21": {
+      "en": "Al-Anbiya",
+      "apiEn": "Al-Anbya",
+      "approvedOn": "2026-10-04"
+    },
+    "42": {
+      "en": "Ash-Shura",
+      "apiEn": "Ash-Shuraa",
+      "approvedOn": "2026-10-04"
+    },
+    "93": {
+      "en": "Ad-Duha",
+      "apiEn": "Ad-Duhaa",
+      "approvedOn": "2026-10-04"
+    }
   },
-  "proposed": {
-    "3": { "en": "Al 'Imran", "apiEn": "Ali 'Imran" },
-    "21": { "en": "Al-Anbiya", "apiEn": "Al-Anbya" },
-    "42": { "en": "Ash-Shura", "apiEn": "Ash-Shuraa" },
-    "93": { "en": "Ad-Duha", "apiEn": "Ad-Duhaa" }
-  }
+  "proposed": {}
 }

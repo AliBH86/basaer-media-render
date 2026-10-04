@@ -10,8 +10,8 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 |---|---|---|---|
 | 1 | List every Instagram publish/container call; confirm no other post/Reel/story | done | Account has exactly 2 media, 0 stories: Reel Dd__1FiCdrE (2026-10-02 17:16 UTC, made by the user, confirmed 2026-10-04) and image post DeDusHzFoRe (2026-10-04 04:02:47 UTC, media 18391121536165913, the one post the user asked for; 1 container create + 1 status check + 1 media_publish through a temporary workflow, deleted). No other container/publish call in this project; disabled IG nodes only pass data through (checked on Draft Approval runs 40426/40428). |
 | 2 | PUBLISH_ENABLED=false IF gate before every IG publish step; CLAUDE.md "PUBLISH NOW" rule | done | Reel: Config.PUBLISH_ENABLED=false + gates before container and publish. Draft Approval (active): Set node Publish Switch + same two gates; false branch -> NoOp. All 9 IG nodes still disabled. Wiring verified. CLAUDE.md rule added. |
-| 3 | English surah spellings (Ad-Duha, Al-Anbiya, Ash-Shura, Aal 'Imran) | todo | |
-| 4 | Keep 20:114, 25:74, 9:129 | todo | |
+| 3 | English surah spellings (Ad-Duha, Al-Anbiya, Ash-Shura, Aal 'Imran) | done | data/surah_names.json approved; Daily Post Build HTML + Build Caption SURAH_NAMES maps updated; Reels read the data file. Checked with the caption preview. |
+| 4 | Keep 20:114, 25:74, 9:129 | done | No change needed (they stay in the rotation). |
 | 5 | Re-tag 18:10-12 / 18:46 / 18:23-24 to Dua / Reminder / Trust; re-run 160-day simulation | todo | |
 | 6 | Token work | skipped (user rotates it) | |
 | 7 | Daily Post QA: all 76 ayahs, contact sheets | todo | |
@@ -24,4 +24,4 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 
 GitHub Actions minutes used tonight: 0 (budget 200).
 
-Next step: item 3.
+Next step: item 5.
