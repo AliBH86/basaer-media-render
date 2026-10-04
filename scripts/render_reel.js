@@ -81,8 +81,9 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   .content { position:absolute; top:556px; height:604px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:visible; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
   .translation { font-family:'Montserrat Local',sans-serif; font-size:46px; color:#F2ECE1; opacity:0.9; text-align:center; margin-top:70px; max-width:860px; line-height:1.4; }
-  .sajdah { margin-top:10px; font-family:'Montserrat Local',sans-serif; font-size:24px; color:#C9A24B; letter-spacing:1px; }
-  .sajdah-ar { font-family:'Amiri Quran Local',serif; font-size:30px; }
+  /* Sajdah label (Khatm): under the handle, still above the bottom 670 px that Instagram covers (ends ~1246 px). */
+  .sajdah { position:absolute; top:1208px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:26px; color:#C9A24B; letter-spacing:1px; }
+  .sajdah-ar { font-family:'Amiri Quran Local',serif; font-size:32px; }
   .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
 </style></head>
 <body>
@@ -91,13 +92,14 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   <div class="header">
     <div class="surah-ar">سورة ${surahNameArabic}</div>
     <div class="surah-en">SURAH ${surahNameEnglish.toUpperCase()}${ref ? ' &middot; ' + ref : ''}</div>
-    <div class="reciter"><span class="reciter-ar">${reciterNameArabic}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterNameEnglish}</span></div>${sajdah ? '<div class="sajdah"><span class="sajdah-ar">۩ آية سجدة</span> &middot; Ayah of prostration</div>' : ''}
+    <div class="reciter"><span class="reciter-ar">${reciterNameArabic}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterNameEnglish}</span></div>
   </div>
   <div class="content">
     <div class="arabic" id="arabic">${spans}</div>
     <div class="translation" id="translation">${translation}</div>
   </div>
-  <div class="handle">${handle}</div>
+  <div class="handle"${sajdah ? ' style="top:1172px"' : ''}>${handle}</div>
+  ${sajdah ? '<div class="sajdah"><span class="sajdah-ar">۩ آية سجدة</span> &middot; Ayah of prostration</div>' : ''}
   <script>
     function fits(el, maxWidth, maxHeight) {
       return el.scrollWidth <= maxWidth && el.scrollHeight <= maxHeight;
