@@ -141,10 +141,10 @@
    "22:5-5 88.5s",
    "6:93-93 90s"
   ],
-  "within45to75": 1603,
+  "within45to75": 1601,
   "between25and45": 30,
-  "between75and90": 56,
-  "under25": 5,
+  "between75and90": 57,
+  "under25": 6,
   "splitAyahs": 6,
   "splitParts": 12,
   "yearsAt1PerDay": 4.6,
@@ -217,18 +217,18 @@
    "parts": [
     [
      1,
-     39,
-     56
+     18,
+     22
     ],
     [
-     40,
+     19,
      78,
-     46
+     81
     ]
    ],
-   "nonWaqfCuts": 1,
+   "nonWaqfCuts": 0,
    "englishChars": 790,
-   "maxPartArabicChars": 396
+   "maxPartArabicChars": 576
   },
   {
    "key": "33:37",
@@ -10631,11 +10631,11 @@
    "ayahStart": 31,
    "ayahEnd": 31,
    "wordStart": 1,
-   "wordEnd": 39,
+   "wordEnd": 18,
    "part": 1,
    "parts": 2,
    "reciterId": 2,
-   "estSec": 56.1,
+   "estSec": 21.5,
    "bismillah": false,
    "sajdah": false,
    "day": 939,
@@ -10645,12 +10645,12 @@
    "surah": 24,
    "ayahStart": 31,
    "ayahEnd": 31,
-   "wordStart": 40,
+   "wordStart": 19,
    "wordEnd": 78,
    "part": 2,
    "parts": 2,
    "reciterId": 2,
-   "estSec": 46.4,
+   "estSec": 81,
    "bismillah": false,
    "sajdah": false,
    "day": 940,

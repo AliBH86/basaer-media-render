@@ -35,7 +35,8 @@ function buildOverlayHtml({ surahNameArabic, surahNameEnglish, reciterNameEnglis
   const spans = arabicWords.map((w, i) => {
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
-    return `<span style="color:${color};font-weight:${weight};">${w}</span>`;
+    // A word and its own waqf sign are one API word separated by a space; a non-breaking space keeps them on one line.
+    return `<span style="color:${color};font-weight:${weight};">${String(w).replace(/ /g, ' ')}</span>`;
   }).join(' ');
   const fillPct = Math.max(0, Math.min(1, progressFraction)) * 100;
 
@@ -456,7 +457,7 @@ async function main() {
   const overlaySpecs = [];
   // Khatm: an ayah longer than PAGE_MAX_WORDS words is shown in pages (preferably ending on a word with a waqf sign),
   // Arabic only; its full English goes into the caption. Curated Reels (KHATM unset) are unchanged: one page, English shown.
-  const WAQF = /[ۖ-ۜ]/;
+  const WAQF = /[ۖۗۘۚ]/; // stop signs where a break is allowed (never U+06D9 'do not stop')
   const pageRanges = (from, to, words) => {
     const n = to - from + 1;
     if (!KHATM || n <= PAGE_MAX_WORDS) return [[from, to]];

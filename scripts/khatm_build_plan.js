@@ -108,7 +108,11 @@ function cost(d, mustAllowShort) {
         const W = words.length;
         const st = (w) => (segsT.get(w) || [w, null, null])[1];
         const en = (w) => (segsT.get(w) || [w, null, null])[2];
-        const waqf = (w) => /[ۖ-ۜ]/.test(words[w - 1].text_uthmani);
+        // Split only after a stop sign; strongest first: U+06D8 (mandatory) / U+06D7 (stop preferred) / U+06DA (permissible)
+        // / U+06D6 (continuing preferred). Never after U+06D9 (do not stop) or U+06DC (sakt).
+        const STOP_COST = { 'ۘ': 0, 'ۗ': 0, 'ۚ': 60, 'ۖ': 200 };
+        const stopCost = (w) => { const m = words[w - 1].text_uthmani.match(/[ۖۗۘۚ]/); return m ? STOP_COST[m[0]] : 2500; };
+        const waqf = (w) => stopCost(w) < 2500;
         // DP over word boundaries: parts [p..q], cost by duration, small penalty when not ending at a waqf sign.
         const partDur = (p, q) => (en(q) ?? t.timestamp_to) - (st(p) ?? t.timestamp_from) + (a === 1 && p === 1 ? bismMs : 0);
         const B = new Array(W + 1).fill(Infinity); const P = new Array(W + 1).fill(-1); B[0] = 0;
@@ -116,7 +120,7 @@ function cost(d, mustAllowShort) {
           for (let p = q; p >= 1; p--) {
             const dd = partDur(p, q);
             if (dd > CAP) break;
-            const endPenalty = q === W ? 0 : (waqf(q) ? 0 : 400); // prefer waqf; a plain word boundary only if no waqf fits
+            const endPenalty = q === W ? 0 : stopCost(q); // a plain word boundary only if no stop sign fits
             const c = B[p - 1] + cost(dd, true) + endPenalty;
             if (c < B[q]) { B[q] = c; P[q] = p - 1; }
           }
