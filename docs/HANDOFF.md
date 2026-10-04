@@ -56,6 +56,30 @@ The Reel Config `CYCLE_START_DATE` was set to 2026-10-04 on 2026-10-04, so it ma
 
 Nothing else publishes.
 
+## FACEBOOK PAGE CROSS-POST (built 2026-10-05, switched OFF)
+
+Owner request: every Daily Post published on Instagram should also go to the Facebook Page.
+
+**Why it is built in n8n:** Instagram's "share to Facebook" setting does not apply to posts published through the API, and the Instagram Login token cannot reach Facebook.
+
+**The Page:**
+- Basaer.media.bh, id `1395526123635246`.
+- Credential `Basaer - Facebook Page token` (httpQueryAuth, id `uVzgj4lLyxpKnPfW`, Name `access_token`).
+- The token is a Page token derived from a long-lived user token, so it does not expire. It was saved by the owner in n8n.
+- Read-only check `GET /me` returned the Page.
+- Basaer Publisher app, use case "Manage everything on your Page" (pages_show_list, pages_read_engagement, pages_manage_posts). No App Review is needed: the owner is an admin of the app and the Page.
+
+**Draft Approval nodes, after `Telegram - Published`:**
+1. `FB Switch` sets `FB_PUBLISH_ENABLED`.
+2. `FB_PUBLISH_ENABLED?`
+3. `FB - Post Photo to Page`: `POST graph.facebook.com/v25.0/1395526123635246/photos` with `url` (the image), `caption` and `published=true`. No retry.
+4. `FB posted?` checks for `body.post_id`.
+5. Then `Telegram - Facebook Posted` (silent, with the post link) or `Telegram - Facebook Alert` (silent, says the Instagram post is fine).
+
+When the switch is off, the flow ends at `Facebook posting OFF`.
+
+**To turn it on:** the owner must write PUBLISH NOW for Facebook. Then set `FB Switch` → `"true"`. Daily Post only; Reels never reach this point.
+
 ## KHATM SERIES IS RUNNING (review only) from Monday 2026-10-05
 
 Owner decisions on 2026-10-04 (late evening):
