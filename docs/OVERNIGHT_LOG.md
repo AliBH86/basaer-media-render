@@ -14,7 +14,7 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 | 4 | Keep 20:114, 25:74, 9:129 | done | No change needed (they stay in the rotation). |
 | 5 | Re-tag 18:10-12 / 18:46 / 18:23-24 to Dua / Reminder / Trust; re-run 160-day simulation | done | data/reel_list.json + docs/REEL_CONTENT_LIST.md + live Pick Reel list updated; no Friday theme left; no theme 3x in a row. Simulation: 160 Reels 2026-10-11..2027-07-17, 0 problems (no Friday Reel, no shared surah with the Daily Post, 4 forced skips). Reminder has no approved lines: uses the Gratitude set; 3 draft Reminder lines parked in data/reflections.json (proposed). |
 | 6 | Token work | skipped (user rotates it) | |
-| 7 | Daily Post QA: all 76 ayahs, contact sheets | doing | n8n/daily_build_html.js = byte-exact copy of the live Build HTML node (verified by exact-match probes). Runner: .github/workflows/qa-daily.yml + scripts/qa_daily.js (GitHub, headless Chrome; droplet untouched). Dry run: 76 slides, 0 integrity failures. |
+| 7 | Daily Post QA: all 76 ayahs, contact sheets | done | Runs 37178063015 + 37178258693 (~5 min). 76/76 integrity ok, 0 OVERFLOW, Arabic 62-100 px, English 27-30 px. Bug found+fixed: salawat sign ﷺ rendered as a box (57:9, 18:1) -> English font fallback to Scheherazade (live node + repo copy). 9 borderline (tight but inside the frame; 59:10 has 0 px spare and the first Arabic line sits close to the header). Table: docs/QA_DAILY_2026-10-04.md. Cloudinary qa-overnight: 4.47 MB + 4.62 MB. |
 | 8 | Reel QA: 10 Reels | todo | |
 | 9 | Prayer times research + SAMPLE cards | todo | |
 | 10 | Hadith (Thaqalayn) evaluation | todo | |
@@ -22,6 +22,6 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 | 12 | Go-live readiness checklist in HANDOFF | todo | |
 | 13 | docs/MORNING_REPORT.md + one silent Telegram message | todo | |
 
-GitHub Actions minutes used tonight: 0 (budget 200).
+GitHub Actions minutes used tonight: ~5 so far (budget 200).
 
-Next step: item 7 (item 6 skipped by the user).
+Next step: item 8 (Reel QA).
