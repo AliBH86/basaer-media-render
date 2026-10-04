@@ -8,7 +8,7 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 
 | # | Item | Status | Notes / run IDs |
 |---|---|---|---|
-| 1 | List every Instagram publish/container call; confirm no other post/Reel/story | **STOPPED** | Found an unexplained Reel (2026-10-02 17:16 UTC, media 18105703034573681). See docs/MORNING_REPORT.md. Waiting for the user. |
+| 1 | List every Instagram publish/container call; confirm no other post/Reel/story | done | Account has exactly 2 media, 0 stories: Reel Dd__1FiCdrE (2026-10-02 17:16 UTC, made by the user, confirmed 2026-10-04) and image post DeDusHzFoRe (2026-10-04 04:02:47 UTC, media 18391121536165913, the one post the user asked for; 1 container create + 1 status check + 1 media_publish through a temporary workflow, deleted). No other container/publish call in this project; disabled IG nodes only pass data through (checked on Draft Approval runs 40426/40428). |
 | 2 | PUBLISH_ENABLED=false IF gate before every IG publish step; CLAUDE.md "PUBLISH NOW" rule | todo | |
 | 3 | English surah spellings (Ad-Duha, Al-Anbiya, Ash-Shura, Aal 'Imran) | todo | |
 | 4 | Keep 20:114, 25:74, 9:129 | todo | |
@@ -24,4 +24,4 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 
 GitHub Actions minutes used tonight: 0 (budget 200).
 
-Next step: WAIT for the user to say whether the 2026-10-02 Reel was theirs (message-1 rule: unexpected publish -> stop and wait). Then mark item 1 done and continue with item 2.
+Next step: item 2.
