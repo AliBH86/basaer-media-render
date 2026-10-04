@@ -1,6 +1,6 @@
 # Basaer Media — Handoff
 
-Last updated: 2026-10-03 (late night: approved reciters + Reel list, Reel picker with the "never the Daily Post's surah" rule, `ayahEnd`, three test Reels, new SAVE/SHARE caption lines). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
+Last updated: 2026-10-04 (early morning: Reel audio onset/end fix, bilingual first caption line, surah-name overrides, translation as one config value, weekday Reel schedule, FIRST LIVE POST). Read this file first in any new session before touching the project. No secrets appear anywhere in this file — see "Secrets" at the bottom for where they actually live.
 
 ---
 
@@ -56,6 +56,17 @@ Never create an n8n API key with write access just to automate this. If the moni
 
 ## PENDING / BLOCKERS
 
+### Done 2026-10-04 (user's review of the Reels and captions)
+
+- **FIRST LIVE POST (user's explicit instruction, 2026-10-04: "share one post on instagram")**: Daily Post 94:6, draft `2026-10-04_94:6_40424` (the user pressed Approve on it in Telegram), published 2026-10-04 04:02:47 UTC: https://www.instagram.com/p/DeDusHzFoRe/ (media id 18391121536165913). Published through a TEMPORARY one-off workflow that copied the disabled production node settings, added the `status_code = FINISHED` gate, accepted only that one draft id, and was **deleted** right after. The caption on Instagram was read back through the API and matches the draft exactly. Draft row status = `published (one manual post authorised by the user 2026-10-04)`. **The production Instagram nodes are still DISABLED** and both content workflows are INACTIVE. Note: `Log Posted Ayah` was not run (its table is not used by the date-based rotation).
+- **Reel audio (1a/1b)**: every render now (a) finds the real voice onset in the source, trims leading silence to 150 ms before it and shifts all word timings, so the first gold word never appears before the voice (39:53 Minshawi: onset 640 ms, 490 ms trimmed; 14:40 Minshawi: onset 700 ms, 550 ms trimmed; 93:1 Husary: first word moved from 0 to the 70 ms onset). Recitations that run straight in from the previous ayah (sound before the first word within 20 dB of the recitation's peak, e.g. Hani Ar-Rifai 3:200) keep the API timing. (b) At the end, if the voice is still sounding, it extends up to 250 ms to the first natural low point and fades out (40 ms at a low point, 100 ms otherwise). 3:200 is the last ayah of Al 'Imran and the recording itself ends ~280 ms after the API end while the voice still sounds, so it is extended 250 ms with a 100 ms fade (last 300 ms: mean -29.5 dB, last 50 ms: mean -37.9 dB). Stats: `voiceOnset`, `naturalEnd`, `audioLevels.last300ms`, `envelope.tailSource`.
+- **Caption layout (2)**: line 1 = bilingual reference ("سورة الشرح · ٩٤:٦ | Surah Ash-Sharh 94:6"); then Arabic ayah, reflection, SAVE + SHARE; divider; English ayah, reflection, SAVE + SHARE; credit; hashtags. Reference lines inside the blocks removed. Reference now visible before "more" in 115 of 115 captions; longest possible caption 1,277 characters. Both integrity checks updated to the new layout.
+- **Surah names (3)**: `data/surah_names.json`, only the `approved` section is applied (14 → إبراهيم, in the Daily Post slide + caption and the Reel overlay + caption). Scan of all 45 surahs used: no other Arabic name needs a change. English names proposed (NOT applied, waiting for the user): 3 "Ali 'Imran" → "Al 'Imran", 21 "Al-Anbya" → "Al-Anbiya", 42 "Ash-Shuraa" → "Ash-Shura", 93 "Ad-Duhaa" → "Ad-Duha".
+- **Reflections (4)**: Faith = one line, Unity = three lines, verbatim from the user; all reflection lines are now approved (`data/reflections.json`).
+- **Translation (5)**: Saheeh International kept for launch. ONE config value: `Config.TRANSLATION_ID` (20) and `Config.TRANSLATION_NAME` (credit line + slide) in both workflows; the Reel passes them to GitHub as inputs `translationId` / `translationName` (env `TRANSLATION_ID` / `TRANSLATION_NAME`). Keyword scan of all 115 passages (Throne, Face, Hand, above, Eye, plurals): only 3 hits, all Daily Posts: 20:114 ("So high [above all] is Allāh"), 25:74 ("comfort to our eyes"), 9:129 ("Lord of the Great Throne"). No Reel passage contains any of them.
+- **Reel schedule (6)**: Sunday, Tuesday, Thursday, Saturday at 20:00 Asia/Bahrain (schedule node, cron `0 20 * * 0,2,4,6`, workflow timezone Asia/Bahrain), never on Fridays. `Config.REEL_START_DATE` = 2026-10-11 (first Reel, used by the before-start guard), `Config.REEL_WEEKDAYS` = 7,2,4,6, `CYCLE_START_DATE` = 2026-10-10 (Daily Post day 0, used by the picker for the "not the Daily Post's surah" rule). Daily Post unchanged at 19:00. Test: 160 Reels from 2026-10-11 to 2027-07-17, all on Sun/Tue/Thu/Sat, 0 collisions with that day's Daily Post (4 forced skips), Monday/Friday return no Reel, 2026-10-10 is blocked. The three Friday-themed Reels (18:10-12, 18:46, 18:23-24) now run on Reel weekdays with the Friday reflection set.
+- **Bug fixed**: the n8n Reel text check compared raw strings, so 108:1 (shadda/fatha in a different order in the API's verse text and word list) would have been falsely voided; it now uses the same NFC display rule as the GitHub guard.
+
 ### Resolved 2026-10-03
 
 - **Instagram credential FIXED and verified.** Root cause: the httpQueryAuth credential's *Name* field was empty, so n8n sent the token with no parameter name (proved by comparing with a no-token request: identical `IGApiException` 190, while any real token string returns "Failed to decrypt"). Name is now `access_token`. Read-only `GET graph.instagram.com/v25.0/me?fields=user_id,username,account_type` → 200, `basaer.media.bh`, `MEDIA_CREATOR`.
@@ -79,8 +90,9 @@ Never create an n8n API key with write access just to automate this. If the moni
 | 1 | Real ❌ **Reject** press: the fresh draft `_40245` was answered with ✅ (status `approved`), so the reject path is still proven only by simulation. Ask Claude to "send another draft" and press ❌. (The double-press guard IS proven for real: four ❌ taps on already-approved drafts at 16:55 were all answered "Already approved - ignored" and changed nothing.) | The reject path | Sign-off of the approval flow |
 | 2 | ~~Reciter table~~ **APPROVED 2026-10-03** (display names in `data/reciters.json`, Arabic + English on every Reel) | — | — |
 | 3 | ~~Reel content list~~ **APPROVED 2026-10-03** (39 Reels, `docs/REEL_CONTENT_LIST.md` / `data/reel_list.json`) | — | — |
-| 3b | Approve the new **caption layout** (SAVE + SHARE lines; three sample captions sent 2026-10-03) and the **draft reflection lines for "Faith" and "Unity"** (`data/reflections.json`, section "draft": used by Reels 96:1-5, 112:1-4 and 49:13) | Faith/Unity Reels would otherwise use unapproved text | Those three Reels |
-| 3c | Decide the **translation** (keep Saheeh International or switch; comparison sent 2026-10-03, nothing changed) and whether the caption's first line should show the **reference before the ayah** (the reference line is outside the ~125 visible characters for 80 of 115 captions) | Content choices | — |
+| 3b | Approve or change the **English surah-name spellings** proposed in `data/surah_names.json` (section `proposed`) | Not applied until approved | — |
+| 3c | Decide whether to keep or drop the Daily Posts **20:114, 25:74, 9:129** (translation keyword scan) | Content choice | — |
+| 3d | Look at the **first live post** https://www.instagram.com/p/DeDusHzFoRe/ and say what to amend (delete it in the Instagram app if anything is wrong) | First public post | — |
 | 4 | Send the **notes on the Reel** | Pending review feedback | Reel go-live |
 | 5 | **Rotate tokens before go-live** — GO-LIVE CHECKLIST step 1 | Chat-exposed tokens must be treated as leaked | Go-live |
 | 6 | Finish reading the Arabic reflection lines (treated as approved) | One-time approval | — |
@@ -197,7 +209,7 @@ Guards (all tested 2026-10-03):
 Simulated edge cases: other account → dropped; Approve on a 3-day-old pending draft → "expired", status unchanged; second press on a handled draft → "Already rejected – ignored"; unknown draft id → "not found". Real presses: Approve on drafts …_40192, …_40210 and …_40212 → status `approved`, confirmation sent, nothing published.
 Settings: Error Workflow = "Basaer - Reel Error Alerts".
 
-### Basaer - Reel (Quran) — id `DDATobrIvVhVGmr0`, INACTIVE, 19 nodes
+### Basaer - Reel (Quran) — id `DDATobrIvVhVGmr0`, INACTIVE, 20 nodes (Schedule Sun/Tue/Thu/Sat 20:00 Bahrain + Manual Trigger; see "Done 2026-10-04" for the schedule and config keys)
 
 `Manual Trigger (test)` → `Config` (surah/ayahStart/`ayahEnd`/reciterId/style/theme/dayIndex — manual-test values (112/1/blank/7/stars), used only when `USE_PICKER` = false; `USE_PICKER` = true; `REEL_EVERY_N_DAYS` = 1; reviewChatId `8704731927`; `igUserId` `17841414160930384`; `igApiBase`; `theme`/`dayIndex` for the reflection pick; `integrityTest` = ""; `CYCLE_START_DATE` = 2026-10-10; `ENFORCE_START_DATE` = true — set it to `false` to run manual test renders before the start date) → **`Before Start Guard`** → **`Before Start?`** (true: `Log Skip (before start)`) → **`Pick Reel`** (picks today's Reel from the approved 39-entry list; hard rule: never the same surah, hence never the same ayah, as that day's Daily Post; returns nothing on non-Reel days when `REEL_EVERY_N_DAYS` > 1) → `Dispatch Reel Render & Wait` (GitHub node with credential `Basaer - GitHub (render dispatch)`; workflow = `test-reel-general.yml` selected **by filename** — the "name" mode failed activation; `workflow_dispatch` + resumeUrl callback, no polling) → `Render OK?` → `Build Caption` (same approved template and reflection list as the Daily Post, no dua line, no AI; reads the pick from `Pick Reel`; theme aliases `Family & parents`→`Parents & departed`, `Friday (Al-Kahf)`→`Friday`; Faith/Unity use DRAFT lines; CTA says "this recitation") → `Verify Text Integrity` → `Text OK?` → `Send Review Notification` (Telegram, Basaer credential, HTML parse mode, escaped; caption + Reel URL + the four review stills: start, middle 1, middle 2, end) → `IG - Create Reel Container (DISABLED)` → `Wait for Processing (DISABLED)` → `IG - Check Container Status (DISABLED)` → `IG - Publish Reel (DISABLED)`. Failure branches: see "Arabic integrity guard". Error Workflow = "Basaer - Reel Error Alerts".
 
@@ -266,13 +278,13 @@ Source of truth: `data/reciters.json` (key = Quran.com audio API reciter id; the
 
 ## 7. Caption template
 
-Approved by the user 2026-10-03 (built in the Daily Post and Reel `Build Caption` nodes):
+Layout approved by the user 2026-10-04 (built in the Daily Post and Reel `Build Caption` nodes; preview with `node scripts/preview_caption.js daily 94:6`):
 
 ```
+سورة <Arabic surah name> · <Eastern-Arabic ref> | Surah <English surah name> <ref>
 ﴿ Arabic ayah text (API) ﴾
-سورة <Arabic surah name> · <Eastern-Arabic-numeral ref>
 
-<one reflection line, Arabic — PICKED from the user-approved list, no AI call>
+<reflection line, Arabic - picked from the approved list, no AI call>
 
 <SAVE line, Arabic>
 <SHARE line, Arabic>
@@ -280,16 +292,15 @@ Approved by the user 2026-10-03 (built in the Daily Post and Reel `Build Caption
 ━━━━━━━━━━
 
 <English translation exactly as the API returns it>
-Surah <English surah name> <ref>
 
 <same reflection line, English>
 
 <SAVE line, English>
 <SHARE line, English>
 
-Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh International.
+Text and recitation: Quran.com / Quran Foundation. Translation: <Config.TRANSLATION_NAME>.
 
-<5-8 hashtags, Arabic + English mixed>
+<hashtags, Arabic + English mixed>
 ```
 
 - **No dua line** in captions (removed by the user; the duas live in the ayah rotation itself).
