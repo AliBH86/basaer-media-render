@@ -207,12 +207,15 @@ function adjustStart(timeline, chapterPath) {
   if (!env || !env.length) return { applied: false, reason: 'could not read the source' };
   const iApi = Math.min(env.length, Math.round((apiFirst - from) / STEP));
   const pre = env.slice(0, iApi);
-  const sorted = (pre.length ? pre : env.slice(0, 5)).slice().sort((a, b) => a - b);
-  const floorDb = sorted[Math.floor(sorted.length / 2)];
-  const thresholdDb = Math.max(floorDb + 12, -45);
-  const report = { apiFirstWordMs: Math.round((apiFirst - timeline.clipStartSec) * 1000), noiseFloorDb: floorDb, thresholdDb };
+  const median = (xs) => { const s = xs.slice().sort((a, b) => a - b); return s[Math.floor(s.length / 2)]; };
+  const floorDb = median(pre.length ? pre : env.slice(0, 5));
+  const speechPeakDb = Math.max(...env.slice(iApi)); // loudest point of the recitation in the 1.6 s after the API time
+  // Onset = first frame clearly above the room sound AND within 25 dB of the recitation's own peak.
+  const thresholdDb = Math.max(floorDb + 12, speechPeakDb - 25, -45);
+  const report = { apiFirstWordMs: Math.round((apiFirst - timeline.clipStartSec) * 1000), noiseFloorDb: floorDb, speechPeakDb, thresholdDb };
   const before = env.slice(Math.max(0, iApi - 10), iApi); // the 100 ms before the API's first-word time
-  if (floorDb >= -40 || (before.length && Math.max(...before) >= thresholdDb)) return { ...report, applied: false, reason: 'voice already sounding before the first word (continuous recitation): API timing kept' };
+  // Continuous recitation = the sound right before the first word is already near speech level (within 20 dB).
+  if (before.length && median(before) >= speechPeakDb - 20) return { ...report, applied: false, reason: 'voice already sounding before the first word (continuous recitation): API timing kept' };
   let k = -1;
   for (let i = Math.max(0, iApi - 10); i < env.length - 1; i++) if (env[i] >= thresholdDb && env[i + 1] >= thresholdDb - 6) { k = i; break; }
   if (k < 0) return { ...report, applied: false, reason: 'no voice onset found within 1.6 s of the first word' };
