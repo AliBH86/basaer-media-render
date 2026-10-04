@@ -81,7 +81,7 @@ Owner decisions on 2026-10-04 (late evening):
 
 **Reel publishing stays OFF.** ✅ on a Reel only marks it approved. Publishing Reels needs the owner's written PUBLISH NOW for Reels plus a Reel publish chain, the same as the Daily Post.
 
-**Translation:** the owner leans to Abdel Haleem and would like no translator name on posts if the licence allows. **Open:** the licence check could not be done on 2026-10-04 because the web lookup tool was unavailable. Until it is verified, Saheeh International stays, with its credit line.
+**Translation:** the owner leans to Abdel Haleem and would like no translator name on posts if the licence allows. **Checked 2026-10-05, decision: stay with Saheeh International, with its credit line.** Abdel Haleem's translation is still under Oxford University Press copyright, with no open grant. The Quran Foundation developer guidance also requires crediting every translation by its named source. So dropping the translator name is not allowed, whichever translation is used. Switch only if OUP gives written permission.
 
 **Sajdah:** the label shows on the 14 ayahs marked by Quran.com (default).
 
