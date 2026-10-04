@@ -64,8 +64,8 @@ Owner decisions on 2026-10-04 (late evening):
 - Day 1 = Monday 2026-10-05.
 
 **What happens every day at 06:30 Bahrain:**
-1. The Reel workflow's  takes Day N of  (embedded in the node; Day 1 = Config ).
-2. It renders through .
+1. The Reel workflow's `Pick Reel` takes Day N of `data/khatm_plan.json` (embedded in the node; Day 1 = Config `KHATM_START_DATE`).
+2. It renders through `khatm-reel.yml`.
 3. It builds the Khatm caption: series line "ختمة بصائر · اليوم N | Basaer Khatm · Day N", reference with the part number, Arabic, save/share, English, credit, hashtags.
 4. It runs the text check.
 5. It sends the review message with ✅/❌.
@@ -73,10 +73,10 @@ Owner decisions on 2026-10-04 (late evening):
 **The plan:**
 - Day 1 = Al-Fatiha 1:1-7 (Alafasy); Day 2 = 2:1-5 (Al-Shatri, with his Bismillah).
 - 1,542 Reels, about 4.2 years at 1/day.
-- The 5-reciter alternative is kept in .
+- The 5-reciter alternative is kept in `data/khatm_plan_5reciters.json`.
 
 **Built-in protection:**
--  re-checks the whole plan on every run: all 6,236 ayahs in order, split parts in order, one approved reciter per surah. It stops with an alert if anything is wrong.
+- `Pick Reel` re-checks the whole plan on every run: all 6,236 ayahs in order, split parts in order, one approved reciter per surah. It stops with an alert if anything is wrong.
 - Tested end to end through n8n on 2026-10-04 with Day 2 (exec 40766) and Day 108 (2:282 part 1, exec 40765, long-caption fallback).
 
 **Reel publishing stays OFF.** ✅ on a Reel only marks it approved. Publishing Reels needs the owner's written PUBLISH NOW for Reels plus a Reel publish chain, the same as the Daily Post.
