@@ -26,7 +26,8 @@ const REFLECTIONS = { ...REFL.approved, ...(REFL.draft || {}) };
 const SURAH_NAMES = readJson('data/surah_names.json').approved;
 const arName = (n, api) => (SURAH_NAMES[String(n)] || {}).ar || api;
 const enName = (n, api) => (SURAH_NAMES[String(n)] || {}).en || api;
-const THEME_ALIAS = { 'Family & parents': 'Parents & departed', 'Friday (Al-Kahf)': 'Friday' };
+// Same as the Reel Build Caption node. 'Reminder' uses the approved Gratitude set until Reminder lines are approved.
+const THEME_ALIAS = { 'Family & parents': 'Parents & departed', 'Friday (Al-Kahf)': 'Friday', 'Reminder': 'Gratitude' };
 const TRANSLATION_ID = 20; // = n8n Config.TRANSLATION_ID
 const CREDIT = 'Text and recitation: Quran.com / Quran Foundation. Translation: Saheeh International.';
 const HASHTAGS = '#القرآن_الكريم #آية_اليوم #تدبر #صدقة_جارية #Quran #QuranVerses #QuranReflection';

@@ -12,7 +12,7 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 | 2 | PUBLISH_ENABLED=false IF gate before every IG publish step; CLAUDE.md "PUBLISH NOW" rule | done | Reel: Config.PUBLISH_ENABLED=false + gates before container and publish. Draft Approval (active): Set node Publish Switch + same two gates; false branch -> NoOp. All 9 IG nodes still disabled. Wiring verified. CLAUDE.md rule added. |
 | 3 | English surah spellings (Ad-Duha, Al-Anbiya, Ash-Shura, Aal 'Imran) | done | data/surah_names.json approved; Daily Post Build HTML + Build Caption SURAH_NAMES maps updated; Reels read the data file. Checked with the caption preview. |
 | 4 | Keep 20:114, 25:74, 9:129 | done | No change needed (they stay in the rotation). |
-| 5 | Re-tag 18:10-12 / 18:46 / 18:23-24 to Dua / Reminder / Trust; re-run 160-day simulation | todo | |
+| 5 | Re-tag 18:10-12 / 18:46 / 18:23-24 to Dua / Reminder / Trust; re-run 160-day simulation | done | data/reel_list.json + docs/REEL_CONTENT_LIST.md + live Pick Reel list updated; no Friday theme left; no theme 3x in a row. Simulation: 160 Reels 2026-10-11..2027-07-17, 0 problems (no Friday Reel, no shared surah with the Daily Post, 4 forced skips). Reminder has no approved lines: uses the Gratitude set; 3 draft Reminder lines parked in data/reflections.json (proposed). |
 | 6 | Token work | skipped (user rotates it) | |
 | 7 | Daily Post QA: all 76 ayahs, contact sheets | todo | |
 | 8 | Reel QA: 10 Reels | todo | |
@@ -24,4 +24,4 @@ Resume line: "Resume overnight tasks: read CLAUDE.md, docs/HANDOFF.md and docs/O
 
 GitHub Actions minutes used tonight: 0 (budget 200).
 
-Next step: item 5.
+Next step: item 7 (item 6 skipped by the user).

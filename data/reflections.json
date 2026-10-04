@@ -134,5 +134,22 @@
       }
     ]
   },
-  "draft": {}
+  "draft": {},
+  "proposed": {
+    "_comment": "DRAFTS for the 'Reminder' theme (Reel 18:46, re-tagged 2026-10-04). NOT used anywhere until the user approves them; until then 'Reminder' uses the approved Gratitude set (THEME_ALIAS in the Reel Build Caption node and in scripts/preview_caption.js).",
+    "Reminder": [
+      {
+        "ar": "ما يبقى عند الله خيرٌ مما يزول.",
+        "en": "What remains with Allah is better than what fades."
+      },
+      {
+        "ar": "النِّعَم زينة، والعمل الصالح هو الباقي.",
+        "en": "Blessings are an adornment; good deeds are what last."
+      },
+      {
+        "ar": "استمتع بما أُعطيت، واذكر ما يبقى.",
+        "en": "Enjoy what you have been given, and remember what lasts."
+      }
+    ]
+  }
 }
