@@ -492,6 +492,8 @@ async function main() {
   const envelope = {
     startFinal: envelopeDb(outPath, 0, 1.2), startSource: envelopeDb(chapterPath, timeline.clipStartSec, 1.2),
     endFinal: envelopeDb(outPath, fileDur - 0.3, 0.3), endSource: envelopeDb(chapterPath, timeline.clipEndSec - 0.3, 0.3),
+    // The source for 1.5 s after the (possibly extended) end: shows how long the voice keeps sounding.
+    tailSource: envelopeDb(chapterPath, timeline.clipEndSec, 1.5),
     stepMs: 20,
   };
   console.log('Audio envelope (peak dBFS per 20 ms):', JSON.stringify(envelope));
