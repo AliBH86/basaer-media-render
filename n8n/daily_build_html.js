@@ -167,7 +167,7 @@ const FIT_SCRIPT = `<script>
   if (m && c) {
     const els=[a&&{el:a,base:parseFloat(getComputedStyle(a).fontSize),min:56}, t&&{el:t,base:parseFloat(getComputedStyle(t).fontSize),min:26}].filter(Boolean);
     const apply=(s)=>{ els.forEach(e=>{ e.el.style.fontSize=Math.max(e.min,Math.round(e.base*s))+'px'; }); void c.offsetHeight; };
-    const fits=()=>c.offsetHeight<=m.clientHeight-16;
+    const fits=()=>c.offsetHeight<=m.clientHeight-56; // 56 px reserve = at least ~28 px between the header and the first Arabic line (2026-10-04)
     let ok=fits();
     if (!ok) { let lo=0.5, hi=1; for (let i=0;i<8;i++){ const mid=(lo+hi)/2; apply(mid); if (fits()) lo=mid; else hi=mid; } apply(lo); ok=fits(); }
     if (!ok) { const f=document.createElement('div'); f.className='overflow-flag'; f.textContent='OVERFLOW'; document.body.appendChild(f); }

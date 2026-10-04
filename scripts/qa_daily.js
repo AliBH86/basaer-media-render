@@ -150,7 +150,7 @@ function upload(file, publicId) {
         return {
           arabicPx: fs(a), englishPx: fs(t),
           arabicBasePx: a ? parseFloat((a.getAttribute('style') || '').replace(/[^0-9.]/g, '')) : null,
-          spareFitPx: mm && c ? mm.clientHeight - 16 - c.offsetHeight : null,
+          spareFitPx: mm && c ? mm.clientHeight - 56 - c.offsetHeight : null,
           overflow: !!document.querySelector('.overflow-flag'),
           arabicInsideFrame: ar ? (ar.top >= frame.top && ar.bottom <= frame.bottom && ar.left >= frame.left && ar.right <= frame.right) : null,
           arabicLines: a ? Math.round(a.getBoundingClientRect().height / (parseFloat(getComputedStyle(a).fontSize) * 1.9)) : null,
