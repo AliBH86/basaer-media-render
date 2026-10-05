@@ -1,0 +1,14 @@
+{
+  "_source": "تقويم الهادي (Taqweem Al-Hadee), Manama, Kingdom of Bahrain. Supplied by the owner 2026-10-05 as the reliable Shia calendar for Bahrain. Printed in 12-hour form without AM/PM; converted to 24-hour here. Imsak and Sunset are not printed on that calendar - Imsak below is AlAdhan's Fajr-10 convention and Sunset is AlAdhan's, both marked so they are never mistaken for Al-Hadee's own values.",
+  "_authoritative": ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"],
+  "05-10-2026": {
+    "Fajr": "04:14",
+    "Sunrise": "05:31",
+    "Dhuhr": "11:27",
+    "Asr": "14:49",
+    "Maghrib": "17:35",
+    "Isha": "18:36",
+    "Sunset": "17:20",
+    "Imsak": "04:04"
+  }
+}

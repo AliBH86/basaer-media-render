@@ -223,3 +223,43 @@ in CLAUDE.md. **Only an owner-approved allowlist of holidays may ever reach a po
 
 `scripts/prayer_guard.js` passes all 31 days of the real export with no false positives. The month is
 committed as `tests/fixtures/aladhan-manama-2026-10-method10.json` so this stays a regression test.
+
+## Shia ground truth: تقويم الهادي (Taqweem Al-Hadee)
+
+The owner supplied Al-Hadee, Manama, as the reliable Shia calendar for Bahrain. One day
+(Mon 05-10-2026 / 23 Rabīʿ al-Ākhir 1448) is committed as
+`tests/fixtures/alhadee-manama-2026-10-05.json`. Compared with AlAdhan method 10 (Qatar) for the
+same day:
+
+| prayer | AlAdhan (Qatar) | Al-Hadee (Shia) | diff |
+| --- | --- | --- | --- |
+| Fajr | 04:15 | 04:14 | -1m |
+| Sunrise | 05:32 | 05:31 | -1m |
+| Dhuhr | 11:26 | 11:27 | +1m |
+| Asr | 14:49 | 14:49 | 0m |
+| **Maghrib** | 17:20 | **17:35** | **+15m** |
+| **Isha** | 18:50 | **18:36** | **-14m** |
+
+This is the textbook Ja'fari signature and it validates the whole design:
+
+- The sun-position prayers (Fajr, Sunrise, Dhuhr, Asr) agree within a minute. **The two calendars
+  differ only where the schools differ.** So one source can legitimately serve both columns.
+- **Maghrib is 15 minutes after sunset**, not at sunset - Ja'fari waits for the redness to pass.
+  AlAdhan method 0 computes Maghrib at 4 degrees, which at Bahrain's latitude in October is about
+  15-16 minutes after sunset. Method 0 therefore looks like the right source for the Shia column,
+  pending a month of data to confirm.
+- **Isha cannot be reconciled by `tune`, and this is now demonstrated rather than predicted.**
+  Al-Hadee's Isha is 61 minutes after its Maghrib (angle-based, so it moves with the season).
+  AlAdhan's Qatar method uses a FIXED 90 minutes. A fixed offset can match on one day and must
+  drift on every other. For the Shia column this means method 0 (angle-based) and never method 10
+  plus a tune.
+
+**Open question worth checking:** Ja'fari Fajr is normally 16 degrees against Qatar's 18, which at
+this latitude should differ by roughly 8 minutes - yet the two calendars differ by 1. Either
+Al-Hadee uses a different Fajr angle, or the coincidence is seasonal. A month of AlAdhan method 0
+against a month of Al-Hadee will settle it; `scripts/prayer_calibrate.js` reports exactly this.
+
+### Guard validated on both calendars
+
+`prayer_guard.js` passes Al-Hadee's day standalone, and the cross-method check correctly confirms the
+Ja'fari Maghrib is later than the Sunni one - the check that catches a silent method-0 failure.
