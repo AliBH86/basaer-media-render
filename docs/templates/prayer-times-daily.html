@@ -1,0 +1,58 @@
+<!-- Daily prayer times: DESIGN REFERENCE, not wired to any workflow.
+     Plate, frame, padding, footer, fonts and colours copied from n8n/daily_build_html.js.
+     THE TIMES IN THIS FILE ARE PLACEHOLDERS. AlAdhan has no Bahrain method, so real times
+     must be calibrated first - see docs/CONTENT_PLAN.md and scripts/prayer_calibrate.js.
+     TYPOGRAPHY TRAP: never put a middot separator next to Arabic-Indic digits. Arabic-Indic
+     zero is itself a dot, so RTL reordering makes '5 ·' render as '50'. The Hijri and
+     Gregorian dates are on separate lines for exactly this reason. -->
+<!doctype html><html lang="ar"><meta charset="utf-8">
+<style>
+@font-face{font-family:'Scheherazade';font-weight:400;src:url('https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960346/fonts/scheherazade-regular.woff2') format('woff2')}
+@font-face{font-family:'Scheherazade';font-weight:700;src:url('https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960348/fonts/scheherazade-bold.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;src:url('https://res.cloudinary.com/b72gfdzx/raw/upload/v1790955379/fonts/inter-regular.woff2') format('woff2')}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1350px;background:#0F2A3D;overflow:hidden}
+.frame{width:984px;height:1254px;margin:48px;border:2px solid #C9A24B;display:flex;flex-direction:column;
+  align-items:center;padding:60px 90px;overflow:hidden}
+.header{flex:0 0 auto;text-align:center}
+.title-ar{font-family:'Scheherazade',serif;font-weight:700;font-size:44px;color:#C9A24B;direction:rtl}
+.title-en{font-family:'Inter',sans-serif;font-size:20px;letter-spacing:2px;color:#C9A24B;text-transform:uppercase;margin-top:10px}
+.dateline{font-family:'Scheherazade',serif;font-size:28px;color:#8a9bab;direction:rtl;margin-top:16px}
+.dateline.g{margin-top:4px;font-size:25px}
+.middle{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;width:100%;min-height:0}
+table{width:100%;border-collapse:collapse;direction:rtl}
+th.lbl{font-family:'Scheherazade',serif;font-size:30px;direction:rtl;color:#8a9bab;
+  text-transform:uppercase;padding-bottom:20px;font-weight:400}
+th.sp{width:38%}
+td.name{font-family:'Scheherazade',serif;font-size:42px;color:#F5EDDC;text-align:right;padding:17px 0;direction:rtl}
+td.t{font-family:'Inter',sans-serif;font-size:38px;color:#D9CFB8;text-align:center;
+  font-variant-numeric:tabular-nums;letter-spacing:1px}
+td.t.j{color:#C9A24B}
+tr+tr td{border-top:1px solid rgba(201,162,75,.18)}
+.footer{flex:0 0 auto;text-align:center;padding-top:26px}
+.src{font-family:'Inter',sans-serif;font-size:17px;color:#8a9bab;margin-bottom:10px;letter-spacing:.5px}
+.handle{font-family:'Inter',sans-serif;font-size:24px;color:#C9A24B}
+</style>
+<div class="frame">
+  <div class="header">
+    <div class="title-ar">مَوَاقِيتُ الصَّلَاة</div>
+    <div class="title-en">Manama &middot; Bahrain</div>
+    <div class="dateline">الأحد ١٣ ربيع الآخر ١٤٤٨ هـ</div>
+    <div class="dateline g">٥ أكتوبر ٢٠٢٦</div>
+  </div>
+  <div class="middle">
+    <table>
+      <tr><th class="sp"></th><th class="lbl">التقويم الرسمي</th><th class="lbl">التقويم الجعفري</th></tr>
+      <tr><td class="name">الفَجْر</td>   <td class="t">04:08</td><td class="t j">03:58</td></tr>
+      <tr><td class="name">الشُّرُوق</td> <td class="t">05:24</td><td class="t j">05:24</td></tr>
+      <tr><td class="name">الظُّهْر</td>  <td class="t">11:22</td><td class="t j">11:22</td></tr>
+      <tr><td class="name">العَصْر</td>   <td class="t">14:40</td><td class="t j">14:52</td></tr>
+      <tr><td class="name">المَغْرِب</td> <td class="t">17:14</td><td class="t j">17:29</td></tr>
+      <tr><td class="name">العِشَاء</td>  <td class="t">18:28</td><td class="t j">18:34</td></tr>
+    </table>
+  </div>
+  <div class="footer">
+    <div class="src">Prayer times: AlAdhan.com</div>
+    <div class="handle">@basaer.media.bh</div>
+  </div>
+</div>

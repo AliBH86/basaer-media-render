@@ -167,3 +167,15 @@ every line sourced. The ayah does the work the invented gloss was doing.
 2. Open https://aladhan.com/calendar/Manama/Bahrain and report the calculation method shown, or
    allow `api.aladhan.com` through the environment's network policy so Claude can read
    `meta.method` directly.
+
+## Typography trap: never put a separator dot next to Arabic-Indic digits
+
+Found while rendering the daily prayer slide. The date line was written as
+`١٤٤٨ هـ &middot; ٥ أكتوبر ٢٠٢٦`. Under RTL reordering the middot lands immediately to the left
+of the `٥`, and **Arabic-Indic zero `٠` is itself a dot**, so the rendered line reads
+«٥٠ أكتوبر» - *fiftieth* of October. Caught only by looking at the frame; no code check sees it.
+
+Fix used: Hijri and Gregorian on separate lines, no separator at all.
+
+**Worth auditing the existing caption format for the same hazard** - caption line 1 is
+«سورة الشرح · ٩٤:٦ | Surah Ash-Sharh 94:6», which places a middot next to Arabic-Indic digits.
