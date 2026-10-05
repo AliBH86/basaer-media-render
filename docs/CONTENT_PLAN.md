@@ -179,3 +179,47 @@ Fix used: Hijri and Gregorian on separate lines, no separator at all.
 
 **Worth auditing the existing caption format for the same hazard** - caption line 1 is
 «سورة الشرح · ٩٤:٦ | Surah Ash-Sharh 94:6», which places a middot next to Arabic-Indic digits.
+
+## What the real AlAdhan export told us (owner's calendar.csv, Oct 2026)
+
+**The method AlAdhan uses for Bahrain is Qatar (id 10), not a Bahrain method.**
+`meta.method.params` = Fajr 18 degrees, **Isha = "90 min"**, anchored at Doha (25.2854, 51.5310).
+`school` STANDARD (Shafi'i), `midnightMode` STANDARD, hijri method HJCoSA, all tune offsets 0.
+
+Structural facts confirmed over all 31 days:
+- **Maghrib == Sunset on 31/31 days** - a sunset-Maghrib (Sunni-type) method, as expected. The Ja'fari
+  column still needs a separate export with `method=0`, where Maghrib must come out later.
+- **Isha - Maghrib is exactly 90 minutes on every day.** This is a FIXED INTERVAL, not a solar angle.
+  It therefore cannot track an angle-based official calendar through the seasons, and **no single `tune`
+  offset will ever reconcile the two**. If Bahrain's official Isha is angle-based, method 99 with
+  explicit angles is the only correct route. `prayer_calibrate.js` is built to expose exactly this.
+- **Imsak = Fajr - 10 minutes**, constant.
+
+### The metadata coordinates in the export are wrong
+
+`meta.latitude` / `meta.longitude` read **8.8888888, 7.7777777** - that is in Nigeria, not Manama
+(26.2285, 50.5860). The repeating digits look like placeholder values.
+
+**The timings themselves are genuinely Bahrain's.** Verified independently by solar noon: for Manama's
+longitude the predicted Dhuhr is 11:27, which matches the CSV to the minute; for the metadata
+coordinates it would be 14:18. So the times are right and the coordinate fields are junk.
+
+Consequence: **never echo coordinates back from a response, and never trust this export's meta block.**
+Send explicit coordinates (26.2285, 50.5860) with `timezonestring=Asia/Bahrain`, and have the guard
+assert the returned latitude is within a degree of Manama before anything is drawn.
+
+### Holidays must be allowlisted, not published
+
+An earlier note in this document called `date.hijri.holidays[]` "free value". That was too optimistic.
+The October export returns, on 03-10-2026:
+
+> `Urs of Shaykh Muhiyuddīn Ibn al-'Arabi`
+
+a Sufi commemoration. AlAdhan's holiday list is broad and includes sect-specific observances. Publishing
+it unfiltered would put commemorations on the account that conflict with the neutral, inclusive framing
+in CLAUDE.md. **Only an owner-approved allowlist of holidays may ever reach a post.**
+
+### Guard validated on real data
+
+`scripts/prayer_guard.js` passes all 31 days of the real export with no false positives. The month is
+committed as `tests/fixtures/aladhan-manama-2026-10-method10.json` so this stays a regression test.
