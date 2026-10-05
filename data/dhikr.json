@@ -1,0 +1,73 @@
+{
+  "_comment": "Dhikr / tasbih / salawat lines for the non-ayah post types. STATUS: PROPOSED — nothing here is approved or wired into any workflow yet. Drafted 2026-10-05 after the owner asked for content beyond ayahs (صلوات، تسبيح، ذكر الله، حكم، روحانيات). Per the owner's decision the same day, NO HADITH is included: these are the fixed devotional formulas themselves, not narration texts, and no virtue-hadith ('whoever says X gets Y') appears anywhere. Each category carries a _note naming where its wording comes from, because some formulas reach us through hadith even though the phrase itself is invariant — see _provenance_warning. Arabic is fully voweled for rendering; English is a plain meaning, not a translation of scripture. Mirrors the structure of reflections.json.",
+  "_provenance_warning": "Read before approving. A dhikr FORMULA and a HADITH are not the same thing, but the line between them is real and the owner should draw it, not Claude. Phrases marked provenance 'quran' appear verbatim in the Qur'an and are verifiable against the API. Phrases marked 'formula-via-hadith' are invariant devotional phrases that reach us through narration — they are not presented as narrations here (no 'قال رسول الله ﷺ', no chain, no virtue claim), but if the owner wants to defer anything that touches hadith at all, those entries should be dropped until hadith sourcing is settled.",
+  "approved": {},
+  "proposed": {
+    "Salawat": {
+      "_note": "Salawat upon the Prophet ﷺ. The 'آl Muhammad' form is recited by both Sunni and Shia (it is the wording of the salawat in the tashahhud), so it suits the page's inclusive positioning. provenance: formula-via-hadith.",
+      "provenance": "formula-via-hadith",
+      "lines": [
+        {
+          "ar": "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّد",
+          "en": "O Allah, send prayers and peace upon our Prophet Muhammad ﷺ."
+        },
+        {
+          "ar": "اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ وَعَلَى آلِ مُحَمَّد",
+          "en": "O Allah, send prayers upon Muhammad and upon the family of Muhammad."
+        }
+      ]
+    },
+    "Tasbih": {
+      "_note": "The core glorification phrases. provenance: formula-via-hadith.",
+      "provenance": "formula-via-hadith",
+      "lines": [
+        {
+          "ar": "سُبْحَانَ اللَّهِ وَبِحَمْدِه",
+          "en": "Glory be to Allah, and praise be to Him."
+        },
+        {
+          "ar": "سُبْحَانَ اللَّهِ الْعَظِيم",
+          "en": "Glory be to Allah, the Most Great."
+        },
+        {
+          "ar": "سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَر",
+          "en": "Glory be to Allah; praise be to Allah; there is no god but Allah; Allah is the Greatest."
+        }
+      ]
+    },
+    "Istighfar": {
+      "_note": "Seeking forgiveness. The short form only; sayyid al-istighfar is a hadith text and is deliberately excluded. provenance: formula-via-hadith.",
+      "provenance": "formula-via-hadith",
+      "lines": [
+        {
+          "ar": "أَسْتَغْفِرُ اللَّهَ الْعَظِيمَ وَأَتُوبُ إِلَيْه",
+          "en": "I seek the forgiveness of Allah, the Most Great, and I turn to Him."
+        }
+      ]
+    },
+    "Hawqala": {
+      "_note": "provenance: formula-via-hadith.",
+      "provenance": "formula-via-hadith",
+      "lines": [
+        {
+          "ar": "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّه",
+          "en": "There is no power and no strength except by Allah."
+        }
+      ]
+    },
+    "AsmaAlHusna": {
+      "_note": "Names of Allah that appear verbatim in the Qur'an, so each one is verifiable against the Quran.com API exactly like an ayah. This is the SAFEST category of all and the best candidate to launch the new visual template with. provenance: quran.",
+      "provenance": "quran",
+      "lines": [
+        { "ar": "الرَّحْمَٰن",  "en": "The Most Compassionate" },
+        { "ar": "الرَّحِيم",   "en": "The Most Merciful" },
+        { "ar": "الْغَفُور",   "en": "The Ever-Forgiving" },
+        { "ar": "الْوَدُود",   "en": "The Most Loving" },
+        { "ar": "اللَّطِيف",   "en": "The Most Subtle, the Most Kind" },
+        { "ar": "الْكَرِيم",   "en": "The Most Generous" },
+        { "ar": "الصَّبُور",   "en": "The Most Patient" },
+        { "ar": "الشَّكُور",   "en": "The Most Appreciative" }
+      ]
+    }
+  }
+}

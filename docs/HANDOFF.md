@@ -267,6 +267,33 @@ Never create an n8n API key with write access just to automate this. If the moni
 
 ## PENDING / BLOCKERS
 
+### Done 2026-10-05 (Claude Code session)
+
+**Telegram "Facebook posted" node was failing on every successful post.** On 2026-10-05
+the Daily Post 28:24 published correctly to Instagram
+(media 18116368046063981, https://www.instagram.com/p/DeHYAxKFs5x/) and to the Facebook
+Page (post 1395526123635246_122096570703505826), but execution 41063 still ended in
+`error` and fired Reel Error Alerts (41064). Cause: `Telegram - Facebook Posted` had no
+`parse_mode`, so Telegram parsed the text as Markdown; the Facebook post id always
+contains an underscore, which opens an italic entity that never closes
+("Can't find end of the entity starting at byte offset 99" - byte 99 is exactly that
+underscore). It would have failed on every post from the Facebook go-live onward.
+
+`Telegram - Facebook Alert` had the same unset `parse_mode` **and** interpolates Meta's
+raw error message, so the Facebook *failure* alarm would itself have thrown the same 400
+the first time it was ever needed.
+
+Fix (Draft Approval, one atomic update, nothing else touched - connections, credentials
+and disabled-states verified byte-identical before/after):
+- `Telegram - Facebook Posted`: `parse_mode = HTML`.
+- `Telegram - Facebook Alert`: `parse_mode = HTML`, and the interpolated error message is
+  now HTML-escaped (`&` `<` `>`) so a Meta message containing markup cannot break it.
+
+All seven Telegram nodes in that workflow now use HTML parse mode. Verified structurally
+and the escaping was tested offline against a hostile string; end-to-end proof comes at
+the next 17:00 Bahrain post, since every path to that node runs through the live publish
+chain.
+
 ### Done 2026-10-04 afternoon (user's 8-item message)
 
 **1. 59:10 spacing**
