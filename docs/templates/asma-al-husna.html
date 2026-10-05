@@ -1,0 +1,53 @@
+<!-- Asma al-Husna slide: DESIGN REFERENCE, not yet wired to any workflow.
+     Every token (plate, 984x1254 frame, 2px #C9A24B border, padding, divider,
+     footer, Scheherazade+Inter, colours) is copied from n8n/daily_build_html.js
+     so this reads as the same hand as the Daily Post. The ONLY new rules are
+     .name and .occurs, which occupy the ayah slot.
+     Fonts load from the same Cloudinary URLs production uses.
+     NOTE: the document root is intentionally LTR with direction:rtl set only on
+     Arabic elements - exactly as daily_build_html.js does. Putting dir=rtl on
+     <html> moves the English full stop and the @ in the handle to the wrong end. -->
+<!doctype html><html lang="ar"><meta charset="utf-8">
+<style>
+@font-face{font-family:'Scheherazade';font-weight:400;src:url('https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960346/fonts/scheherazade-regular.woff2') format('woff2')}
+@font-face{font-family:'Scheherazade';font-weight:700;src:url('https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960348/fonts/scheherazade-bold.woff2') format('woff2')}
+@font-face{font-family:'Inter';font-weight:400;src:url('https://res.cloudinary.com/b72gfdzx/raw/upload/v1790955379/fonts/inter-regular.woff2') format('woff2')}
+/* --- tokens copied verbatim from n8n/daily_build_html.js --- */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1350px;background:#0F2A3D;overflow:hidden}
+.frame{box-sizing:border-box;width:984px;height:1254px;margin:48px;border:2px solid #C9A24B;
+  display:flex;flex-direction:column;align-items:center;padding:60px 110px;overflow:hidden}
+.header{flex:0 0 auto;text-align:center}
+.surah-ar{font-family:'Scheherazade',serif;font-weight:700;font-size:40px;color:#C9A24B;direction:rtl;margin-top:20px}
+.surah-en{font-family:'Inter',sans-serif;font-size:20px;letter-spacing:2px;color:#C9A24B;text-transform:uppercase;margin-top:10px}
+.middle{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;min-height:0}
+.content{display:flex;flex-direction:column;align-items:center;width:100%}
+.divider{width:90px;height:3px;background:#C9A24B;margin-top:40px}
+.translation{font-family:'Inter','Scheherazade',sans-serif;font-size:30px;line-height:1.6;color:#D9CFB8;text-align:center;max-width:720px;margin-top:32px}
+.translator{font-family:'Inter',sans-serif;direction:rtl;font-size:18px;color:#8a9bab;margin-top:16px;letter-spacing:1px}
+.footer{flex:0 0 auto;text-align:center;padding-top:28px}
+.progress{font-family:'Inter',sans-serif;font-size:20px;direction:rtl;color:#8a9bab;margin-bottom:10px}
+.handle{font-family:'Inter',sans-serif;font-size:24px;color:#C9A24B;margin-bottom:4px}
+/* --- the ONLY new rule: the name occupies the ayah slot --- */
+.name{font-family:'Scheherazade',serif;font-weight:700;font-size:210px;line-height:1.55;direction:rtl;
+  color:#F5EDDC;direction:rtl;text-align:center}
+.occurs{font-family:'Scheherazade',serif;font-size:34px;direction:rtl;line-height:1.9;color:#D9CFB8;
+  direction:rtl;text-align:center;max-width:740px;margin-top:34px}
+</style>
+<div class="frame">
+  <div class="header">
+    <div class="surah-ar">مِنْ أَسْمَاءِ اللهِ الْحُسْنَى</div>
+    <div class="surah-en">Asma al-Husna</div>
+  </div>
+  <div class="middle"><div class="content">
+    <div class="name">الْوَدُودُ</div>
+    <div class="divider"></div>
+    <div class="occurs">﴿وَهُوَ الْغَفُورُ الْوَدُودُ﴾</div>
+    <div class="translation">The Most Loving — who loves His servants, and whom His servants love.</div>
+    <div class="translator">سورة البروج ٨٥:١٤</div>
+  </div></div>
+  <div class="footer">
+    <div class="progress">٤٧ من ٩٩</div>
+    <div class="handle">@basaer.media.bh</div>
+  </div>
+</div>
