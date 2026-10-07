@@ -246,18 +246,18 @@ This is the textbook Ja'fari signature and it validates the whole design:
   differ only where the schools differ.** So one source can legitimately serve both columns.
 - **Maghrib is 15 minutes after sunset**, not at sunset - Ja'fari waits for the redness to pass.
   AlAdhan method 0 computes Maghrib at 4 degrees, which at Bahrain's latitude in October is about
-  15-16 minutes after sunset. Method 0 therefore looks like the right source for the Shia column,
-  pending a month of data to confirm.
-- **Isha cannot be reconciled by `tune`, and this is now demonstrated rather than predicted.**
-  Al-Hadee's Isha is 61 minutes after its Maghrib (angle-based, so it moves with the season).
-  AlAdhan's Qatar method uses a FIXED 90 minutes. A fixed offset can match on one day and must
-  drift on every other. For the Shia column this means method 0 (angle-based) and never method 10
-  plus a tune.
+  15-16 minutes after sunset. Maghrib 4 degrees matches Al-Hadee (17:34 vs 17:35).
+- **Isha cannot be reconciled by `tune`.** Al-Hadee's Isha is angle-based (moves with the season);
+  Qatar's is a FIXED 90 minutes. A fixed offset matches one day and drifts on every other.
 
-**Open question worth checking:** Ja'fari Fajr is normally 16 degrees against Qatar's 18, which at
-this latitude should differ by roughly 8 minutes - yet the two calendars differ by 1. Either
-Al-Hadee uses a different Fajr angle, or the coincidence is seasonal. A month of AlAdhan method 0
-against a month of Al-Hadee will settle it; `scripts/prayer_calibrate.js` reports exactly this.
+**CORRECTION (2026-10-07): AlAdhan method 0 does NOT reproduce Al-Hadee.** For 2026-10-05 method 0
+gives Fajr 04:24 (+10 vs Al-Hadee 04:14), Maghrib 17:34 (-1), Isha 18:19 (-17 vs 18:36).
+Al-Hadee's implied angles are 18.28 / 4.11 / 17.78; the clean fit is **Fajr 18, Maghrib 4, Isha 18**
+(04:15 / 17:35 / 18:37). Evidence is ONE day only. Candidate sources for the Shia column:
+AlAdhan method 99 (custom angles; exact `methodSettings` syntax UNVERIFIED, check the API PDF) or
+offline generation with `scripts/derive_angles.js`. Do not ship either until more Al-Hadee days
+are compared with `scripts/prayer_calibrate.js`. The earlier "Fajr 16 vs 18 open question" is
+answered: Al-Hadee uses about 18.
 
 ### Guard validated on both calendars
 

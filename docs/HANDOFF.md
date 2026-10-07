@@ -4,6 +4,20 @@ Last updated: 2026-10-04 go-live (Daily Post LIVE with publish-on-Approve; see L
 
 ---
 
+## STATUS 2026-10-07 (Claude Code session) - done / pending / where things live
+
+**Where:** all work is on GitHub, repo `AliBH86/basaer-media-render`, branch `claude/task-oe8hh0` (NOT merged to main, no PR). Nothing on the laptop. n8n change is live (not in git). VS Code: `git fetch origin && git checkout claude/task-oe8hh0`. Mobile: continue the session at https://claude.ai/code/session_01YAE9VfUfw75MmLwJVKvEVW. (Repo `Basaer-Media` has an unrelated scaffold on a same-named branch; ignore it.)
+
+**Done:** Telegram Facebook nodes fixed live (parse_mode HTML, Alert text escaped; verify on a post after 2026-10-06 17:00). `docs/CONTENT_PLAN.md` (formats, guardrails, prayer findings). Proposed `data/dhikr.json` (unapproved, unwired). Templates `docs/templates/asma-al-husna.html` (has hand-typed placeholders; must be sourced in production) and `prayer-times-daily.html` (placeholder times). Scripts: `prayer_guard.js`, `prayer_calibrate.js`, `derive_angles.js` (offline solar model, matches AlAdhan to the minute). Fixtures: AlAdhan method 10 month, Al-Hadee 2026-10-05.
+
+**Finding:** AlAdhan method 0 does not match Al-Hadee (Fajr +10, Isha -17). Best fit Fajr 18 / Maghrib 4 / Isha 18, from one day only.
+
+**Pending from the owner:** attach the almajles Sunni PDF (proxy blocks it); more Al-Hadee days; choose Hijri date source (Al-Hadee 23 vs AlAdhan 24 on 5 Oct) and a holiday allowlist (AlAdhan holidays include Sufi Urs entries); approve/cut dhikr list.
+
+**Pending build:** prayer-time workflows (daily + weekly, separate from Meta Daily Post chain); guard check on meta lat/long; weekly Asma al-Husna via API; Reel approval + publish chain (only with written PUBLISH NOW); carousel publish; Meta API v26 move; audit middot next to Arabic-Indic digits in captions; later TikTok, YouTube, Threads, X (separate captions/workflows). Repo CLAUDE.md status lines are stale (Daily Post and FB cross-post are live).
+
+---
+
 ## LIVE STATUS — Daily Post went live on 2026-10-04 (read this first)
 
 On 2026-10-04 the user wrote, in their own message, "Confirmed: PUBLISH NOW for Daily Post drafts only".
