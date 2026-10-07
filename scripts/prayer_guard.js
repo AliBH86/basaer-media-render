@@ -83,6 +83,13 @@ function checkTimings(timings, opts = {}) {
       issues.push(`asked for ${opts.expectDate} but the API answered for ${got}`);
     }
   }
+  // The API echoes the coordinates it used; a calendar export once carried junk meta (8.88, 7.77).
+  if (opts.meta && opts.meta.latitude !== undefined) {
+    const lat = Number(opts.meta.latitude), lon = Number(opts.meta.longitude);
+    if (!(Math.abs(lat - 26.2285) <= 1 && Math.abs(lon - 50.586) <= 1)) {
+      issues.push(`meta coordinates ${opts.meta.latitude},${opts.meta.longitude} are not Manama (26.23,50.59)`);
+    }
+  }
   return issues;
 }
 
