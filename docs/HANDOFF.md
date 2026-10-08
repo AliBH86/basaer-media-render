@@ -4,7 +4,7 @@ Last updated: 2026-10-04 go-live (Daily Post LIVE with publish-on-Approve; see L
 
 ---
 
-## REEL PUBLISH CHAIN built 2026-10-07 (SAVED AS DRAFT, OFF) - Draft Approval workflow
+## REEL PUBLISH CHAIN built 2026-10-07; ENABLED 2026-10-08 after owner wrote 'PUBLISH NOW: the Reel workflow, Reels approved in Telegram, Instagram only' (needs owner to attach IG credential in UI + press Publish) - Draft Approval workflow
 
 - 26 new nodes prefixed `Reel - ` plus `Reel Publish Switch (REEL_PUBLISH_ENABLED=false)`. Path: `Reel draft?` -> Reel switch -> gate -> re-read -> Check Draft (Reel id + Cloudinary mp4 + caption) -> lock -> create REELS container (media_type=REELS, video_url, share_to_feed) -> poll up to 36x10s -> second gate -> publish -> mark published -> permalink -> Telegram. Failures go to the existing `Build Publish Alert`.
 - OFF by design: all 4 `Reel - IG - ...` nodes are DISABLED, the Reel switch is `false` (separate from the Daily Post `Publish Switch`, which stays true). While false, a Reel approval behaves as before ("Reel publishing OFF").
