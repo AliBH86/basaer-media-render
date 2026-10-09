@@ -1,6 +1,6 @@
 {
   "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building. v2: lighter scrim and grade.",
-  "mode": "import",
+  "mode": "render",
   "queries": [
     "mosque sunset",
     "mosque night",
@@ -21,29 +21,30 @@
     "reciterId": 4,
     "shots": [
       {
-        "id": "fsnU3mB4YK",
-        "_what": "#31 sun breaking over a forest ridge (hook)",
-        "at": 0.2,
-        "cropX": 0.66,
-        "drift": -40
+        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/13516810-vertical.mp4",
+        "_what": "Pexels 13516810 cloud time-lapse, sun bursting through (hook)",
+        "at": 10,
+        "cropX": 0.5,
+        "drift": -30
       },
       {
-        "id": "wl1arfmJ9d",
-        "_what": "#24 fog rolling over a dark mountain",
+        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/11421223-vertical.mp4",
+        "_what": "Pexels 11421223 sea waves on rocks",
         "fromWord": 4,
-        "at": 22,
-        "cropX": 0.4,
-        "drift": 50
+        "at": 2,
+        "cropX": 0.5,
+        "drift": 30
       },
       {
-        "id": "vA06xDUsWQ",
-        "_what": "#55 palm trees at twilight",
+        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/10307487-vertical.mp4",
+        "_what": "Pexels 10307487 waterfall",
         "fromWord": 6,
         "at": 3,
         "cropX": 0.5,
-        "drift": 30
+        "drift": -25
       }
-    ]
+    ],
+    "scrim": 1.25
   },
   "import": [
     {

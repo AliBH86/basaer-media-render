@@ -13,7 +13,8 @@ if (!KEY) { console.error('COVERR_API_KEY is not set'); process.exit(1); }
 const outDir = path.resolve(process.argv[2] || 'out/render');
 fs.mkdirSync(outDir, { recursive: true });
 const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'test', 'cinematic.json'), 'utf8'));
-const { surah, ayah, reciterId, shots } = cfg.render;
+const { surah, ayah, reciterId, shots, scrim: SCRIM = 1 } = cfg.render;
+const al = (x) => Math.min(0.92, x * SCRIM).toFixed(2);
 const RUN = process.env.GITHUB_RUN_ID || String(Date.now());
 const W = 1080, H = 1920, FPS = 30, XF = 0.5;
 const sh = (cmd) => { console.log('+ ' + cmd.slice(0, 300)); return execSync(cmd, { stdio: ['ignore', 'pipe', 'inherit'], shell: '/bin/bash' }).toString(); };
@@ -63,8 +64,8 @@ async function coverr(p, method = 'GET') {
   // navy scrim behind the text area (header 290 px .. handle 1230 px) so footage never fights the Arabic
   const scrim = path.join(outDir, 'scrim.png');
   shot(`<html><body style="margin:0;width:${W}px;height:${H}px;background:linear-gradient(180deg,
-    rgba(11,31,42,0.20) 0px, rgba(11,31,42,0.38) 280px, rgba(11,31,42,0.55) 560px, rgba(11,31,42,0.55) 1180px,
-    rgba(11,31,42,0.18) 1420px, rgba(11,31,42,0.0) 1650px, rgba(11,31,42,0.35) 1920px)"></body></html>`, scrim);
+    rgba(11,31,42,${al(0.20)}) 0px, rgba(11,31,42,${al(0.38)}) 280px, rgba(11,31,42,${al(0.55)}) 560px, rgba(11,31,42,${al(0.55)}) 1180px,
+    rgba(11,31,42,${al(0.18)}) 1420px, rgba(11,31,42,0.0) 1650px, rgba(11,31,42,${al(0.35)}) 1920px)"></body></html>`, scrim);
 
   // 3. recitation, the same clip production cuts, 100 ms fade-out, silence to the end
   const audio = path.join(outDir, 'recitation.wav');
@@ -74,20 +75,23 @@ async function coverr(p, method = 'GET') {
   const cuts = [0, ...shots.slice(1).map((s) => words[s.fromWord].wt.startMs / 1000), TOTAL];
   const segs = [];
   for (const [i, s] of shots.entries()) {
-    const v = await coverr(`/videos/${s.id}`);
     const raw = path.join(outDir, `raw_${i}.mp4`);
-    sh(`curl -sSL --fail -o "${raw}" "${v.urls.mp4_download || v.urls.mp4}"`);
-    await coverr(`/videos/${s.id}/stats/downloads`, 'PATCH').catch((e) => console.log('stats ping failed (ignored): ' + e.message));
+    let v = { title: s._what || s.src };
+    if (s.src) sh(`curl -sSL --fail -o "${raw}" "${s.src}"`);
+    else {
+      v = await coverr(`/videos/${s.id}`);
+      sh(`curl -sSL --fail -o "${raw}" "${v.urls.mp4_download || v.urls.mp4}"`);
+      await coverr(`/videos/${s.id}/stats/downloads`, 'PATCH').catch((e) => console.log('stats ping failed (ignored): ' + e.message));
+    }
     const start = i === 0 ? 0 : cuts[i] - XF / 2, end = i === shots.length - 1 ? TOTAL : cuts[i + 1] + XF / 2, len = end - start;
     const cx = s.cropX ?? 0.5, drift = s.drift ?? 40;
     const seg = path.join(outDir, `seg_${i}.mp4`);
+    const grade = s.src ? '' : `eq=saturation=0.88:contrast=1.08:brightness=0.0,colorbalance=rs=-0.08:gs=-0.02:bs=0.10:rm=-0.02:gm=0:bm=0.03:rh=0.10:gh=0.06:bh=-0.08,vignette=PI/5,`;
     ff(`-ss ${s.at} -t ${len.toFixed(3)} -i "${raw}" -an -vf "scale=-2:${H + 120},` +
       `crop=${W}:${H}:x='min(max(0,(iw-${W})*${cx}+${drift}*(t/${len.toFixed(3)}-0.5)),iw-${W})':y='(ih-${H})/2+30*(t/${len.toFixed(3)})',` +
-      `eq=saturation=0.88:contrast=1.08:brightness=0.0,` +
-      `colorbalance=rs=-0.08:gs=-0.02:bs=0.10:rm=-0.02:gm=0:bm=0.03:rh=0.10:gh=0.06:bh=-0.08,` +
-      `vignette=PI/5,fps=${FPS},format=yuv420p,setsar=1" -c:v libx264 -crf 16 -preset fast "${seg}"`);
+      `${grade}fps=${FPS},format=yuv420p,setsar=1" -c:v libx264 -crf 16 -preset fast "${seg}"`);
     fs.rmSync(raw, { force: true });
-    segs.push({ seg, len, title: v.title, id: s.id });
+    segs.push({ seg, len, title: v.title, id: s.id || s.src });
   }
   // cross-dissolves on the cut points
   let chain = '', prev = '[0:v]';
