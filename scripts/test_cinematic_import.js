@@ -34,7 +34,7 @@ for (const item of cfg.import || []) {
     sh(`ffmpeg -nostdin -loglevel error -y ${sel} -filter_complex "[0:v]scale=-2:300[a];[1:v]scale=-2:300[b];[2:v]scale=-2:300[c];[3:v]scale=-2:300[d];[a][b][c][d]hstack=4" -frames:v 1 "${sheet}"`);
     // vertical, graded library version (the same grade as the cinematic test Reel)
     const cx = item.cropX ?? 0.5, vert = path.join(outDir, `${id}-vertical.mp4`);
-    sh(`ffmpeg -nostdin -loglevel error -y -t ${Math.min(MAXLEN, dur).toFixed(2)} -i "${raw}" -an -vf "scale=-2:${H}:flags=lanczos,crop=${W}:${H}:x='(iw-${W})*${cx}':y=0,` +
+    sh(`ffmpeg -nostdin -loglevel error -y -t ${Math.min(MAXLEN, dur).toFixed(2)} -i "${raw}" -an -vf "scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}:x='(iw-${W})*${cx}':y='(ih-${H})/2',` +
       `eq=saturation=0.88:contrast=1.08,colorbalance=rs=-0.08:gs=-0.02:bs=0.10:rm=-0.02:bm=0.03:rh=0.10:gh=0.06:bh=-0.08,vignette=PI/5,fps=30,format=yuv420p,setsar=1" ` +
       `-c:v libx264 -preset slow -crf 20 -movflags +faststart "${vert}"`);
     const s = up(sheet, 'image', `${id}-sheet`), v = up(vert, 'video', `${id}-vertical`);
