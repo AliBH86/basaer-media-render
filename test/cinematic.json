@@ -109,9 +109,9 @@
         "at": 2
       },
       {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/7311579-b-vertical.mp4",
-        "_what": "minarets against orange sky",
-        "at": 0.7
+        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/11408241-vertical.mp4",
+        "_what": "clouds racing over a pond at sunset",
+        "at": 2
       },
       {
         "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/11399155-vertical.mp4",
@@ -119,9 +119,19 @@
         "at": 3
       },
       {
+        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/15646594-vertical.mp4",
+        "_what": "blue hour, later in the clip",
+        "at": 8.5
+      },
+      {
         "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/19735649-vertical.mp4",
         "_what": "night sky over distant lights",
         "at": 2
+      },
+      {
+        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/34198277-vertical.mp4",
+        "_what": "lit minaret and moon, later in the clip",
+        "at": 4.5
       },
       {
         "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/18953366-vertical.mp4",
