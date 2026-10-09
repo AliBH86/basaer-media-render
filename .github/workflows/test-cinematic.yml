@@ -39,6 +39,18 @@ jobs:
           echo "mode: $mode"
           if [ "$mode" = scout ]; then
             node scripts/test_cinematic_scout.js out/scout "$(node -e "console.log((require('./test/cinematic.json').queries||[]).join(','))")"
+          elif [ "$mode" = reel60 ]; then
+            # the real production renderer, Khatm settings as in khatm-reel.yml, footage background via BG_FOOTAGE
+            r=$(node -e "const r=require('./test/cinematic.json').reel60; console.log([r.surah,r.ayahStart,r.reciterId,r.ayahEnd].join(' '))")
+            set -- $r
+            mkdir -p out
+            KHATM=1 SOFT_CAP_SEC=75 MAX_CAP_SEC=95 TOTAL_BUDGET_SEC=1200 BG_BUDGET_SEC=300 BISMILLAH=auto               TRANSLATION_ID=20 TRANSLATION_NAME="Saheeh International" BG_FOOTAGE=1               node scripts/render_reel.js "$1" "$2" "$3" footage out "$4"
+            REEL=$(ls out/reel_*.mp4)
+            ffprobe -v error -show_entries format=duration -show_entries stream=width,height,codec_name -of default=noprint_wrappers=1 "$REEL"
+            ffmpeg -nostdin -loglevel error -y -i "$REEL" -vf "fps=1/3,scale=216:384,tile=11x2" -frames:v 1 out/sheet.jpg
+            node scripts/upload_cloudinary.js "$REEL" "cinematic-test/reel60-${GITHUB_RUN_ID}" video out reelUrl
+            node scripts/upload_cloudinary.js out/sheet.jpg "cinematic-test/reel60-sheet-${GITHUB_RUN_ID}" image out sheetUrl
+            cat out/uploads.json
           elif [ "$mode" = import ]; then
             node scripts/test_cinematic_import.js out/import
           else

@@ -489,7 +489,12 @@ async function main() {
   const bgPath = path.join(workDir, 'bg.mp4');
   const bgScript = path.join(REPO_ROOT, 'scripts', 'generate_background.sh');
   let actualStyle = style;
-  try {
+  if (process.env.BG_FOOTAGE) { // TEST BRANCH ONLY (test/cinematic): real-footage background from the approved clip library
+    const tlBg = path.join(workDir, 'timeline_bg.json');
+    fs.writeFileSync(tlBg, JSON.stringify(timeline));
+    sh(`node "${path.join(REPO_ROOT, 'scripts', 'test_cinematic_bg.js')}" "${tlBg}" "${bgPath}"`);
+    actualStyle = 'footage';
+  } else try {
     sh(`timeout ${BG_BUDGET_SEC} bash "${bgScript}" ${style} ${timeline.durationSec} "${bgPath}"`);
   } catch (e) {
     console.error(`WARNING: style '${style}' exceeded its ${BG_BUDGET_SEC}s render budget or failed. Falling back to '${FALLBACK_STYLE}'.`);
