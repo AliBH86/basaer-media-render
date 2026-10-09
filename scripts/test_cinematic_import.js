@@ -21,24 +21,26 @@ const results = [];
 for (const item of cfg.import || []) {
   const m = /(\d+)\/?$/.exec(item.url.trim()); // page link (...-<id>/) or download link (/download/video/<id>/)
   if (!m) { results.push({ url: item.url, error: 'no video id in the link' }); continue; }
-  const id = m[1], raw = path.join(outDir, `${id}.mp4`);
+  // optional trim: from/to (seconds) keep only a clean stretch; suffix names the trimmed piece (e.g. 7311579-a)
+  const id = m[1], name = item.suffix ? `${id}-${item.suffix}` : id, raw = path.join(outDir, `${name}.mp4`);
   try {
     const code = sh(`curl -sSL -A "${UA}" -o "${raw}" -w "%{http_code} %{content_type}" "https://www.pexels.com/download/video/${id}/"`).trim();
     const isVideo = / video\//.test(code) && fs.statSync(raw).size > 100000;
     if (!isVideo) { results.push({ id, error: `download refused (${code})` }); console.log(`${id}: download refused (${code})`); continue; }
     const probe = JSON.parse(sh(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height:format=duration -of json "${raw}"`));
-    const dur = Number(probe.format.duration), { width, height } = probe.streams[0];
+    const full = Number(probe.format.duration), { width, height } = probe.streams[0];
+    const from = item.from || 0, dur = Math.min(item.to ?? full, full) - from;
     // review sheet: 4 frames across the whole clip
-    const sel = [0.1, 0.35, 0.6, 0.85].map((f) => `-ss ${(dur * f).toFixed(2)} -i "${raw}"`).join(' ');
-    const sheet = path.join(outDir, `${id}-sheet.jpg`);
+    const sel = [0.1, 0.35, 0.6, 0.85].map((f) => `-ss ${(from + dur * f).toFixed(2)} -i "${raw}"`).join(' ');
+    const sheet = path.join(outDir, `${name}-sheet.jpg`);
     sh(`ffmpeg -nostdin -loglevel error -y ${sel} -filter_complex "[0:v]scale=-2:300[a];[1:v]scale=-2:300[b];[2:v]scale=-2:300[c];[3:v]scale=-2:300[d];[a][b][c][d]hstack=4" -frames:v 1 "${sheet}"`);
     // vertical, graded library version (the same grade as the cinematic test Reel)
-    const cx = item.cropX ?? 0.5, vert = path.join(outDir, `${id}-vertical.mp4`);
-    sh(`ffmpeg -nostdin -loglevel error -y -t ${Math.min(MAXLEN, dur).toFixed(2)} -i "${raw}" -an -vf "scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}:x='(iw-${W})*${cx}':y='(ih-${H})/2',` +
+    const cx = item.cropX ?? 0.5, vert = path.join(outDir, `${name}-vertical.mp4`);
+    sh(`ffmpeg -nostdin -loglevel error -y -ss ${from} -t ${Math.min(MAXLEN, dur).toFixed(2)} -i "${raw}" -an -vf "scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}:x='(iw-${W})*${cx}':y='(ih-${H})/2',` +
       `eq=saturation=0.88:contrast=1.08,colorbalance=rs=-0.08:gs=-0.02:bs=0.10:rm=-0.02:bm=0.03:rh=0.10:gh=0.06:bh=-0.08,vignette=PI/5,fps=30,format=yuv420p,setsar=1" ` +
       `-c:v libx264 -preset slow -crf 20 -movflags +faststart "${vert}"`);
-    const s = up(sheet, 'image', `${id}-sheet`), v = up(vert, 'video', `${id}-vertical`);
-    const r = { id, page: item.url, source: `${width}x${height}`, durationSec: +dur.toFixed(2), sheet: s.secure_url, vertical: v.secure_url };
+    const s = up(sheet, 'image', `${name}-sheet`), v = up(vert, 'video', `${name}-vertical`);
+    const r = { id: name, page: item.url, from, to: +(from + dur).toFixed(2), source: `${width}x${height}`, durationSec: +dur.toFixed(2), sheet: s.secure_url, vertical: v.secure_url };
     results.push(r);
     console.log(`IMPORTED ${JSON.stringify(r)}`);
   } catch (e) {

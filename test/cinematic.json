@@ -48,10 +48,16 @@
   },
   "import": [
     {
-      "url": "https://www.pexels.com/video/cloudy-sky-over-water-pond-12028925/"
+      "url": "https://www.pexels.com/video/silhouette-of-a-building-7311579/",
+      "suffix": "a",
+      "from": 0,
+      "to": 4
     },
     {
-      "url": "https://www.pexels.com/video/serene-reflection-of-trees-in-tranquil-lake-38326500/"
+      "url": "https://www.pexels.com/video/silhouette-of-a-building-7311579/",
+      "suffix": "b",
+      "from": 12.5,
+      "to": 15
     }
   ]
 }
