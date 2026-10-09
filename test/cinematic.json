@@ -1,6 +1,6 @@
 {
   "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building. v2: lighter scrim and grade.",
-  "mode": "render",
+  "mode": "import",
   "queries": [
     "mosque sunset",
     "mosque night",
@@ -48,7 +48,22 @@
   },
   "import": [
     {
-      "url": "https://www.pexels.com/video/sea-waves-on-rocks-11421223/"
+      "url": "https://www.pexels.com/download/video/36598091/"
+    },
+    {
+      "url": "https://www.pexels.com/video/prophet-mosque-28286015/"
+    },
+    {
+      "url": "https://www.pexels.com/video/majestic-mosque-dome-surrounded-by-nature-39718851/"
+    },
+    {
+      "url": "https://www.pexels.com/video/suleymaniye-camii-28566877/"
+    },
+    {
+      "url": "https://www.pexels.com/video/serene-view-of-masjid-exterior-blue-sky-35266331/"
+    },
+    {
+      "url": "https://www.pexels.com/video/people-gathering-at-al-masjid-an-nabawi-mosque-35250209/"
     }
   ]
 }

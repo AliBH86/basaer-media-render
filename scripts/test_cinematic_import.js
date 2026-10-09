@@ -19,7 +19,7 @@ const up = (file, kind, id) => JSON.parse(sh(`curl -sS -X POST "https://api.clou
 
 const results = [];
 for (const item of cfg.import || []) {
-  const m = /-(\d+)\/?$/.exec(item.url.trim());
+  const m = /(\d+)\/?$/.exec(item.url.trim()); // page link (...-<id>/) or download link (/download/video/<id>/)
   if (!m) { results.push({ url: item.url, error: 'no video id in the link' }); continue; }
   const id = m[1], raw = path.join(outDir, `${id}.mp4`);
   try {
