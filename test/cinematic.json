@@ -1,0 +1,5 @@
+{
+  "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from the approved clip ids).",
+  "mode": "scout",
+  "queries": ["mosque sunset", "mosque night", "islamic architecture", "arches", "mountains mist", "fog mountains", "clouds sun rays", "sunrise clouds", "rain", "desert night", "stars night sky", "twilight sky"]
+}
