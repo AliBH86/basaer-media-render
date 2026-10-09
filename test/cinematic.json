@@ -1,6 +1,6 @@
 {
   "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building. v2: lighter scrim and grade.",
-  "mode": "render",
+  "mode": "import",
   "queries": [
     "mosque sunset",
     "mosque night",
@@ -44,5 +44,19 @@
         "drift": 30
       }
     ]
-  }
+  },
+  "import": [
+    {
+      "url": "https://www.pexels.com/video/film-of-waterfall-10307487/"
+    },
+    {
+      "url": "https://www.pexels.com/video/time-lapse-of-moving-clouds-in-sky-13516810/"
+    },
+    {
+      "url": "https://www.pexels.com/video/sea-waves-on-rocks-11421223/"
+    },
+    {
+      "url": "https://www.pexels.com/video/stunning-himalayan-landscape-in-nepal-35890635/"
+    }
+  ]
 }

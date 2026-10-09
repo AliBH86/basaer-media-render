@@ -39,6 +39,8 @@ jobs:
           echo "mode: $mode"
           if [ "$mode" = scout ]; then
             node scripts/test_cinematic_scout.js out/scout "$(node -e "console.log((require('./test/cinematic.json').queries||[]).join(','))")"
+          elif [ "$mode" = import ]; then
+            node scripts/test_cinematic_import.js out/import
           else
             node scripts/test_cinematic_render.js out/render
           fi
