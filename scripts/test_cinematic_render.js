@@ -63,8 +63,8 @@ async function coverr(p, method = 'GET') {
   // navy scrim behind the text area (header 290 px .. handle 1230 px) so footage never fights the Arabic
   const scrim = path.join(outDir, 'scrim.png');
   shot(`<html><body style="margin:0;width:${W}px;height:${H}px;background:linear-gradient(180deg,
-    rgba(11,31,42,0.55) 0px, rgba(11,31,42,0.62) 260px, rgba(11,31,42,0.70) 560px, rgba(11,31,42,0.70) 1180px,
-    rgba(11,31,42,0.35) 1420px, rgba(11,31,42,0.15) 1650px, rgba(11,31,42,0.45) 1920px)"></body></html>`, scrim);
+    rgba(11,31,42,0.20) 0px, rgba(11,31,42,0.38) 280px, rgba(11,31,42,0.55) 560px, rgba(11,31,42,0.55) 1180px,
+    rgba(11,31,42,0.18) 1420px, rgba(11,31,42,0.0) 1650px, rgba(11,31,42,0.35) 1920px)"></body></html>`, scrim);
 
   // 3. recitation, the same clip production cuts, 100 ms fade-out, silence to the end
   const audio = path.join(outDir, 'recitation.wav');
@@ -83,9 +83,9 @@ async function coverr(p, method = 'GET') {
     const seg = path.join(outDir, `seg_${i}.mp4`);
     ff(`-ss ${s.at} -t ${len.toFixed(3)} -i "${raw}" -an -vf "scale=-2:${H + 120},` +
       `crop=${W}:${H}:x='min(max(0,(iw-${W})*${cx}+${drift}*(t/${len.toFixed(3)}-0.5)),iw-${W})':y='(ih-${H})/2+30*(t/${len.toFixed(3)})',` +
-      `eq=saturation=0.72:contrast=1.06:brightness=-0.04,` +
-      `colorbalance=rs=-0.10:gs=-0.03:bs=0.12:rm=-0.04:gm=-0.01:bm=0.05:rh=0.09:gh=0.05:bh=-0.07,` +
-      `vignette=PI/4.5,fps=${FPS},format=yuv420p,setsar=1" -c:v libx264 -crf 16 -preset fast "${seg}"`);
+      `eq=saturation=0.88:contrast=1.08:brightness=0.0,` +
+      `colorbalance=rs=-0.08:gs=-0.02:bs=0.10:rm=-0.02:gm=0:bm=0.03:rh=0.10:gh=0.06:bh=-0.08,` +
+      `vignette=PI/5,fps=${FPS},format=yuv420p,setsar=1" -c:v libx264 -crf 16 -preset fast "${seg}"`);
     fs.rmSync(raw, { force: true });
     segs.push({ seg, len, title: v.title, id: s.id });
   }
