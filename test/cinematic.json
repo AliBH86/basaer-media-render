@@ -1,5 +1,13 @@
 {
-  "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from the approved clip ids).",
-  "mode": "scout",
-  "queries": ["mosque sunset", "mosque night", "islamic architecture", "arches", "mountains mist", "fog mountains", "clouds sun rays", "sunrise clouds", "rain", "desert night", "stars night sky", "twilight sky"]
+  "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building.",
+  "mode": "render",
+  "queries": ["mosque sunset", "mosque night", "islamic architecture", "arches", "mountains mist", "fog mountains", "clouds sun rays", "sunrise clouds", "rain", "desert night", "stars night sky", "twilight sky"],
+  "render": {
+    "surah": 2, "ayah": 2, "reciterId": 4,
+    "shots": [
+      { "id": "fsnU3mB4YK", "_what": "#31 sun breaking over a forest ridge (hook)", "at": 0.5, "cropX": 0.7, "drift": -40 },
+      { "id": "wl1arfmJ9d", "_what": "#24 fog rolling over a dark mountain", "fromWord": 4, "at": 22, "cropX": 0.4, "drift": 50 },
+      { "id": "vA06xDUsWQ", "_what": "#55 palm trees at twilight", "fromWord": 6, "at": 3, "cropX": 0.5, "drift": 30 }
+    ]
+  }
 }
