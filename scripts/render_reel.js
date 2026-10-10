@@ -480,7 +480,7 @@ async function main() {
     const base = b.fromMs - leadMs;
     b.wordTimings = b.wordTimingsAbs.map((w) => ({ wordIndex: w.wordIndex, startMs: w.startMs - base, endMs: w.endMs - base }));
     b.durationMs = offMs;
-    bismillahInfo = { source: 'reciter ' + timeline.reciterId + ' Al-Fatiha 1:1', clipSec: round3(bDurSec), withPauseSec: round3(bLen) };
+    bismillahInfo = { source: timeline.ayahLevel ? 'reciter ' + timeline.reciterId + ' own ayah-1 file (alquran.cloud)' : 'reciter ' + timeline.reciterId + ' Al-Fatiha 1:1', clipSec: round3(bDurSec), withPauseSec: round3(bLen) };
     console.log('Bismillah:', JSON.stringify(bismillahInfo));
     fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2));
   }
@@ -489,8 +489,24 @@ async function main() {
   const bgPath = path.join(workDir, 'bg.mp4');
   const bgScript = path.join(REPO_ROOT, 'scripts', 'generate_background.sh');
   let actualStyle = style;
-  try {
-    sh(`timeout ${BG_BUDGET_SEC} bash "${bgScript}" ${style} ${timeline.durationSec} "${bgPath}"`);
+  // 'footage' (owner-approved 2026-10-10): approved real-footage clips (scripts/footage_background.js). The seed comes from
+  // the passage, so the same part always gets the same clips and consecutive parts open differently. Any failure falls back
+  // to the procedural background below.
+  let footageOk = false;
+  if (style === 'footage') {
+    try {
+      const tlBg = path.join(workDir, 'timeline_bg.json');
+      fs.writeFileSync(tlBg, JSON.stringify(timeline));
+      const seed = timeline.surah * 1000 + timeline.ayahStart + Number(process.env.WORD_START || 0);
+      sh(`FOOTAGE_SEED=${seed} timeout ${BG_BUDGET_SEC} node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bgPath}"`);
+      footageOk = true;
+    } catch (e) {
+      console.error(`WARNING: footage background failed (${String(e.message).split(/\r?\n/)[0]}). Falling back to '${FALLBACK_STYLE}'.`);
+      actualStyle = FALLBACK_STYLE;
+    }
+  }
+  if (footageOk) { /* background ready */ } else try {
+    sh(`timeout ${BG_BUDGET_SEC} bash "${bgScript}" ${actualStyle} ${timeline.durationSec} "${bgPath}"`);
   } catch (e) {
     console.error(`WARNING: style '${style}' exceeded its ${BG_BUDGET_SEC}s render budget or failed. Falling back to '${FALLBACK_STYLE}'.`);
     actualStyle = FALLBACK_STYLE;
@@ -525,7 +541,7 @@ async function main() {
   };
   if (timeline.bismillah && timeline.bismillah.wordTimings) {
     timeline.bismillah.wordTimings.forEach((wt) => {
-      overlaySpecs.push({ startSec: wt.startMs / 1000, endSec: wt.endMs / 1000, arabicWords: timeline.bismillah.words, highlightIndex: wt.wordIndex, translation: '', ayahNumber: 0, refText: '' });
+      overlaySpecs.push({ startSec: wt.startMs / 1000, endSec: wt.endMs / 1000, arabicWords: timeline.bismillah.words, highlightIndex: timeline.ayahLevel ? -1 : wt.wordIndex, translation: '', ayahNumber: 0, refText: '' });
     });
   }
   timeline.ayahs.forEach(ayah => {
@@ -542,7 +558,8 @@ async function main() {
         startSec: wt.startMs / 1000,
         endSec: wt.endMs / 1000,
         arabicWords: ayah.arabicWords.slice(pg[0], pg[1] + 1),
-        highlightIndex: wt.wordIndex - pg[0],
+        // al-Ajmi (ayahLevel): no word timings exist, so no word is highlighted; the text follows the ayahs.
+        highlightIndex: timeline.ayahLevel ? -1 : wt.wordIndex - pg[0],
         translation: showTranslation ? ayah.translation : '',
         ayahNumber: ayah.number,
         refText,

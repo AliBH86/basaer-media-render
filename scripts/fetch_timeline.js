@@ -82,6 +82,88 @@ function wordsFromApi(verse) {
     .filter(Boolean);
 }
 
+// AL-AJMI (reciter 900, owner 2026-10-10): not on Quran.com, so his audio comes from alquran.cloud, one file per ayah,
+// without word timings (scripts/ajmi_audio.js). The TEXT still comes from the Quran.com API exactly as for every reciter.
+// Each ayah file is trimmed to his speech plus a short lead-in/tail and the pieces are joined into one clip; an ayah-1
+// file starts with his Bismillah, which is cut off at his pause and handed to render_reel.js as the Bismillah. Word
+// "timings" are only an even spread over the ayah so the renderer can page long ayahs; timeline.ayahLevel tells it to
+// highlight no word.
+async function ajmiTimeline({ surah, ayahStart, explicitEnd, outFile, MAX_CAP_MS }) {
+  const { execSync } = require('child_process');
+  const os = require('os');
+  const { AJMI_ID, surahAudio, measure } = require('./ajmi_audio');
+  if (explicitEnd === null) throw new Error('al-Ajmi Reels need an explicit ayah range');
+  if (process.env.WORD_START) throw new Error('al-Ajmi has no word timings: an ayah cannot be split into parts');
+  const LEAD = 0.15, TAIL = 0.45;
+  const s = parseInt(surah, 10);
+  const dir = fs.mkdtempSync(require('path').join(os.tmpdir(), 'ajmi-'));
+  const run = (c) => execSync(c, { shell: '/bin/bash', stdio: ['ignore', 'pipe', 'inherit'] }).toString();
+  const chapterInfo = await getJson(`https://api.quran.com/api/v4/chapters/${surah}?language=en`);
+  const urls = await surahAudio(s);
+  const f11 = `${dir}/b11.mp3`;
+  run(`curl -sSL --fail -o "${f11}" "https://cdn.islamic.network/quran/audio/128/ar.ahmedajamy/1.mp3"`);
+  const m11 = measure(f11);
+  const bismSec = m11.speechEnd - m11.speechStart;
+  const pieces = [];
+  let bismillah = null;
+  for (let n = ayahStart; n <= explicitEnd; n++) {
+    const key = `${s}:${n}`;
+    if (!urls[key]) throw new Error(`alquran.cloud has no al-Ajmi audio for ${key}`);
+    const file = `${dir}/a${n}.mp3`;
+    run(`curl -sSL --fail -o "${file}" "${urls[key]}"`);
+    const m = measure(file);
+    let from = Math.max(0, m.speechStart - LEAD);
+    if (n === 1 && ![1, 9].includes(s)) {
+      const p = m.pauses.find(([a]) => a - m.speechStart > bismSec * 0.6 && a - m.speechStart < bismSec * 1.6);
+      if (p) {
+        if (process.env.BISMILLAH === 'auto') {
+          const b = (await getJson(`https://api.quran.com/api/v4/verses/by_key/1:1?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
+          const words = wordsFromApi(b);
+          const b0 = m.speechStart * 1000, b1 = p[0] * 1000, len = words.reduce((t, w) => t + w.length, 0);
+          let c = 0;
+          bismillah = { audioUrl: 'file://' + file, fromMs: Math.round(b0), toMs: Math.round(b1), words,
+            wordTimingsAbs: words.map((w, i) => { const a = b0 + (b1 - b0) * c / len; c += w.length; return { wordIndex: i, startMs: Math.round(a), endMs: Math.round(b0 + (b1 - b0) * c / len) }; }) };
+        }
+        from = Math.max(0, p[1] - LEAD); // the ayah itself starts after his Bismillah
+      } else {
+        console.warn(`NOTE: ${key}: no pause after al-Ajmi's Bismillah found - the file is used whole and no separate Bismillah is shown`);
+      }
+    }
+    const to = Math.min(m.durationSec, m.speechEnd + TAIL);
+    pieces.push({ n, file, from, to });
+  }
+  const clip = `${dir}/clip.mp3`;
+  const inputs = pieces.map((p) => `-i "${p.file}"`).join(' ');
+  const fc = pieces.map((p, i) => `[${i}:a]atrim=${p.from.toFixed(3)}:${p.to.toFixed(3)},asetpts=PTS-STARTPTS,aresample=44100,aformat=channel_layouts=stereo[a${i}]`).join(';')
+    + ';' + pieces.map((_, i) => `[a${i}]`).join('') + `concat=n=${pieces.length}:v=0:a=1[out]`;
+  run(`ffmpeg -nostdin -loglevel error -y ${inputs} -filter_complex "${fc}" -map "[out]" -c:a libmp3lame -q:a 2 "${clip}"`);
+  const ayahs = [];
+  let t = 0;
+  for (const p of pieces) {
+    const verse = (await getJson(`https://api.quran.com/api/v4/verses/by_key/${s}:${p.n}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
+    const arabicWords = wordsFromApi(verse);
+    const startMs = t * 1000, endMs = (t + (p.to - p.from)) * 1000;
+    const a0 = startMs + LEAD * 1000, a1 = Math.max(a0 + 100, endMs - TAIL * 1000);
+    const len = arabicWords.reduce((x, w) => x + w.length, 0);
+    let c = 0;
+    const wordTimings = arabicWords.map((w, i) => { const st = a0 + (a1 - a0) * c / len; c += w.length; return { wordIndex: i, startMs: Math.round(st), endMs: Math.round(a0 + (a1 - a0) * c / len) }; });
+    ayahs.push({ number: p.n, arabicWords, translation: cleanTranslation(verse.translations[0].text), ayahStartMs: Math.round(startMs), ayahEndMs: Math.round(endMs), wordTimings });
+    t += p.to - p.from;
+  }
+  const durMs = Math.round(t * 1000);
+  if (durMs > MAX_CAP_MS) throw new Error(`passage ${s}:${ayahStart}-${explicitEnd} is ${(durMs / 1000).toFixed(1)} s with al-Ajmi: over the ${MAX_CAP_MS / 1000} s hard cap`);
+  const timeline = {
+    bismillah, ayahLevel: true, partEndsMidAyah: false, surah: s,
+    surahNameArabic: (SURAH_NAMES[String(s)] || {}).ar || chapterInfo.chapter.name_arabic,
+    surahNameEnglish: (SURAH_NAMES[String(s)] || {}).en || chapterInfo.chapter.name_simple,
+    translationId: TRANSLATION_ID, reciterId: AJMI_ID, audioUrl: 'file://' + clip, audioSource: 'alquran.cloud ar.ahmedajamy',
+    explicitRange: true, ayahStart, ayahEnd: explicitEnd, clipStartSec: 0, clipEndSec: t, durationSec: t,
+    softCapExceeded: false, requestedLeadInMs: 200, availableLeadInMs: LEAD * 1000, fadeInMs: 15, stoppedBySurahEnd: false, ayahs,
+  };
+  fs.writeFileSync(outFile, JSON.stringify(timeline, null, 2));
+  console.log(`Timeline (al-Ajmi, per ayah): surah ${s} ayahs ${ayahStart}-${explicitEnd}, duration ${t.toFixed(3)}s${bismillah ? ', Bismillah from his ayah-1 file' : ''}`);
+}
+
 async function main() {
   const [surah, ayahStartArg, reciterId, outFile, ayahEndArg] = process.argv.slice(2);
   const ayahStart = parseInt(ayahStartArg, 10);
@@ -93,6 +175,8 @@ async function main() {
   // Khatm split ayahs: WORD_START..WORD_END (1-based, inclusive) of a single ayah. Only valid with ayahEnd = ayahStart.
   const WORD_START = process.env.WORD_START ? parseInt(process.env.WORD_START, 10) : null;
   const WORD_END = process.env.WORD_END ? parseInt(process.env.WORD_END, 10) : null;
+
+  if (parseInt(reciterId, 10) === 900) return ajmiTimeline({ surah, ayahStart, explicitEnd, outFile, MAX_CAP_MS });
 
   const chapterInfo = await getJson(`https://api.quran.com/api/v4/chapters/${surah}?language=en`);
   const audioInfo = await getJson(`https://api.qurancdn.com/api/qdc/audio/reciters/${reciterId}/audio_files?chapter=${surah}&segments=true`);
