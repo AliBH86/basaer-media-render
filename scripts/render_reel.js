@@ -541,7 +541,7 @@ async function main() {
   };
   if (timeline.bismillah && timeline.bismillah.wordTimings) {
     timeline.bismillah.wordTimings.forEach((wt) => {
-      overlaySpecs.push({ startSec: wt.startMs / 1000, endSec: wt.endMs / 1000, arabicWords: timeline.bismillah.words, highlightIndex: timeline.ayahLevel ? -1 : wt.wordIndex, translation: '', ayahNumber: 0, refText: '' });
+      overlaySpecs.push({ startSec: wt.startMs / 1000, endSec: wt.endMs / 1000, arabicWords: timeline.bismillah.words, highlightIndex: timeline.ayahLevel ? -1 : wt.wordIndex, translation: '', ayahNumber: 0, refText: '', screen: { kind: 'bismillah' } });
     });
   }
   timeline.ayahs.forEach(ayah => {
@@ -564,9 +564,35 @@ async function main() {
         ayahNumber: ayah.number,
         refText,
         sajdah,
+        screen: { kind: 'ayah', ayah: ayah.number, from: pg[0], to: pg[1], hideEnglish: !showTranslation },
       });
     });
   });
+  // NO EMPTY SCREEN, EVER (owner, 2026-10-11): each word overlay used to show only while its word is recited, so when the
+  // reciter paused (2:20 AbdulBaset: 3.3 s between the two halves) the screen went bare, header included. Now:
+  //  - a short breath (<= REST_HOLD_SEC): the word stays lit until the next word starts;
+  //  - a longer pause: the word stays lit REST_HOLD_SEC as the voice dies away, then the UPCOMING text is shown with no word
+  //    lit (the same page, or the next page early, as lyric videos do), until the next word starts;
+  //  - before the first word: the first screen, no word lit.
+  // The rest screens are extra overlays appended AFTER the word overlays (the guard pairs overlay i with word timing i),
+  // listed in timeline.restScreens and checked against the API like every other screen.
+  const REST_HOLD_SEC = 0.6;
+  {
+    const order = overlaySpecs.map((s, i) => i).sort((x, y) => overlaySpecs[x].startSec - overlaySpecs[y].startSec);
+    const rest = [];
+    const restOf = (s, t0, t1) => ({ ...s, startSec: t0, endSec: t1, highlightIndex: -1 });
+    const first = overlaySpecs[order[0]];
+    if (first && first.startSec > 0.001) rest.push(restOf(first, 0, first.startSec));
+    for (let k = 0; k + 1 < order.length; k++) {
+      const a = overlaySpecs[order[k]], b = overlaySpecs[order[k + 1]];
+      if (b.startSec - a.endSec <= REST_HOLD_SEC) { a.endSec = Math.max(a.endSec, b.startSec); continue; }
+      a.endSec += REST_HOLD_SEC;
+      rest.push(restOf(b, a.endSec, b.startSec));
+    }
+    if (order.length) overlaySpecs[order[order.length - 1]].persist = true; // the last word stays to the end of the Reel
+    timeline.restScreens = rest.map((r, j) => ({ overlayIndex: overlaySpecs.length + j, startSec: +r.startSec.toFixed(3), endSec: +r.endSec.toFixed(3), ...r.screen }));
+    overlaySpecs.push(...rest);
+  }
   fs.writeFileSync(timelinePath, JSON.stringify(timeline, null, 2)); // pages + showTranslation, read by the guard
   console.log('Pages:', JSON.stringify(timeline.ayahs.map((a) => ({ ayah: a.number, pages: a.pages, english: a.showTranslation }))));
 
@@ -607,7 +633,7 @@ async function main() {
   overlaySpecs.forEach((spec, i) => {
     const inIdx = i + 1;
     const out = i === overlaySpecs.length - 1 ? 'vout' : `v${i}`;
-    const endCond = i === overlaySpecs.length - 1 ? `gte(t,${spec.startSec})` : `between(t,${spec.startSec},${spec.endSec})`;
+    const endCond = spec.persist ? `gte(t,${spec.startSec})` : `between(t,${spec.startSec},${spec.endSec})`;
     filterLines.push(`[${prev}][${inIdx}:v]overlay=enable='${endCond}'[${out}]`);
     prev = out;
   });

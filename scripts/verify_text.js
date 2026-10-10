@@ -154,7 +154,22 @@ async function verifyRender(timelinePath, workDir, outDir) {
       }
     }
   }
-  const report = { ok: issues.length === 0, ayahs: refs, checkedOverlays: overlayIndex, issues, at: new Date().toISOString() };
+  // Rest screens (2026-10-11: shown between words when the reciter pauses, so the screen is never empty): same text
+  // rules as the word screens, no word lit. Each is checked against the same fresh API copy.
+  const freshCache = {};
+  const freshFor = async (key, s, a) => (freshCache[key] = freshCache[key] || await freshAyah(s, a, timeline.translationId || 20));
+  for (const r of timeline.restScreens || []) {
+    const file = path.join(workDir, `overlay_${r.overlayIndex}.html`);
+    if (!fs.existsSync(file)) { issues.push(`rest screen ${r.overlayIndex}: overlay file is missing`); continue; }
+    const drawn = readOverlay(fs.readFileSync(file, 'utf8'));
+    if (r.kind === 'bismillah') {
+      issues.push(...checkOverlay(`Bismillah rest screen ${r.overlayIndex}`, drawn, await freshFor('1:1', 1, 1), { hideEnglish: true }));
+    } else {
+      issues.push(...checkOverlay(`${timeline.surah}:${r.ayah} rest screen ${r.overlayIndex}`, drawn, await freshFor(`${timeline.surah}:${r.ayah}`, timeline.surah, r.ayah), { from: r.from, to: r.to, hideEnglish: r.hideEnglish }));
+    }
+    overlayIndex++;
+  }
+  const report = { ok: issues.length === 0, ayahs: refs, checkedOverlays: overlayIndex, restScreens: (timeline.restScreens || []).length, issues, at: new Date().toISOString() };
   if (outDir) { fs.mkdirSync(outDir, { recursive: true }); fs.writeFileSync(path.join(outDir, 'integrity_report.json'), JSON.stringify(report, null, 2)); }
   return report;
 }
