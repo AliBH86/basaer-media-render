@@ -7,6 +7,10 @@ on:
     branches: [feature/reciters-footage]
     paths: ['.github/workflows/khatm-replan-finish.yml', 'scripts/khatm_build_plan.js']
 
+permissions:
+  contents: read
+  actions: read   # download the artifacts of the earlier re-plan run
+
 env:
   ROTATION: "1,9,3,5,900"
   RESUME: "2:20"
