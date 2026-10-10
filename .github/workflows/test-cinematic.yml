@@ -51,6 +51,8 @@ jobs:
             node scripts/upload_cloudinary.js "$REEL" "cinematic-test/reel60-${GITHUB_RUN_ID}" video out reelUrl
             node scripts/upload_cloudinary.js out/sheet.jpg "cinematic-test/reel60-sheet-${GITHUB_RUN_ID}" image out sheetUrl
             cat out/uploads.json
+          elif [ "$mode" = ajmi ]; then
+            node scripts/test_cinematic_ajmi.js out/ajmi
           elif [ "$mode" = import ]; then
             node scripts/test_cinematic_import.js out/import
           else

@@ -1,6 +1,6 @@
 {
   "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building. v2: lighter scrim and grade.",
-  "mode": "reel60",
+  "mode": "ajmi",
   "queries": [
     "mosque sunset",
     "mosque night",
@@ -68,5 +68,11 @@
     "reciterId": 4,
     "scrim": 1.15,
     "seed": 7
+  },
+  "ajmi": {
+    "surah": 2,
+    "ayahStart": 20,
+    "ayahEnd": 21,
+    "seed": 11
   }
 }
