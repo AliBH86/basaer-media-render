@@ -3,16 +3,15 @@ name: Khatm re-plan - finish from an earlier run (research only)
 # Reuses the coverage scan and the long-ayah pause measurements of an earlier "Khatm re-plan" run, then runs plan v1,
 # the ayah-end pauses and the final plan. Numbers only; nothing is rendered, published or uploaded.
 on:
-  workflow_dispatch:
-    inputs:
-      fromRun:
-        description: "Run id of the Khatm re-plan run whose scan + pauses artifacts to reuse"
-        required: true
+  push:
+    branches: [feature/reciters-footage]
+    paths: ['.github/workflows/khatm-replan-finish.yml', 'scripts/khatm_build_plan.js']
 
 env:
   ROTATION: "1,9,3,5,900"
   RESUME: "2:20"
   PREFIX_DAYS: "6"
+  FROM_RUN: "38080398678"   # the Khatm re-plan run whose scan + pauses artifacts are reused
 
 jobs:
   plan1:
@@ -21,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
-        with: { path: art, run-id: "${{ github.event.inputs.fromRun }}", github-token: "${{ github.token }}" }
+        with: { path: art, run-id: "${{ env.FROM_RUN }}", github-token: "${{ github.token }}" }
       - name: Plan v1 (assigns the reciters)
         run: |
           mkdir -p logs && cp art/pauses-*/*.txt logs/ && cp -r art/scan logs/scan
