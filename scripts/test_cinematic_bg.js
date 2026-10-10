@@ -31,6 +31,32 @@ for (let i = 1; i < raw.length; i++) {
 const pieces = cuts.slice(0, -1).map((c, i) => ({ start: i === 0 ? 0 : c - XF / 2, end: i === cuts.length - 2 ? TOTAL : cuts[i + 1] + XF / 2 }));
 console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at ${cuts.slice(1, -1).join(', ')}`);
 
+// 1b. no fixed shot list: pick from the approved library (data/footage_library.json). The mood runs night -> dusk ->
+// day -> dusk -> night and always opens on a mosque at night; clips never repeat inside a Reel, and the starting point in
+// each pool moves with the Khatm part (FOOTAGE_SEED) so consecutive Reels open on different clips.
+if (!cfg.shots) {
+  const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_library.json'), 'utf8'));
+  const seed = Number(process.env.FOOTAGE_SEED || cfg.seed || 1);
+  const ARC = ['mosqueN', 'skyN', 'dusk', 'mosqueN', 'dusk', 'day', 'mosqueD', 'day', 'dusk', 'skyN', 'mosqueN', 'dusk', 'skyN', 'mosqueN'];
+  const pools = {};
+  for (const c of lib.clips) (pools[c.pool] = pools[c.pool] || []).push(c);
+  const used = new Set(), next = {};
+  const pick = (pool) => {
+    const list = pools[pool] || [];
+    for (let k = 0; k < list.length; k++) {
+      next[pool] = (next[pool] ?? (seed * 3) % list.length);
+      const c = list[(next[pool] + k) % list.length];
+      if (!used.has(c.id)) { used.add(c.id); next[pool] = (next[pool] + k + 1) % list.length; return c; }
+    }
+    return null;
+  };
+  // the last piece echoes the opening pool so the Reel ends where it began
+  const arc = pieces.map((_, i) => (i === pieces.length - 1 && pieces.length > 2 ? 'mosqueN' : ARC[i % ARC.length]));
+  cfg.shots = arc.map((pool, i) => {
+    const c = pick(pool) || pick('dusk') || pick('skyN') || pick('day') || pick('mosqueD') || pick('mosqueN') || lib.clips[(seed + i) % lib.clips.length];
+    return { src: lib.base + c.id + '-vertical.mp4', _what: c.what + ' [' + pool + ']', at: 0.3 + ((seed + i) % 3) };
+  });
+}
 // 2. one segment per piece, taken from the shot list in order (wrapping if the Reel is longer than the list)
 const segs = [];
 const cache = {};
@@ -38,7 +64,9 @@ for (const [i, p] of pieces.entries()) {
   const s = cfg.shots[i % cfg.shots.length], len = p.end - p.start;
   if (!cache[s.src]) { cache[s.src] = path.join(work, `src_${Object.keys(cache).length}.mp4`); sh(`curl -sSL --fail -o "${cache[s.src]}" "${s.src}"`); }
   const src = cache[s.src];
-  const avail = Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${src}"`)) - (s.at || 0) - 0.05;
+  const full = Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${src}"`));
+  if (full - (s.at || 0) < len) s.at = Math.max(0, full - len - 0.1);
+  const avail = full - (s.at || 0) - 0.05;
   // a clip shorter than its piece is slowed (sky, water and silhouettes read well slower); never sped up
   const slow = Math.max(1, len / avail);
   if (slow > 2.5) throw new Error(`shot ${i} (${s._what}) is too short: ${avail.toFixed(2)}s for ${len.toFixed(2)}s`);

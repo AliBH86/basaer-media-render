@@ -61,83 +61,12 @@
     }
   ],
   "reel60": {
-    "_comment": "Khatm Part 2 (2:1-5, reciter 4, Bismillah) - the same Reel as the 2026-10-08 draft, for a side-by-side comparison. Shots in order, night -> dusk -> night.",
+    "_comment": "Footage go-live test: Khatm Part 7 (2:20-21, reciter 4 as in the current plan), clips picked automatically from data/footage_library.json (no fixed shot list).",
     "surah": 2,
-    "ayahStart": 1,
-    "ayahEnd": 5,
+    "ayahStart": 20,
+    "ayahEnd": 21,
     "reciterId": 4,
     "scrim": 1.15,
-    "shots": [
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/18953366-vertical.mp4",
-        "_what": "crescent moon over minaret silhouettes (Bismillah)",
-        "at": 0.3
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/20690004-vertical.mp4",
-        "_what": "Blue Mosque at night from the water",
-        "at": 0.3
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/34198277-vertical.mp4",
-        "_what": "lit minaret, full moon behind clouds",
-        "at": 0.3
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/15646594-vertical.mp4",
-        "_what": "blue-hour sky over city lights",
-        "at": 2
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/7311579-a-vertical.mp4",
-        "_what": "mosque silhouette at sunset",
-        "at": 0.2
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/19206668-vertical.mp4",
-        "_what": "skyline at sunset, drifting cloud",
-        "at": 0.3
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/38326500-vertical.mp4",
-        "_what": "tree reflected in still water at dusk",
-        "at": 1
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/11922417-vertical.mp4",
-        "_what": "sunset clouds over a pond",
-        "at": 2
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/11408241-vertical.mp4",
-        "_what": "clouds racing over a pond at sunset",
-        "at": 2
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/11399155-vertical.mp4",
-        "_what": "soft winter sunset over water",
-        "at": 3
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/15646594-vertical.mp4",
-        "_what": "blue hour, later in the clip",
-        "at": 8.5
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/19735649-vertical.mp4",
-        "_what": "night sky over distant lights",
-        "at": 2
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/34198277-vertical.mp4",
-        "_what": "lit minaret and moon, later in the clip",
-        "at": 4.5
-      },
-      {
-        "src": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/18953366-vertical.mp4",
-        "_what": "crescent moon minarets again (bookend)",
-        "at": 7
-      }
-    ]
+    "seed": 7
   }
 }
