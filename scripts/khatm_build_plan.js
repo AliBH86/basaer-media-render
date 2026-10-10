@@ -17,6 +17,15 @@ const STYLES = ['gradient', 'stars', 'rays', 'mist', 'lattice'];
 const T_MIN = 25000, T_LO = 45000, T_HI = 75000, CAP = 90000, CAP_SINGLE = 95000;
 const BISMILLAH_GAP = 450;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// RE-PLAN FROM A POINT (owner, 2026-10-10: new reciters from Khatm Part 7). KHATM_PREFIX_PLAN = the current plan file:
+// its first KHATM_PREFIX_DAYS entries (already published) are kept exactly; the surah of KHATM_RESUME (e.g. 2:20) continues
+// from that ayah with the FIRST reciter of ROTATION (so that surah has two reciters: before and after the change), and
+// every later surah follows ROTATION.
+const PREFIX = process.env.KHATM_PREFIX_PLAN ? JSON.parse(fs.readFileSync(process.env.KHATM_PREFIX_PLAN, 'utf8')) : null;
+const PREFIX_DAYS = Number(process.env.KHATM_PREFIX_DAYS || 0);
+const [RESUME_S, RESUME_A] = (process.env.KHATM_RESUME || '0:0').split(':').map(Number);
+const OUT_FILE = process.env.KHATM_PLAN_OUT || path.join(__dirname, '..', 'render_repo', 'data', 'khatm_plan.json');
+const RECITERS_FILE = process.env.KHATM_RECITERS_JSON || path.join(__dirname, '..', 'render_repo', 'data', 'reciters.json');
 function getJson(url, tries = 4) {
   return new Promise((resolve, reject) => {
     https.get(url, { headers: { 'User-Agent': 'basaer-khatm-plan' } }, (res) => {
@@ -87,6 +96,8 @@ function cost(d, mustAllowShort) {
   const infeasibleCount = (ch, rid) => longKeys(ch, rid).filter((k) => !pauseCutFeasible(k, rid)).length;
   let rot = 0;
   for (const ch of chapters) {
+    if (PREFIX && ch.id < RESUME_S) { assignment[ch.id] = Number(PREFIX.reciterBySurah[ch.id]); continue; }
+    if (PREFIX && ch.id === RESUME_S) { assignment[ch.id] = ROTATION[0]; rot = 1 % ROTATION.length; continue; }
     let chosen = null;
     for (let k = 0; k < ROTATION.length; k++) {
       const rid = ROTATION[(rot + k) % ROTATION.length];
@@ -112,6 +123,8 @@ function cost(d, mustAllowShort) {
   const splitAyahs = [];
   const exceptions = [];
   for (const ch of chapters) {
+    if (PREFIX && ch.id < RESUME_S) continue;
+    const startA = PREFIX && ch.id === RESUME_S ? RESUME_A : 1;
     const rid = assignment[ch.id];
     const s = cov.reciters[rid].surahs[ch.id];
     const dur = Object.fromEntries(s.durations); // verse_key -> ms
@@ -126,11 +139,12 @@ function cost(d, mustAllowShort) {
     // DP over ayahs: best[i] = min cost to cover ayahs 1..i.
     const best = new Array(n + 1).fill(Infinity); const prev = new Array(n + 1).fill(-1);
     best[0] = 0;
+    for (let i = 1; i < startA; i++) { best[i] = 0; prev[i] = i - 1; } // already published before the re-plan
     const surahTotal = Object.values(dur).reduce((x, y) => x + y, 0) + bismMs;
-    for (let i = 1; i <= n; i++) {
+    for (let i = startA; i <= n; i++) {
       if (isLong(i)) { best[i] = best[i - 1]; prev[i] = -(i - 1) - 1; continue; } // split ayah: handled separately
       let sum = 0;
-      for (let j = i; j >= 1; j--) {
+      for (let j = i; j >= startA; j--) {
         if (isLong(j)) break;
         sum += d(j) + (j === 1 ? bismMs : 0);
         if (sum > CAP && !(j === i && sum <= CAP_SINGLE)) break;
@@ -144,7 +158,7 @@ function cost(d, mustAllowShort) {
     }
     // backtrack
     const segs = [];
-    for (let i = n; i > 0;) {
+    for (let i = n; i >= startA;) {
       if (prev[i] < 0) { segs.push({ long: i }); i = -prev[i] - 1; continue; }
       segs.push({ from: prev[i] + 1, to: i }); i = prev[i];
     }
@@ -210,12 +224,13 @@ function cost(d, mustAllowShort) {
     }
   }
   // 3) Day numbers and background styles (never the same background twice in a row).
-  plan.forEach((e, i) => { e.day = i + 1; e.style = STYLES[i % STYLES.length]; });
+  if (PREFIX) plan.unshift(...PREFIX.plan.slice(0, PREFIX_DAYS).map((e) => ({ ...e, keptFromPrefix: true })));
+  plan.forEach((e, i) => { e.day = i + 1; e.style = e.keptFromPrefix ? e.style : 'footage'; });
 
   const secs = plan.map((e) => e.estSec);
   const total = secs.reduce((x, y) => x + y, 0);
   const sorted = [...plan].sort((a, b) => a.estSec - b.estSec);
-  const RN = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'render_repo', 'data', 'reciters.json'), 'utf8'));
+  const RN = JSON.parse(fs.readFileSync(RECITERS_FILE, 'utf8'));
   const summary = {
     reels: plan.length,
     totalHours: Math.round(total / 360) / 10,
@@ -240,12 +255,12 @@ function cost(d, mustAllowShort) {
   };
   const out = {
     _comment: 'Khatm series plan (built ' + new Date().toISOString().slice(0, 10) + '). References and estimated durations only; no Quran text, translation or audio is stored. Text, translation and audio are fetched fresh from the Quran.com API at render time. Durations come from the API timing data of the assigned reciter and are estimates (the renderer trims silence at both ends).',
-    rules: { perDay: 1, targetSec: [45, 75], minSec: 25, capSec: 90, oneReciterPerSurah: true, splitAt: 'waqf signs (plain word boundary only when no waqf fits)' },
+    rules: { perDay: 2, targetSec: [45, 75], minSec: 25, capSec: 90, oneReciterPerSurah: true, reciterChange: PREFIX ? { atDay: PREFIX_DAYS + 1, resume: process.env.KHATM_RESUME, surahWithTwoReciters: RESUME_S, rotation: ROTATION } : null, splitAt: 'waqf signs (plain word boundary only when no waqf fits)' },
     reciterBySurah: assignment,
     summary,
     splitAyahs,
     plan,
   };
-  fs.writeFileSync(path.join(__dirname, '..', 'render_repo', 'data', 'khatm_plan.json'), JSON.stringify(out, null, 1));
+  fs.writeFileSync(OUT_FILE, JSON.stringify(out, null, 1));
   console.log(JSON.stringify(summary, null, 1));
 })().catch((e) => { console.error(e); process.exit(1); });

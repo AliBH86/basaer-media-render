@@ -3,8 +3,8 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
-const OUT = path.join(__dirname, 'coverage.json');
-const RECITERS = [7, 2, 6, 9, 3, 97, 5, 4, 10];
+const OUT = process.env.KHATM_COVERAGE_OUT || path.join(__dirname, 'coverage.json');
+const RECITERS = (process.env.KHATM_RECITERS || '7,2,6,9,3,97,5,4,10').split(',').map(Number);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function getJson(url, tries = 4) {
   return new Promise((resolve, reject) => {

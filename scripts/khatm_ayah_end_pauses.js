@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const plan = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'khatm_plan.json'), 'utf8'));
+const plan = JSON.parse(fs.readFileSync(process.env.KHATM_PLAN_FILE || path.join(__dirname, '..', 'data', 'khatm_plan.json'), 'utf8'));
 const from = Number(process.argv[2] || 1), to = Number(process.argv[3] || 114);
 function getJson(url) {
   return new Promise((resolve, reject) => {
@@ -34,6 +34,7 @@ function envelope(file, fromSec, durSec) {
   const result = {};
   for (let s = from; s <= to; s++) {
     const rid = plan.reciterBySurah[s];
+    if (Number(rid) === 900) continue; // al-Ajmi: one file per ayah, so every ayah end is a pause (not measured)
     const af = (await getJson(`https://api.qurancdn.com/api/qdc/audio/reciters/${rid}/audio_files?chapter=${s}&segments=true`)).audio_files[0];
     const file = `/tmp/ae_${rid}_${s}.mp3`;
     execSync(`curl -sS -L "${af.audio_url}" -o "${file}"`);

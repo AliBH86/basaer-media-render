@@ -8,7 +8,8 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-const plan = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'khatm_plan.json'), 'utf8'));
+// SPLIT_LIST_FILE (JSON [{key, reciterId}]) replaces the plan's split ayahs, for measuring candidate reciters before a re-plan.
+const plan = process.env.SPLIT_LIST_FILE ? { splitAyahs: JSON.parse(fs.readFileSync(process.env.SPLIT_LIST_FILE, 'utf8')) } : JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'khatm_plan.json'), 'utf8'));
 function getJson(url) {
   return new Promise((resolve, reject) => {
     https.get(url, (res) => { const c = []; res.on('data', (d) => c.push(d)); res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(c).toString('utf8'))); } catch (e) { reject(e); } }); }).on('error', reject);
