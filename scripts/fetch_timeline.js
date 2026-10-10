@@ -300,8 +300,11 @@ async function main() {
         if (right) right.startMs = b;
       }
       const step = (b - a) / missing;
-      for (let k = 0; k < missing; k++) timed.set(p + 1 + k, { startMs: Math.round(a + k * step), endMs: Math.round(a + (k + 1) * step) });
-      filled.push(`${key} word ${i + 1}`);
+      // every word of the gap is filled here (several in a row: 2:93 words 23-25, AbdulBaset), so all are recorded
+      for (let k = 0; k < missing; k++) {
+        timed.set(p + 1 + k, { startMs: Math.round(a + k * step), endMs: Math.round(a + (k + 1) * step) });
+        filled.push(`${key} word ${p + 2 + k}`);
+      }
     }
     if (filled.length) console.warn(`NOTE: word timing filled from neighbours: ${filled.join(', ')}`);
     // Every recitation of a shown word (repeats included), plus the filled ones, in time order; no two overlap.
