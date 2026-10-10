@@ -1,6 +1,6 @@
 name: Khatm re-plan (new reciters, research only)
 
-# Owner, 2026-10-10: new reciters from Khatm Part 7 (AbdulBaset Mujawwad, Minshawi Mujawwad, As-Sudais, Ar-Rifai,
+# Owner, 2026-10-10: new reciters from Khatm Part 7 (AbdulBaset Mujawwad, Minshawi Murattal, As-Sudais, Ar-Rifai,
 # al-Ajmi). Rebuilds data/khatm_plan.json from 2:20 on: Parts 1-6 (published) are kept exactly. Numbers only (references
 # and durations); nothing is rendered, published or uploaded. The final plan is an artifact to review before it is
 # committed. Stages: coverage -> pauses inside long ayahs (per candidate reciter) -> plan v1 (assigns reciters) ->
@@ -12,7 +12,7 @@ on:
     paths: ['.github/workflows/khatm-replan.yml']
 
 env:
-  ROTATION: "1,8,3,5,900"
+  ROTATION: "1,9,3,5,900"
   RESUME: "2:20"
   PREFIX_DAYS: "6"
 
@@ -25,7 +25,7 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
       - name: Coverage (Quran.com reciters)
-        run: KHATM_RECITERS=1,8,3,5 KHATM_COVERAGE_OUT=$PWD/work/coverage.json node -e "require('fs').mkdirSync('work',{recursive:true})" && KHATM_RECITERS=1,8,3,5 KHATM_COVERAGE_OUT=$PWD/work/coverage.json node scripts/khatm_coverage.js
+        run: KHATM_RECITERS=1,9,3,5 KHATM_COVERAGE_OUT=$PWD/work/coverage.json node -e "require('fs').mkdirSync('work',{recursive:true})" && KHATM_RECITERS=1,9,3,5 KHATM_COVERAGE_OUT=$PWD/work/coverage.json node scripts/khatm_coverage.js
       - name: Coverage (al-Ajmi, alquran.cloud per-ayah audio)
         run: KHATM_COVERAGE_OUT=$PWD/work/coverage.json node scripts/khatm_coverage_ajmi.js
       - name: Translation scan (sajdah ayahs)
@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        reciter: [1, 8, 3, 5]
+        reciter: [1, 9, 3, 5]
     steps:
       - uses: actions/checkout@v4
       - name: Install ffmpeg

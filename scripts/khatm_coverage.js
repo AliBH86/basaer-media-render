@@ -36,6 +36,8 @@ function getJson(url, tries = 4) {
       const f = r.audio_files && r.audio_files[0];
       const s = { ok: true, problems: [] };
       if (!f || !f.audio_url) { s.ok = false; s.problems.push('no chapter audio'); rec.surahs[ch.id] = s; rec.gaps.push(ch.id); continue; }
+      const head = await new Promise((res) => { const rq = https.request(f.audio_url, { method: 'HEAD' }, (r) => res(r.statusCode)); rq.on('error', () => res(0)); rq.end(); });
+      if (head !== 200) s.problems.push(`chapter audio file missing (HTTP ${head})`);
       const vt = f.verse_timings || [];
       if (vt.length !== ch.verses_count) s.problems.push(`verse timings ${vt.length}/${ch.verses_count}`);
       s.durations = [];

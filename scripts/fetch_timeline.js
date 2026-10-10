@@ -91,7 +91,7 @@ function wordsFromApi(verse) {
 async function ajmiTimeline({ surah, ayahStart, explicitEnd, outFile, MAX_CAP_MS }) {
   const { execSync } = require('child_process');
   const os = require('os');
-  const { AJMI_ID, surahAudio, measure } = require('./ajmi_audio');
+  const { AJMI_ID, surahAudio, measure, bismillahCut } = require('./ajmi_audio');
   if (explicitEnd === null) throw new Error('al-Ajmi Reels need an explicit ayah range');
   if (process.env.WORD_START) throw new Error('al-Ajmi has no word timings: an ayah cannot be split into parts');
   const LEAD = 0.15, TAIL = 0.45;
@@ -114,7 +114,7 @@ async function ajmiTimeline({ surah, ayahStart, explicitEnd, outFile, MAX_CAP_MS
     const m = measure(file);
     let from = Math.max(0, m.speechStart - LEAD);
     if (n === 1 && ![1, 9].includes(s)) {
-      const p = m.pauses.find(([a]) => a - m.speechStart > bismSec * 0.6 && a - m.speechStart < bismSec * 1.6);
+      const p = bismillahCut(file, m, bismSec);
       if (p) {
         if (process.env.BISMILLAH === 'auto') {
           const b = (await getJson(`https://api.quran.com/api/v4/verses/by_key/1:1?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;

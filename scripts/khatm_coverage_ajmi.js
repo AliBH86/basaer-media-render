@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
-const { AJMI_ID, surahAudio, measure } = require('./ajmi_audio');
+const { AJMI_ID, surahAudio, measure, bismillahCut } = require('./ajmi_audio');
 
 const OUT = process.env.KHATM_COVERAGE_OUT || path.join(__dirname, 'coverage.json');
 const LEAD = 0.15, TAIL = 0.45;
@@ -29,7 +29,7 @@ const cov = JSON.parse(fs.readFileSync(OUT, 'utf8'));
         let from = m.speechStart;
         if (k === 1 && ![1, 9].includes(ch.id)) {
           // skip his Bismillah: the first pause after about the length of his 1:1
-          const p = m.pauses.find(([a]) => a - m.speechStart > bismSec * 0.6 && a - m.speechStart < bismSec * 1.6);
+          const p = bismillahCut(tmp, m, bismSec);
           if (p) from = p[1]; else s.problems.push(`${key}: Bismillah not separable (no pause)`);
         }
         s.durations.push([key, Math.round((m.speechEnd - from + LEAD + TAIL) * 1000)]);

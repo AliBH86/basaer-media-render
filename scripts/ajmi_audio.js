@@ -28,8 +28,8 @@ async function surahAudio(surah) {
 }
 
 // Speech span of one file: first and last moment above the silence floor, plus the internal pauses (seconds).
-function measure(file) {
-  const out = execSync(`ffmpeg -nostdin -hide_banner -i "${file}" -af silencedetect=noise=${SILENCE_DB}dB:d=${SILENCE_MIN} -f null - 2>&1`, { shell: '/bin/bash', encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+function measure(file, { db = SILENCE_DB, min = SILENCE_MIN } = {}) {
+  const out = execSync(`ffmpeg -nostdin -hide_banner -i "${file}" -af silencedetect=noise=${db}dB:d=${min} -f null - 2>&1`, { shell: '/bin/bash', encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   const dur = Number((out.match(/Duration: (\d+):(\d+):([\d.]+)/) || []).slice(1).reduce((t, x, i) => t + Number(x) * [3600, 60, 1][i], 0));
   const starts = [...out.matchAll(/silence_start: ([\d.]+)/g)].map((m) => Number(m[1]));
   const ends = [...out.matchAll(/silence_end: ([\d.]+)/g)].map((m) => Number(m[1]));
@@ -42,4 +42,13 @@ function measure(file) {
   return { durationSec: dur, speechStart, speechEnd, pauses };
 }
 
-module.exports = { AJMI_ID, EDITION, getJson, surahAudio, measure };
+// End of his Bismillah inside an ayah-1 file: the pause nearest to the length of his own 1:1 (within 60-160 %). First a
+// clear pause (0.25 s at -35 dB); some files run straight on with only a short breath (112:1: 80 ms at -30 dB, checked
+// 2026-10-10), so a second, finer pass looks for that. Returns [pauseStart, pauseEnd] in seconds, or null.
+function bismillahCut(file, m, bismSec) {
+  const near = (ps) => ps.filter(([a]) => a - m.speechStart > bismSec * 0.6 && a - m.speechStart < bismSec * 1.6)
+    .sort((x, y) => Math.abs(x[0] - m.speechStart - bismSec) - Math.abs(y[0] - m.speechStart - bismSec))[0] || null;
+  return near(m.pauses) || near(measure(file, { db: -30, min: 0.06 }).pauses);
+}
+
+module.exports = { AJMI_ID, EDITION, getJson, surahAudio, measure, bismillahCut };
