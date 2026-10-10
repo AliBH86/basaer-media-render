@@ -17,6 +17,9 @@ const STYLES = ['gradient', 'stars', 'rays', 'mist', 'lattice'];
 const T_MIN = 25000, T_LO = 45000, T_HI = 75000, CAP = 90000, CAP_SINGLE = 95000;
 const BISMILLAH_GAP = 450;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// A surah is usable when its audio and ayah timings are complete; a few words without their own timing are accepted
+// (re-plan 2026-10-10): the renderer fills them from the neighbouring words, so the highlight still moves in order.
+const usable = (s) => !!(s && s.durations && (s.problems || []).every((p) => /words timed$/.test(p)));
 // RE-PLAN FROM A POINT (owner, 2026-10-10: new reciters from Khatm Part 7). KHATM_PREFIX_PLAN = the current plan file:
 // its first KHATM_PREFIX_DAYS entries (already published) are kept exactly; the surah of KHATM_RESUME (e.g. 2:20) continues
 // from that ayah with the FIRST reciter of ROTATION (so that surah has two reciters: before and after the change), and
@@ -102,11 +105,11 @@ function cost(d, mustAllowShort) {
     for (let k = 0; k < ROTATION.length; k++) {
       const rid = ROTATION[(rot + k) % ROTATION.length];
       const s = cov.reciters[rid].surahs[ch.id];
-      if (s && s.ok && longAyahsFeasible(ch, rid)) { chosen = rid; rot = (rot + k + 1) % ROTATION.length; break; }
+      if (usable(s) && longAyahsFeasible(ch, rid)) { chosen = rid; rot = (rot + k + 1) % ROTATION.length; break; }
     }
     if (!chosen) {
       // no complete reciter can cut every long ayah at a real pause: the complete reciter with the fewest such ayahs
-      const c = ROTATION.filter((rid) => cov.reciters[rid].surahs[ch.id].ok).map((rid) => [rid, infeasibleCount(ch, rid)]).sort((a, b) => a[1] - b[1])[0];
+      const c = ROTATION.filter((rid) => usable(cov.reciters[rid].surahs[ch.id])).map((rid) => [rid, infeasibleCount(ch, rid)]).sort((a, b) => a[1] - b[1])[0];
       if (c) { chosen = c[0]; noPauseSurahs[ch.id] = { reciterId: c[0], ayahsWithoutPauseCut: c[1] }; }
     }
     if (!chosen) {
@@ -187,6 +190,7 @@ function cost(d, mustAllowShort) {
         const cleanSegs = (() => { const ss = t.segments.filter((x) => Array.isArray(x) && x.length >= 3 && x[0] >= 1).sort((x, y) => x[1] - y[1]); const o = []; let mx = 0; for (const x of ss) { if (x[0] > mx + 3) continue; o.push(x); mx = Math.max(mx, x[0]); } return o; })();
         const partDur = (p, q) => {
           let i0 = cleanSegs.findIndex((x) => x[0] === p); if (i0 < 0) i0 = cleanSegs.findIndex((x) => x[0] >= p);
+          if (i0 < 0) return Infinity; // no timed word from p on
           let i1 = cleanSegs.findIndex((x, i) => i > i0 && x[0] > q); if (i1 < 0) i1 = cleanSegs.length;
           const endMs = i1 >= cleanSegs.length ? t.timestamp_to : cleanSegs[i1 - 1][2];
           return endMs - cleanSegs[i0][1] + (a === 1 && p === 1 ? bismMs : 0);
