@@ -46,13 +46,18 @@ function getJson(url) {
 
 // API word timings in recitation order. Reciters sometimes go back a few words and recite them again (waqf and
 // ibtida'); those repeats are kept so the highlight follows the voice. An entry far ahead of everything recited so far
-// is a data error (e.g. a "word 118" among words 30-40 of 2:282, Al-Shatri) and is dropped.
+// is a data error (e.g. a "word 118" among words 30-40 of 2:282, Al-Shatri) and is dropped. "Far ahead" is counted from
+// the next word that has any timing at all: some files leave a few words untimed (2:93 words 23-25, 2:282 words 47-50,
+// AbdulBaset Mujawwad), and the words after such a gap are not a data error (checked 2026-10-11).
 function cleanSegments(segments, wordCount = Infinity) {
   const segs = (segments || []).filter((s) => Array.isArray(s) && s.length >= 3 && s[0] >= 1 && s[0] <= wordCount).sort((a, b) => a[1] - b[1]);
+  const timed = new Set(segs.map((s) => s[0]));
+  const lastTimed = Math.max(0, ...timed);
+  const nextTimed = (m) => { let n = m + 1; while (n < lastTimed && !timed.has(n)) n++; return n; };
   const out = [];
   let maxSeen = 0;
   for (const s of segs) {
-    if (s[0] > maxSeen + 3) continue;
+    if (s[0] > nextTimed(maxSeen) + 2) continue;
     out.push(s);
     maxSeen = Math.max(maxSeen, s[0]);
   }

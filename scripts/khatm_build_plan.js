@@ -187,7 +187,8 @@ function cost(d, mustAllowShort) {
         // DP over word boundaries: parts [p..q], cost by duration, small penalty when not ending at a waqf sign.
         // Same rule as the renderer (scripts/fetch_timeline.js partInterval): recitation order, repeats kept, impossible jumps dropped;
         // a part runs from the first time word p is recited until the reciter moves past word q.
-        const cleanSegs = (() => { const ss = t.segments.filter((x) => Array.isArray(x) && x.length >= 3 && x[0] >= 1).sort((x, y) => x[1] - y[1]); const o = []; let mx = 0; for (const x of ss) { if (x[0] > mx + 3) continue; o.push(x); mx = Math.max(mx, x[0]); } return o; })();
+        // "Far ahead" counts from the next word that has any timing (untimed gaps such as 2:93 words 23-25 are not data errors).
+        const cleanSegs = (() => { const ss = t.segments.filter((x) => Array.isArray(x) && x.length >= 3 && x[0] >= 1).sort((x, y) => x[1] - y[1]); const tm = new Set(ss.map((x) => x[0])); const last = Math.max(0, ...tm); const nx = (m) => { let n = m + 1; while (n < last && !tm.has(n)) n++; return n; }; const o = []; let mx = 0; for (const x of ss) { if (x[0] > nx(mx) + 2) continue; o.push(x); mx = Math.max(mx, x[0]); } return o; })();
         const partDur = (p, q) => {
           let i0 = cleanSegs.findIndex((x) => x[0] === p); if (i0 < 0) i0 = cleanSegs.findIndex((x) => x[0] >= p);
           if (i0 < 0) return Infinity; // no timed word from p on
@@ -199,6 +200,7 @@ function cost(d, mustAllowShort) {
         for (let q = 1; q <= W; q++) {
           for (let p = q; p >= 1; p--) {
             const dd = partDur(p, q);
+            if (dd === Infinity) continue; // no timed word from p on (untimed tail): a longer part may still start earlier
             if (dd > CAP) break;
             // Cut where the reciter really pauses (measured), preferably at a stop sign; a stop sign without a pause or a
             // plain boundary only when nothing else keeps the parts under 90 s (then the renderer fades the cut).
@@ -207,9 +209,16 @@ function cost(d, mustAllowShort) {
             if (c < B[q]) { B[q] = c; P[q] = p - 1; }
           }
         }
+        if (!(B[W] < Infinity)) throw new Error(`${key} (reciter ${rid}): no split into parts of at most ${CAP / 1000} s - check its word timings`);
         const parts = [];
         for (let q = W; q > 0; q = P[q]) parts.push([P[q] + 1, q]);
         parts.reverse();
+        if (parts.length === 1) {
+          // fits in one Reel after all (the measured span is shorter than the coverage estimate): a normal whole-ayah entry
+          plan.push({ surah: ch.id, ayahStart: a, ayahEnd: a, reciterId: rid, estSec: Math.round(partDur(1, W) / 100) / 10, bismillah: bism && a === 1, sajdah: sajdahKeys.has(key) });
+          await sleep(150);
+          continue;
+        }
         const nonWaqf = parts.slice(0, -1).filter(([, q]) => !waqf(q)).length;
         const noPause = parts.slice(0, -1).filter(([, q]) => !goodPause(key, rid, q)).length;
         const english = String(v.translations[0].text).replace(/<sup[^>]*>.*?<\/sup>/g, '').replace(/<[^>]+>/g, '').trim();
