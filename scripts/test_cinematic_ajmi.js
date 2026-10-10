@@ -30,7 +30,7 @@ const shot = (html, png) => { const h = png.replace(/\.png$/, '.html'); fs.write
 (async () => {
   // text from Quran.com (production fetcher; its reciter-4 timings are not used)
   const tlPath = path.join(outDir, 'text.json');
-  sh(`node "${path.join(__dirname, 'fetch_timeline.js')}" ${cfg.surah} ${cfg.ayahStart} 4 "${tlPath}" ${cfg.ayahEnd}`);
+  sh(`SOFT_CAP_SEC=75 MAX_CAP_SEC=95 node "${path.join(__dirname, 'fetch_timeline.js')}" ${cfg.surah} ${cfg.ayahStart} 4 "${tlPath}" ${cfg.ayahEnd}`);
   const tl = JSON.parse(fs.readFileSync(tlPath, 'utf8'));
   // audio per ayah from alquran.cloud
   const parts = [];
