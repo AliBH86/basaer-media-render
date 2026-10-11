@@ -115,7 +115,8 @@ async function main() {
       api.push(...v.words.filter((x) => x.char_type_name === 'word').map((x) => ({ key, text: x.text_uthmani })));
     }
     const passage = al.words.filter((w) => w.phrase >= q.phrases[0] && w.phrase <= q.phrases[1]);
-    const plain = (t) => t.replace(/[ً-ْٰـۖ-ۭ]/g, '').replace(/[ٱأإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/\s+/g, '');
+    // marks ignored: tashkeel U+064B-U+065F (incl. the madda U+0653 of تَشَآءُ), dagger alif, tatweel, Quranic marks
+    const plain = (t) => t.replace(/[ً-ٰٟـۖ-ۭ]/g, '').replace(/[ٱأإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/\s+/g, '');
     // The dua quotes 3:26 from "تُؤْتِى ٱلْمُلْكَ": find that word in the API list, then require a 1:1 match to the end of 3:27.
     const startIdx = api.findIndex((x, i) => plain(x.text) === plain(passage[0].w) && api[i + 1] && plain(api[i + 1].text) === plain(passage[1].w));
     const slice = startIdx >= 0 ? api.slice(startIdx) : [];
