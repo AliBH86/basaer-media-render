@@ -83,6 +83,30 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
 </body></html>`;
 }
 
+// SAVE / SHARE PROMPT (owner, 2026-10-11): fades in over the last CTA_SEC of the Reel. Instagram ranks saves and shares
+// highly; a short, calm prompt at the end asks for them without cluttering the words. Sits at 1150-1246 px, above the
+// bottom 670 px Instagram covers; it covers the @handle line for those seconds only.
+const CTA_SEC = 3.5;
+function buildCtaHtml({ ar, en }) {
+  const bookmark = '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M6 2.5h12a1 1 0 0 1 1 1V22l-7-4.2L5 22V3.5a1 1 0 0 1 1-1z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round"/></svg>';
+  const send = '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M21.5 2.5 10.6 13.4M21.5 2.5l-7 19-3.9-8.1-8.1-3.9z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
+  @font-face { font-family:'Amiri Quran Local'; src:url(data:font/woff2;base64,${amiriQuranBase64}) format('woff2'); font-weight:400 700; }
+  @font-face { font-family:'Montserrat Local'; src:url(data:font/woff2;base64,${montserratBase64}) format('woff2'); font-weight:100 900; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:${W}px; height:${H}px; background:transparent; position:relative; overflow:hidden; }
+  .pill { position:absolute; top:1150px; left:50%; transform:translateX(-50%); height:96px; padding:0 42px; display:flex; align-items:center; gap:22px; direction:rtl;
+          background:rgba(11,31,42,0.86); border:1.5px solid rgba(201,162,75,0.9); border-radius:48px; box-shadow:0 8px 30px rgba(0,0,0,0.45); white-space:nowrap; }
+  .t { font-family:'Amiri Quran Local',serif; font-size:36px; color:#F2ECE1; }
+  .dot { color:#C9A24B; font-size:30px; }
+  .en { position:absolute; top:1252px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:22px; color:#F2ECE1; opacity:0.75; letter-spacing:2px; }
+</style></head><body>
+  <div class="pill">${bookmark}<span class="t">${ar[0]}</span><span class="dot">·</span>${send}<span class="t">${ar[1]}</span></div>
+  <div class="en">${en}</div>
+  <script>document.fonts.ready.then(() => requestAnimationFrame(() => requestAnimationFrame(() => document.body.setAttribute('data-fonts-ready', '1'))));</script>
+</body></html>`;
+}
+
 let chromeDir = null;
 function renderPng(html, outPath) {
   const htmlPath = outPath.replace(/\.png$/, '.html');
@@ -200,19 +224,24 @@ async function main() {
   fs.writeFileSync(tlBg, JSON.stringify({ durationSec: dur, ayahs: pages.map((p) => ({ ayahStartMs: Math.max(0, rel(p.words[0].start)) * 1000 })) }));
   sh(`FOOTAGE_SEED=${7000 + part.part * 37} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 
-  // 6. Composite.
-  const inputs = [`-i "${bg}"`, ...specs.map((s) => `-i "${s.png}"`), `-i "${audio}"`].join(' ');
+  // 6. Composite (the save/share prompt last, on top, fading in).
+  const ctaPng = path.join(work, 'cta.png');
+  renderPng(buildCtaHtml({ ar: ['احفظه لصباحك', 'أرسله لمن تحب'], en: 'SAVE &nbsp;·&nbsp; SHARE' }), ctaPng);
+  const ctaAt = Math.max(0, dur - CTA_SEC);
+  const inputs = [`-i "${bg}"`, ...specs.map((s) => `-i "${s.png}"`), `-loop 1 -t ${dur} -i "${ctaPng}"`, `-i "${audio}"`].join(' ');
   const lines = [];
   let prev = '0:v';
   specs.forEach((s, i) => {
-    const out = i === specs.length - 1 ? 'vout' : `v${i}`;
-    lines.push(`[${prev}][${i + 1}:v]overlay=enable='${s.persist ? `gte(t,${s.startSec})` : `between(t,${s.startSec},${s.endSec})`}'[${out}]`);
-    prev = out;
+    lines.push(`[${prev}][${i + 1}:v]overlay=enable='${s.persist ? `gte(t,${s.startSec})` : `between(t,${s.startSec},${s.endSec})`}'[v${i}]`);
+    prev = `v${i}`;
   });
+  const ctaIdx = specs.length + 1;
+  lines.push(`[${ctaIdx}:v]format=rgba,fade=t=in:st=${ctaAt.toFixed(3)}:d=0.6:alpha=1[cta]`);
+  lines.push(`[${prev}][cta]overlay=enable='gte(t,${ctaAt.toFixed(3)})'[vout]`);
   const fscript = path.join(work, 'filter.txt');
   fs.writeFileSync(fscript, lines.join(';\n'));
   const outPath = path.join(outDir, `series_part_${part.part}.mp4`);
-  sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${fscript}" -map "[vout]" -map ${specs.length + 1}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 160k -shortest "${outPath}"`);
+  sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${fscript}" -map "[vout]" -map ${specs.length + 2}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 160k -shortest "${outPath}"`);
 
   const stats = { series: meta.title, part: part.part, parts, phrases: [part.from, part.to], clipStartSec: +clipStart.toFixed(3), clipEndSec: +clipEnd.toFixed(3), durationSec: dur, pages: pages.length, words: words.length, quranWords: words.filter((w) => w.quran).length, lowestWordScore: Math.min(...words.map((w) => w.score)), elapsedSec: (Date.now() - t0) / 1000 };
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify(stats, null, 2));
