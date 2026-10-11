@@ -1,0 +1,60 @@
+name: Series Reel (one part of a permitted recitation)
+
+# Owner, 2026-10-11: renders one part of a series (data/series/<series>/plan.json) over the approved footage library.
+# Uploads the Reel to Cloudinary for review; nothing is published from here.
+on:
+  workflow_dispatch:
+    inputs:
+      series:
+        description: "Series folder under data/series/"
+        default: "dua-sabah"
+      part:
+        description: "Part number (1..N, see plan.json)"
+        required: true
+      audioUrl:
+        description: "Recording (Cloudinary URL)"
+        default: "https://res.cloudinary.com/b72gfdzx/video/upload/v1791731983/series/dua-sabah/audio-ali-hamadi.mp3"
+      cloudFolder:
+        description: "Cloudinary folder"
+        default: "series-test"
+      resumeUrl:
+        description: "n8n resumeUrl to POST results back to (optional)"
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "No Chrome found" >&2; exit 1
+      - name: Render
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          AUDIO_URL: ${{ github.event.inputs.audioUrl }}
+        run: node scripts/render_series.js "data/series/${{ github.event.inputs.series }}" "${{ github.event.inputs.part }}" out
+      - name: Stills + upload
+        run: |
+          F="${{ github.event.inputs.cloudFolder }}"
+          REEL=$(ls out/series_part_*.mp4)
+          D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$REEL")
+          for k in 1 2 3 4; do ffmpeg -nostdin -loglevel error -y -ss $(echo "$D*($k-0.5)/4" | bc -l) -i "$REEL" -frames:v 1 out/still_$k.png; done
+          ffmpeg -nostdin -loglevel error -y -i out/still_1.png -i out/still_2.png -i out/still_3.png -i out/still_4.png -filter_complex "[0][1]hstack=2[t];[2][3]hstack=2[b];[t][b]vstack=2,scale=1080:-2" out/stills_tile.jpg
+          node scripts/upload_cloudinary.js "$REEL" "$F/${{ github.event.inputs.series }}-part${{ github.event.inputs.part }}-${{ github.run_id }}" video out reelUrl
+          node scripts/upload_cloudinary.js out/stills_tile.jpg "$F/${{ github.event.inputs.series }}-part${{ github.event.inputs.part }}-tile-${{ github.run_id }}" image out stillsTileUrl
+          cat out/uploads.json
+      - uses: actions/upload-artifact@v4
+        with: { name: series-part, path: out/, retention-days: 7 }
+      - name: Notify n8n (only if provided)
+        if: ${{ github.event.inputs.resumeUrl != '' }}
+        run: |
+          node -e "const fs=require('fs');fs.writeFileSync('out/cb.json',JSON.stringify({...JSON.parse(fs.readFileSync('out/uploads.json','utf8')),stats:JSON.parse(fs.readFileSync('out/render_stats.json','utf8')),runId:'${{ github.run_id }}'}))"
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" -H "Content-Type: application/json" -d @out/cb.json
