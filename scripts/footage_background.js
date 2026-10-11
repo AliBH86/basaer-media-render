@@ -38,7 +38,8 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
 {
   const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_library.json'), 'utf8'));
   const seed = Number(process.env.FOOTAGE_SEED || 1);
-  const ARC = ['mosqueN', 'skyN', 'dusk', 'mosqueN', 'dusk', 'day', 'mosqueD', 'day', 'dusk', 'skyN', 'mosqueN', 'dusk', 'skyN', 'mosqueN'];
+  // FOOTAGE_ARC (series Reels, 2026-10-11): a comma list of pools matching the words of that part; unset = the Khatm arc.
+  const ARC = process.env.FOOTAGE_ARC ? process.env.FOOTAGE_ARC.split(',').map((p) => p.trim()).filter(Boolean) : ['mosqueN', 'skyN', 'dusk', 'mosqueN', 'dusk', 'day', 'mosqueD', 'day', 'dusk', 'skyN', 'mosqueN', 'dusk', 'skyN', 'mosqueN'];
   const pools = {};
   for (const c of lib.clips) (pools[c.pool] = pools[c.pool] || []).push(c);
   const used = new Set(), next = {};
@@ -52,7 +53,7 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
     return null;
   };
   // the last piece echoes the opening pool so the Reel ends where it began
-  const arc = pieces.map((_, i) => (i === pieces.length - 1 && pieces.length > 2 ? 'mosqueN' : ARC[i % ARC.length]));
+  const arc = pieces.map((_, i) => (i === pieces.length - 1 && pieces.length > 2 ? (process.env.FOOTAGE_ARC ? ARC[0] : 'mosqueN') : ARC[i % ARC.length]));
   cfg.shots = arc.map((pool, i) => {
     const c = pick(pool) || pick('dusk') || pick('skyN') || pick('day') || pick('mosqueD') || pick('mosqueN') || lib.clips[(seed + i) % lib.clips.length];
     return { src: lib.base + c.id + '-vertical.mp4', _what: c.what + ' [' + pool + ']', at: 0.3 + ((seed + i) % 3) };

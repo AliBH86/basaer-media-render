@@ -84,25 +84,24 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
 }
 
 // SAVE / SHARE PROMPT (owner, 2026-10-11): fades in over the last CTA_SEC of the Reel. Instagram ranks saves and shares
-// highly; a short, calm prompt at the end asks for them without cluttering the words. Sits at 1150-1246 px, above the
+// highly; a short, calm prompt at the end asks for them without cluttering the words. Sits at 1130-1244 px, above the
 // bottom 670 px Instagram covers; it covers the @handle line for those seconds only.
 const CTA_SEC = 3.5;
 function buildCtaHtml({ ar, en }) {
-  const bookmark = '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M6 2.5h12a1 1 0 0 1 1 1V22l-7-4.2L5 22V3.5a1 1 0 0 1 1-1z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round"/></svg>';
-  const send = '<svg viewBox="0 0 24 24" width="40" height="40"><path d="M21.5 2.5 10.6 13.4M21.5 2.5l-7 19-3.9-8.1-8.1-3.9z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  const bookmark = '<svg viewBox="0 0 24 24" width="50" height="50"><path d="M6 2.5h12a1 1 0 0 1 1 1V22l-7-4.2L5 22V3.5a1 1 0 0 1 1-1z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round"/></svg>';
+  const send = '<svg viewBox="0 0 24 24" width="50" height="50"><path d="M21.5 2.5 10.6 13.4M21.5 2.5l-7 19-3.9-8.1-8.1-3.9z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
   @font-face { font-family:'Amiri Quran Local'; src:url(data:font/woff2;base64,${amiriQuranBase64}) format('woff2'); font-weight:400 700; }
   @font-face { font-family:'Montserrat Local'; src:url(data:font/woff2;base64,${montserratBase64}) format('woff2'); font-weight:100 900; }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { width:${W}px; height:${H}px; background:transparent; position:relative; overflow:hidden; }
-  .pill { position:absolute; top:1150px; left:50%; transform:translateX(-50%); height:96px; padding:0 42px; display:flex; align-items:center; gap:22px; direction:rtl;
-          background:rgba(11,31,42,0.86); border:1.5px solid rgba(201,162,75,0.9); border-radius:48px; box-shadow:0 8px 30px rgba(0,0,0,0.45); white-space:nowrap; }
-  .t { font-family:'Amiri Quran Local',serif; font-size:36px; color:#F2ECE1; }
-  .dot { color:#C9A24B; font-size:30px; }
-  .en { position:absolute; top:1252px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:22px; color:#F2ECE1; opacity:0.75; letter-spacing:2px; }
+  .pill { position:absolute; top:1130px; left:50%; transform:translateX(-50%); height:114px; padding:0 50px; display:flex; align-items:center; gap:26px; direction:rtl;
+          background:rgba(11,31,42,0.86); border:1.5px solid rgba(201,162,75,0.9); border-radius:57px; box-shadow:0 8px 30px rgba(0,0,0,0.45); white-space:nowrap; }
+  .t { font-family:'Amiri Quran Local',serif; font-size:44px; color:#F2ECE1; }
+  .dot { color:#C9A24B; font-size:36px; }
 </style></head><body>
   <div class="pill">${bookmark}<span class="t">${ar[0]}</span><span class="dot">·</span>${send}<span class="t">${ar[1]}</span></div>
-  <div class="en">${en}</div>
+
   <script>document.fonts.ready.then(() => requestAnimationFrame(() => requestAnimationFrame(() => document.body.setAttribute('data-fonts-ready', '1'))));</script>
 </body></html>`;
 }
@@ -222,7 +221,7 @@ async function main() {
   const bg = path.join(work, 'bg.mp4');
   const tlBg = path.join(work, 'timeline_bg.json');
   fs.writeFileSync(tlBg, JSON.stringify({ durationSec: dur, ayahs: pages.map((p) => ({ ayahStartMs: Math.max(0, rel(p.words[0].start)) * 1000 })) }));
-  sh(`FOOTAGE_SEED=${7000 + part.part * 37} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
+  sh(`FOOTAGE_SEED=${7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');
