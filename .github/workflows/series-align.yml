@@ -1,0 +1,38 @@
+name: Series - align the text to a permitted recitation (research only)
+
+# Owner, 2026-10-11: دعاء الصباح by علي حمادي (القرمزي للإنتاج الفني, permission 2026-10-11) as a daily Reel series.
+# Times every word of the owner's text in the recording (forced alignment). Numbers only: nothing is rendered, uploaded
+# or published. The result is an artifact used to cut the series into Reels.
+on:
+  workflow_dispatch:
+    inputs:
+      series:
+        description: "Series folder under data/series/"
+        default: "dua-sabah"
+      audioUrl:
+        description: "Recording (Cloudinary URL)"
+        default: "https://res.cloudinary.com/b72gfdzx/video/upload/v1791731983/series/dua-sabah/audio-ali-hamadi.mp3"
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install the aligner (CPU)
+        run: |
+          pip install --quiet torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+          pip install --quiet git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git
+      - name: Get the recording (16 kHz mono)
+        run: |
+          mkdir -p work
+          curl -sSL --fail -o work/rec.mp3 "${{ github.event.inputs.audioUrl }}"
+          ffmpeg -nostdin -loglevel error -y -i work/rec.mp3 -ac 1 -ar 16000 work/rec.wav
+      - name: Align
+        run: python scripts/series_align.py work/rec.wav "data/series/${{ github.event.inputs.series }}/phrases.json" work/aligned.json
+      - uses: actions/upload-artifact@v4
+        with: { name: aligned, path: work/aligned.json, retention-days: 14 }
