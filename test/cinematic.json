@@ -1,6 +1,6 @@
 {
   "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building. v2: lighter scrim and grade.",
-  "mode": "ajmi",
+  "mode": "import",
   "queries": [
     "mosque sunset",
     "mosque night",
@@ -48,16 +48,16 @@
   },
   "import": [
     {
-      "url": "https://www.pexels.com/video/silhouette-of-a-building-7311579/",
-      "suffix": "a",
-      "from": 0,
-      "to": 4
+      "url": "https://www.pexels.com/download/video/38321872/"
     },
     {
-      "url": "https://www.pexels.com/video/silhouette-of-a-building-7311579/",
-      "suffix": "b",
-      "from": 12.5,
-      "to": 15
+      "url": "https://www.pexels.com/video/timelapse-of-overcast-clouds-in-the-sky-39553996/"
+    },
+    {
+      "url": "https://www.pexels.com/download/video/39003563/"
+    },
+    {
+      "url": "https://www.pexels.com/download/video/12279775/"
     }
   ],
   "reel60": {
