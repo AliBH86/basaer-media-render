@@ -48,16 +48,9 @@
   },
   "import": [
     {
-      "url": "https://www.pexels.com/download/video/38321872/"
-    },
-    {
-      "url": "https://www.pexels.com/video/timelapse-of-overcast-clouds-in-the-sky-39553996/"
-    },
-    {
-      "url": "https://www.pexels.com/download/video/39003563/"
-    },
-    {
-      "url": "https://www.pexels.com/download/video/12279775/"
+      "url": "https://www.pexels.com/download/video/38321872/",
+      "from": 0,
+      "to": 13
     }
   ],
   "reel60": {
