@@ -22,7 +22,6 @@ const W = 1080, H = 1920, FPS = 30;
 const SAFE_X = 65, SAFE_W = W - 2 * SAFE_X;
 const ARABIC_MAX_WIDTH = Math.round(W * 0.8);
 const PAGE_MAX_WORDS = 12;
-const REST_HOLD_SEC = 0.6;
 const LEAD_SEC = 0.35, TAIL_MAX_SEC = 1.2;
 const handle = '@basaer.media.bh';
 const EAST = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
@@ -165,15 +164,24 @@ async function main() {
   for (const pg of pages) {
     pg.words.forEach((w, i) => specs.push({ startSec: rel(w.start), endSec: rel(w.end), page: pg, highlightIndex: i }));
   }
-  // Rest screens (never an empty screen, same rule as the Khatm Reels).
+  // Highlight timing for a melodic recitation (2026-10-11): the aligner finds where each word STARTS reliably, but a word
+  // the reciter draws out (أَللَّهُمَّ held ~8 s in part 1) gets a short end. So a word stays lit until the next word starts,
+  // and goes unlit only where the voice really stops (silences measured in this clip's audio). In such a breath the
+  // upcoming text shows unlit (rest screen), so the screen is never empty (same rule as the Khatm Reels).
+  const silOut = execSync(`ffmpeg -nostdin -hide_banner -i "${audio}" -af silencedetect=noise=-32dB:d=0.4 -f null - 2>&1`, { shell: '/bin/bash', encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  const sStarts = [...silOut.matchAll(/silence_start: ([\d.]+)/g)].map((m) => +m[1]);
+  const sEnds = [...silOut.matchAll(/silence_end: ([\d.]+)/g)].map((m) => +m[1]);
+  const silences = sStarts.map((s, i) => [s, sEnds[i] !== undefined ? sEnds[i] : dur]);
   const order = specs.map((s, i) => i).sort((a, b) => specs[a].startSec - specs[b].startSec);
   const rest = [];
   if (specs[order[0]].startSec > 0.001) rest.push({ ...specs[order[0]], startSec: 0, endSec: specs[order[0]].startSec, highlightIndex: -1 });
   for (let k = 0; k + 1 < order.length; k++) {
     const a = specs[order[k]], b = specs[order[k + 1]];
-    if (b.startSec - a.endSec <= REST_HOLD_SEC) { a.endSec = Math.max(a.endSec, b.startSec); continue; }
-    a.endSec += REST_HOLD_SEC;
-    rest.push({ ...b, startSec: a.endSec, endSec: b.startSec, highlightIndex: -1 });
+    const breath = silences.find(([s, e]) => e > a.endSec + 0.05 && s < b.startSec - 0.05 && e - s >= 0.4);
+    if (!breath) { a.endSec = Math.max(a.endSec, b.startSec); continue; }
+    a.endSec = Math.max(a.endSec, Math.min(breath[0] + 0.15, b.startSec));
+    if (b.startSec - a.endSec > 0.05) rest.push({ ...b, startSec: a.endSec, endSec: b.startSec, highlightIndex: -1 });
+    else a.endSec = b.startSec;
   }
   specs[order[order.length - 1]].persist = true;
   specs.push(...rest);
