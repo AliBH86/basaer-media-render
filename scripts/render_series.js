@@ -39,7 +39,8 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
       const t = String(w).replace(/ /g, ' ');
       if (i === highlightIndex) return `<span style="display:inline-block;color:#F0CB6E;font-weight:700;transform:scale(1.14);text-shadow:0 0 24px rgba(240,203,110,0.7),0 2px 18px rgba(0,0,0,0.6);">${t}</span>`;
       const said = highlightIndex >= 0 && i < highlightIndex;
-      return `<span style="color:#FFFFFF;opacity:${said ? 1 : 0.55};font-weight:${said ? 700 : 400};">${t}</span>`;
+      // dimmed words keep a strong shadow so they stay readable over bright sky
+      return `<span style="color:#FFFFFF;opacity:${said ? 1 : 0.72};font-weight:${said ? 700 : 400};text-shadow:0 2px 6px rgba(0,0,0,0.75),0 0 22px rgba(0,0,0,0.55);">${t}</span>`;
     }
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
