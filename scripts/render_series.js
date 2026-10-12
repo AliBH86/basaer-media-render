@@ -65,7 +65,7 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
   <div class="header">
     <div class="title-ar">${titleAr}</div>
     <div class="title-en">${titleEn}${sub ? ` &middot; ${sub}` : ''}</div>
-    <div class="reciter"><span class="reciter-ar">${reciterAr}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterEn}</span></div>
+    ${reciterAr || reciterEn ? `<div class="reciter">${reciterAr ? `<span class="reciter-ar">${reciterAr}</span>` : ''}${reciterAr && reciterEn ? '<span class="reciter-sep">&middot;</span>' : ''}${reciterEn ? `<span class="reciter-en">${reciterEn}</span>` : ''}</div>` : ''}
   </div>
   <div class="content">
     <div class="arabic" id="arabic">${spans}</div>
@@ -217,7 +217,7 @@ async function main() {
   const qRef = { ar: 'آل عمران ٢٦–٢٧', en: "AAL 'IMRAN 3:26-27" };
   specs.forEach((s, i) => {
     s.png = path.join(work, `overlay_${i}.png`);
-    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter, reciterEn: meta.reciterEn || 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null }), s.png);
+    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null }), s.png);
   });
 
   // 5. Footage background (approved library), shots cut on page starts.
