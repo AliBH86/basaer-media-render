@@ -632,16 +632,25 @@ async function main() {
   let prev = '0:v';
   overlaySpecs.forEach((spec, i) => {
     const inIdx = i + 1;
-    const out = i === overlaySpecs.length - 1 ? 'vout' : `v${i}`;
+    const out = `v${i}`;
     const endCond = spec.persist ? `gte(t,${spec.startSec})` : `between(t,${spec.startSec},${spec.endSec})`;
     filterLines.push(`[${prev}][${inIdx}:v]overlay=enable='${endCond}'[${out}]`);
     prev = out;
   });
+  const audioInputIdx = overlaySpecs.length + 1;
+  // Audio wave (owner, 2026-10-13: "a wave bar for the audio in all reels"): a gold waveform of the recitation itself, in
+  // the free band just above the progress line (200-280 px), so it never meets the ayah text or the translation.
+  // WAVE=0 turns it off. The volume boost is for the drawing only, never the sound.
+  if (process.env.WAVE !== '0') {
+    filterLines.push(`[${audioInputIdx}:a]aformat=channel_layouts=mono,volume=2.2,showwaves=s=840x80:mode=cline:rate=${FPS}:colors=0xF0CB6E:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.85[wave]`);
+    filterLines.push(`[${prev}][wave]overlay=120:200[vout]`);
+  } else {
+    filterLines.push(`[${prev}]null[vout]`);
+  }
   const filterComplex = filterLines.join(';\n');
   const filterScriptPath = path.join(workDir, 'filter.txt');
   fs.writeFileSync(filterScriptPath, filterComplex);
 
-  const audioInputIdx = overlaySpecs.length + 1;
   const outPath = path.join(outDir, `reel_${surah}_${ayahStart}.mp4`);
   sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${filterScriptPath}" -map "[vout]" -map ${audioInputIdx}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 128k -shortest "${outPath}"`);
 
