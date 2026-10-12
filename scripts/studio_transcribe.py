@@ -7,13 +7,19 @@ from this transcript.
 Usage: python scripts/studio_transcribe.py <voice.wav> <model> <out.json>
 """
 import json
+import os
 import sys
 
 from faster_whisper import WhisperModel
 
 audio_path, model_name, out_path = sys.argv[1:4]
 model = WhisperModel(model_name, device="cpu", compute_type="int8")
-segs, info = model.transcribe(audio_path, language="ar", word_timestamps=True, vad_filter=True, beam_size=5)
+# STUDIO_HINT: words the owner or the clip caption gives (helps the model with names and dialect); STUDIO_VAD=0 keeps
+# every second (the VAD filter dropped quiet, slow speech on the first clip).
+hint = os.environ.get("STUDIO_HINT") or None
+vad = os.environ.get("STUDIO_VAD", "1") != "0"
+segs, info = model.transcribe(audio_path, language="ar", word_timestamps=True, vad_filter=vad, beam_size=5,
+                              initial_prompt=hint, condition_on_previous_text=False, temperature=0)
 out = {"duration": round(info.duration, 3), "segments": [], "words": []}
 for s in segs:
     out["segments"].append({"start": round(s.start, 3), "end": round(s.end, 3), "text": s.text.strip()})
