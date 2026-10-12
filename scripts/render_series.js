@@ -31,8 +31,16 @@ const getJson = (url) => new Promise((resolve, reject) => https.get(url, { heade
   const c = []; res.on('data', (d) => c.push(d)); res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(c).toString('utf8'))); } catch (e) { reject(new Error(`${url} -> HTTP ${res.statusCode}`)); } });
 }).on('error', reject));
 
-function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, highlightIndex, progressFraction, quranRef }) {
+function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, highlightIndex, progressFraction, quranRef, energetic }) {
   const spans = words.map((w, i) => {
+    // energetic (owner, 2026-10-13): karaoke feel. Words already said are bright, words still to come are dimmed, and the
+    // word being said pops (gold, slightly larger, glowing). The transform does not move the other words.
+    if (energetic) {
+      const t = String(w).replace(/ /g, ' ');
+      if (i === highlightIndex) return `<span style="display:inline-block;color:#F0CB6E;font-weight:700;transform:scale(1.14);text-shadow:0 0 24px rgba(240,203,110,0.7),0 2px 18px rgba(0,0,0,0.6);">${t}</span>`;
+      const said = highlightIndex >= 0 && i < highlightIndex;
+      return `<span style="color:#FFFFFF;opacity:${said ? 1 : 0.55};font-weight:${said ? 700 : 400};">${t}</span>`;
+    }
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
     return `<span style="color:${color};font-weight:${weight};">${String(w).replace(/ /g, ' ')}</span>`;
@@ -217,14 +225,14 @@ async function main() {
   const qRef = { ar: 'آل عمران ٢٦–٢٧', en: "AAL 'IMRAN 3:26-27" };
   specs.forEach((s, i) => {
     s.png = path.join(work, `overlay_${i}.png`);
-    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null }), s.png);
+    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null, energetic: meta.style === 'energetic' }), s.png);
   });
 
   // 5. Footage background (approved library), shots cut on page starts.
   const bg = path.join(work, 'bg.mp4');
   const tlBg = path.join(work, 'timeline_bg.json');
   fs.writeFileSync(tlBg, JSON.stringify({ durationSec: dur, ayahs: pages.map((p) => ({ ayahStartMs: Math.max(0, rel(p.words[0].start)) * 1000 })) }));
-  sh(`FOOTAGE_SEED=${7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
+  sh(`FOOTAGE_SEED=${7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} FOOTAGE_STYLE=${meta.style || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');

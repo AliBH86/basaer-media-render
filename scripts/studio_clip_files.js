@@ -30,9 +30,10 @@ fs.writeFileSync(path.join(outDir, 'phrases.json'), JSON.stringify({
   reciter: spec.reciter || '', reciterEn: spec.reciterEn || '',
   cta: Array.isArray(spec.cta) && spec.cta.length === 2 ? spec.cta : ['احفظه', 'أرسله لمن تحب'],
   pageStarts: starts,
+  style: spec.style === 'energetic' ? 'energetic' : '',
   phrases: lines.map((text, i) => ({ i, text })),
 }, null, 1));
 fs.writeFileSync(path.join(outDir, 'plan.json'), JSON.stringify({
-  series: spec.title || 'studio', parts: [{ from: 0, to: lines.length - 1, part: 1, arc: (arc.length ? arc : fallback).join(','), maxShot: Number(spec.maxShot) || 8 }],
+  series: spec.title || 'studio', parts: [{ from: 0, to: lines.length - 1, part: 1, arc: (arc.length ? arc : fallback).join(','), maxShot: Number(spec.maxShot) || (spec.style === 'energetic' ? 3.4 : 8) }],
 }, null, 1));
 console.log(`${lines.length} lines, screens start at ${starts.join(',')}, arc ${(arc.length ? arc : fallback).join(',')}`);

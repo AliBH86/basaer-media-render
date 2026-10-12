@@ -14,7 +14,10 @@ const os = require('os');
 const path = require('path');
 
 const [, , tlPath, outPath] = process.argv;
-const W = 1080, H = 1920, FPS = 30, XF = 0.6, MAX_SHOT = Number(process.env.FOOTAGE_MAX_SHOT) || 6.5; // FOOTAGE_MAX_SHOT: calmer, longer shots for a slow item
+// FOOTAGE_STYLE=energetic (owner, 2026-10-13: "more energetic, our reels feel cold"): short shots with a steady push-in,
+// a warmer and brighter grade, a lighter scrim and quick white-flash cuts. Unset = the calm approved look.
+const ENERGETIC = process.env.FOOTAGE_STYLE === 'energetic';
+const W = 1080, H = 1920, FPS = 30, XF = ENERGETIC ? 0.35 : 0.6, MAX_SHOT = Number(process.env.FOOTAGE_MAX_SHOT) || (ENERGETIC ? 3.4 : 6.5); // FOOTAGE_MAX_SHOT: calmer, longer shots for a slow item
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
 const cfg = { scrim: 1.15 };
 const tl = JSON.parse(fs.readFileSync(tlPath, 'utf8'));
@@ -76,8 +79,12 @@ for (const [i, p] of pieces.entries()) {
   if (slow > 2.5) throw new Error(`shot ${i} (${s._what}) is too short: ${avail.toFixed(2)}s for ${len.toFixed(2)}s`);
   const drift = (i % 2 ? 1 : -1) * 36;
   const seg = path.join(work, `seg_${i}.mp4`);
-  ff(`-ss ${s.at || 0} -i "${src}" -an -vf "setpts=${slow.toFixed(4)}*PTS,scale=-2:${H + 110},` +
-    `crop=${W}:${H}:x='(iw-${W})/2+${drift}*(t/${len.toFixed(3)}-0.5)':y='(ih-${H})/2+24*(t/${len.toFixed(3)}-0.5)',fps=${FPS},format=yuv420p,setsar=1" ` +
+  // energetic: a steady push-in (every third shot pulls out), warmer and brighter; calm: the slow side drift
+  const z = i % 3 === 2 ? `(1.16-0.14*t/${len.toFixed(3)})` : `(1.02+0.14*t/${len.toFixed(3)})`;
+  const move = ENERGETIC
+    ? `scale=w='trunc(${W}*${z}/2)*2':h=-2:eval=frame,crop=${W}:${H}:(iw-${W})/2:(ih-${H})/2,eq=brightness=0.03:saturation=1.18:contrast=1.06,colorbalance=rs=0.06:gs=0.02:bs=-0.06:rm=0.05:bm=-0.04`
+    : `scale=-2:${H + 110},crop=${W}:${H}:x='(iw-${W})/2+${drift}*(t/${len.toFixed(3)}-0.5)':y='(ih-${H})/2+24*(t/${len.toFixed(3)}-0.5)'`;
+  ff(`-ss ${s.at || 0} -i "${src}" -an -vf "setpts=${slow.toFixed(4)}*PTS,${move},fps=${FPS},format=yuv420p,setsar=1" ` +
     `-t ${len.toFixed(3)} -c:v libx264 -crf 17 -preset veryfast "${seg}"`);
   segs.push(seg);
   console.log(`shot ${i}: ${s._what} ${len.toFixed(2)}s${slow > 1 ? ` (slowed x${slow.toFixed(2)})` : ''}`);
@@ -85,7 +92,7 @@ for (const [i, p] of pieces.entries()) {
 
 // 3. scrim behind the text area (same gradient as the 9 s cinematic tests)
 const scrimHtml = path.join(work, 'scrim.html'), scrim = path.join(work, 'scrim.png');
-const k = cfg.scrim || 1, al = (x) => Math.min(0.92, x * k).toFixed(2);
+const k = (cfg.scrim || 1) * (ENERGETIC ? 0.72 : 1), al = (x) => Math.min(0.92, x * k).toFixed(2);
 fs.writeFileSync(scrimHtml, `<html><body style="margin:0;width:${W}px;height:${H}px;background:linear-gradient(180deg,
   rgba(11,31,42,${al(0.20)}) 0px, rgba(11,31,42,${al(0.38)}) 280px, rgba(11,31,42,${al(0.55)}) 560px, rgba(11,31,42,${al(0.55)}) 1180px,
   rgba(11,31,42,${al(0.18)}) 1420px, rgba(11,31,42,0.0) 1650px, rgba(11,31,42,${al(0.35)}) 1920px)"></body></html>`);
@@ -94,7 +101,7 @@ sh(`"${CHROME}" --headless --disable-gpu --hide-scrollbars --default-background-
 
 // 4. dissolves on the cuts, scrim on top, exact length
 let chain = '', prev = '[0:v]';
-for (let j = 1; j < segs.length; j++) { chain += `${prev}[${j}:v]xfade=transition=fade:duration=${XF}:offset=${(cuts[j] - XF / 2).toFixed(3)}[x${j}];`; prev = `[x${j}]`; }
+for (let j = 1; j < segs.length; j++) { chain += `${prev}[${j}:v]xfade=transition=${ENERGETIC ? 'fadewhite' : 'fade'}:duration=${XF}:offset=${(cuts[j] - XF / 2).toFixed(3)}[x${j}];`; prev = `[x${j}]`; }
 chain += `${prev}[${segs.length}:v]overlay[bg]`;
 ff(`${segs.map((s) => `-i "${s}"`).join(' ')} -i "${scrim}" -filter_complex "${chain}" -map "[bg]" -t ${TOTAL.toFixed(3)} -r ${FPS} -c:v libx264 -crf 17 -preset veryfast -pix_fmt yuv420p "${outPath}"`);
 console.log(`footage background -> ${outPath}`);
