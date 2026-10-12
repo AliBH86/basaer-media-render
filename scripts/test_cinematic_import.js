@@ -17,15 +17,28 @@ const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Geck
 const sh = (cmd) => execSync(cmd, { stdio: ['ignore', 'pipe', 'inherit'], shell: '/bin/bash' }).toString();
 const up = (file, kind, id) => JSON.parse(sh(`curl -sS -X POST "https://api.cloudinary.com/v1_1/b72gfdzx/${kind}/upload" -F "file=@${file}" -F "upload_preset=ml_default" -F "public_id=cinematic-test/pexels/${id}"`));
 
+// Coverr (2026-10-12, owner: use Coverr + owner links): { coverr: '<video id>' } is fetched through the official API
+// (COVERR_API_KEY) and the download is reported back to Coverr, as their API terms ask.
+async function coverrFile(id, raw) {
+  const H = { Authorization: `Bearer ${process.env.COVERR_API_KEY}` };
+  const v = await (await fetch(`https://api.coverr.co/videos/${id}?urls=true`, { headers: H })).json();
+  const src = v.urls && (v.urls.mp4_download || v.urls.mp4);
+  if (!src) throw new Error('Coverr: no file url');
+  sh(`curl -sSL --fail -o "${raw}" "${src}"`);
+  await fetch(`https://api.coverr.co/videos/${id}/stats/downloads`, { method: 'PATCH', headers: H }).catch(() => {});
+  return v.title;
+}
+
 const results = [];
+(async () => {
 for (const item of cfg.import || []) {
-  const m = /(\d+)\/?$/.exec(item.url.trim()); // page link (...-<id>/) or download link (/download/video/<id>/)
+  const m = item.coverr ? [null, item.coverr] : /(\d+)\/?$/.exec(item.url.trim()); // page link (...-<id>/) or download link (/download/video/<id>/)
   if (!m) { results.push({ url: item.url, error: 'no video id in the link' }); continue; }
   // optional trim: from/to (seconds) keep only a clean stretch; suffix names the trimmed piece (e.g. 7311579-a)
-  const id = m[1], name = item.suffix ? `${id}-${item.suffix}` : id, raw = path.join(outDir, `${name}.mp4`);
+  const id = item.coverr ? `coverr-${m[1]}` : m[1], name = item.suffix ? `${id}-${item.suffix}` : id, raw = path.join(outDir, `${name}.mp4`);
   try {
-    const code = sh(`curl -sSL -A "${UA}" -o "${raw}" -w "%{http_code} %{content_type}" "https://www.pexels.com/download/video/${id}/"`).trim();
-    const isVideo = / video\//.test(code) && fs.statSync(raw).size > 100000;
+    const code = item.coverr ? `coverr "${await coverrFile(m[1], raw)}"` : sh(`curl -sSL -A "${UA}" -o "${raw}" -w "%{http_code} %{content_type}" "https://www.pexels.com/download/video/${id}/"`).trim();
+    const isVideo = (item.coverr || / video\//.test(code)) && fs.statSync(raw).size > 100000;
     if (!isVideo) { results.push({ id, error: `download refused (${code})` }); console.log(`${id}: download refused (${code})`); continue; }
     const probe = JSON.parse(sh(`ffprobe -v error -select_streams v:0 -show_entries stream=width,height:format=duration -of json "${raw}"`));
     const full = Number(probe.format.duration), { width, height } = probe.streams[0];
@@ -40,7 +53,7 @@ for (const item of cfg.import || []) {
       `eq=saturation=0.88:contrast=1.08,colorbalance=rs=-0.08:gs=-0.02:bs=0.10:rm=-0.02:bm=0.03:rh=0.10:gh=0.06:bh=-0.08,vignette=PI/5,fps=30,format=yuv420p,setsar=1" ` +
       `-c:v libx264 -preset slow -crf 20 -movflags +faststart "${vert}"`);
     const s = up(sheet, 'image', `${name}-sheet`), v = up(vert, 'video', `${name}-vertical`);
-    const r = { id: name, page: item.url, from, to: +(from + dur).toFixed(2), source: `${width}x${height}`, durationSec: +dur.toFixed(2), sheet: s.secure_url, vertical: v.secure_url };
+    const r = { id: name, page: item.url || `coverr:${m[1]}`, from, to: +(from + dur).toFixed(2), source: `${width}x${height}`, durationSec: +dur.toFixed(2), sheet: s.secure_url, vertical: v.secure_url };
     results.push(r);
     console.log(`IMPORTED ${JSON.stringify(r)}`);
   } catch (e) {
@@ -50,3 +63,4 @@ for (const item of cfg.import || []) {
 }
 fs.writeFileSync(path.join(outDir, 'imported.json'), JSON.stringify(results, null, 1));
 if (!results.some((r) => r.vertical)) process.exitCode = 1;
+})();

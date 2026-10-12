@@ -1,6 +1,6 @@
 {
   "_comment": "TEST ONLY: drives .github/workflows/test-cinematic.yml on the test/cinematic branch. mode = scout (find and sheet candidate clips) or render (build one test Reel from approved clips). Clips were checked by eye on their scout sheets (run 37893471233): no people, no writing, no logos, no identifiable building. v2: lighter scrim and grade.",
-  "mode": "scout",
+  "mode": "import",
   "queries": [
     "sun rays clouds",
     "light through clouds",
@@ -46,10 +46,28 @@
   },
   "import": [
     {
-      "url": "https://www.pexels.com/download/video/38321872/",
-      "from": 0,
-      "to": 8,
-      "suffix": "b"
+      "coverr": "QjW7fCpztu",
+      "cropX": 0.5
+    },
+    {
+      "coverr": "PtDce945WL",
+      "cropX": 0.55
+    },
+    {
+      "coverr": "ncFMIJ5yHJ",
+      "cropX": 0.5
+    },
+    {
+      "coverr": "fsnU3mB4YK",
+      "cropX": 0.68
+    },
+    {
+      "coverr": "Clo38tKFcq",
+      "cropX": 0.22
+    },
+    {
+      "coverr": "CLew6kVZWU",
+      "cropX": 0.5
     }
   ],
   "reel60": {
