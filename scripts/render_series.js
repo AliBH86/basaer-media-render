@@ -180,7 +180,9 @@ async function main() {
   for (let ph = part.from; ph <= part.to; ph++) {
     const pw = words.filter((w) => w.phrase === ph);
     const isQ = pw.some((w) => w.quran);
-    if (!cur || cur.quran !== isQ || cur.words.length + pw.length > PAGE_MAX_WORDS) { cur = { quran: isQ, words: [] }; pages.push(cur); }
+    // pageStarts (phrases.json, optional): phrases that open a new screen, so one sentence never runs into the next
+    const brk = meta.pageStarts ? meta.pageStarts.includes(ph) : cur && cur.words.length + pw.length > PAGE_MAX_WORDS;
+    if (!cur || cur.quran !== isQ || brk) { cur = { quran: isQ, words: [] }; pages.push(cur); }
     cur.words.push(...pw);
   }
   // a single item (Studio clip, 2026-10-12) sets its own line in phrases.json (sub: "" hides it)
@@ -222,7 +224,7 @@ async function main() {
   const bg = path.join(work, 'bg.mp4');
   const tlBg = path.join(work, 'timeline_bg.json');
   fs.writeFileSync(tlBg, JSON.stringify({ durationSec: dur, ayahs: pages.map((p) => ({ ayahStartMs: Math.max(0, rel(p.words[0].start)) * 1000 })) }));
-  sh(`FOOTAGE_SEED=${7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
+  sh(`FOOTAGE_SEED=${7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');

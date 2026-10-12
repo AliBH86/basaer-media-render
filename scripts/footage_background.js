@@ -14,7 +14,7 @@ const os = require('os');
 const path = require('path');
 
 const [, , tlPath, outPath] = process.argv;
-const W = 1080, H = 1920, FPS = 30, XF = 0.6, MAX_SHOT = 6.5;
+const W = 1080, H = 1920, FPS = 30, XF = 0.6, MAX_SHOT = Number(process.env.FOOTAGE_MAX_SHOT) || 6.5; // FOOTAGE_MAX_SHOT: calmer, longer shots for a slow item
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
 const cfg = { scrim: 1.15 };
 const tl = JSON.parse(fs.readFileSync(tlPath, 'utf8'));
@@ -52,10 +52,12 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
     }
     return null;
   };
-  // the last piece echoes the opening pool so the Reel ends where it began
-  const arc = pieces.map((_, i) => (i === pieces.length - 1 && pieces.length > 2 ? (process.env.FOOTAGE_ARC ? ARC[0] : 'mosqueN') : ARC[i % ARC.length]));
+  // the last piece echoes the opening pool so the Reel ends where it began (unless the arc names a pool for every shot)
+  const echo = !process.env.FOOTAGE_ARC || ARC.length < pieces.length;
+  const arc = pieces.map((_, i) => (echo && i === pieces.length - 1 && pieces.length > 2 ? (process.env.FOOTAGE_ARC ? ARC[0] : 'mosqueN') : ARC[i % ARC.length]));
   cfg.shots = arc.map((pool, i) => {
-    const c = pick(pool) || pick('dusk') || pick('skyN') || pick('day') || pick('mosqueD') || pick('mosqueN') || lib.clips[(seed + i) % lib.clips.length];
+    // with FOOTAGE_ARC an emptied pool repeats its own clip rather than borrowing another pool's
+    const c = pick(pool) || (process.env.FOOTAGE_ARC && pools[pool] ? pools[pool][0] : null) || pick('dusk') || pick('skyN') || pick('day') || pick('mosqueD') || pick('mosqueN') || lib.clips[(seed + i) % lib.clips.length];
     return { src: lib.base + c.id + '-vertical.mp4', _what: c.what + ' [' + pool + ']', at: 0.3 + ((seed + i) % 3) };
   });
 }
