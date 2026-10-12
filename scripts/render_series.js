@@ -64,7 +64,7 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
   <div class="progress-track"></div><div class="progress-fill"></div>
   <div class="header">
     <div class="title-ar">${titleAr}</div>
-    <div class="title-en">${titleEn} &middot; ${sub}</div>
+    <div class="title-en">${titleEn}${sub ? ` &middot; ${sub}` : ''}</div>
     <div class="reciter"><span class="reciter-ar">${reciterAr}</span><span class="reciter-sep">&middot;</span><span class="reciter-en">${reciterEn}</span></div>
   </div>
   <div class="content">
@@ -183,7 +183,8 @@ async function main() {
     if (!cur || cur.quran !== isQ || cur.words.length + pw.length > PAGE_MAX_WORDS) { cur = { quran: isQ, words: [] }; pages.push(cur); }
     cur.words.push(...pw);
   }
-  const sub = `الجزء ${toEastern(part.part)} من ${toEastern(parts)} | PART ${part.part} OF ${parts}`;
+  // a single item (Studio clip, 2026-10-12) sets its own line in phrases.json (sub: "" hides it)
+  const sub = meta.sub !== undefined ? meta.sub : `الجزء ${toEastern(part.part)} من ${toEastern(parts)} | PART ${part.part} OF ${parts}`;
   const specs = [];
   for (const pg of pages) {
     pg.words.forEach((w, i) => specs.push({ startSec: rel(w.start), endSec: rel(w.end), page: pg, highlightIndex: i }));
@@ -225,7 +226,7 @@ async function main() {
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');
-  renderPng(buildCtaHtml({ ar: ['احفظه لصباحك', 'أرسله لمن تحب'], en: 'SAVE &nbsp;·&nbsp; SHARE' }), ctaPng);
+  renderPng(buildCtaHtml({ ar: meta.cta || ['احفظه لصباحك', 'أرسله لمن تحب'], en: 'SAVE &nbsp;·&nbsp; SHARE' }), ctaPng);
   const ctaAt = Math.max(0, dur - CTA_SEC);
   const inputs = [`-i "${bg}"`, ...specs.map((s) => `-i "${s.png}"`), `-loop 1 -t ${dur} -i "${ctaPng}"`, `-i "${audio}"`].join(' ');
   const lines = [];

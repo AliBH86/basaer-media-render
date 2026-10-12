@@ -1,5 +1,5 @@
 {
- "_comment": "Approved background clips (owner-picked on Pexels, checked frame by frame by Claude: no people, no writing or calligraphy, no logos, no commercial towers). Stored on Cloudinary already cropped to 1080x1920 and brand-graded. Only clips listed here can ever appear in a Reel. Owner decision 2026-10-09: recognisable, universally revered mosques are allowed. pool: mosqueN = mosque at night/dusk, skyN = night/blue-hour sky, dusk = sunset/dusk nature, mosqueD = mosque in daylight, day = daytime nature. 7311579-a removed 2026-10-10 (a structure at the left edge shows when the clip is slowed). 2026-10-11: added 12279775 (dawn), 39003563 (skyN), 39553996 (rain), 38321872 (dusk, trimmed 0-8 s, as 38321872-b); new pools dawn = sunrise / first light, rain = rain clouds.",
+ "_comment": "Approved background clips (owner-picked on Pexels, checked frame by frame by Claude: no people, no writing or calligraphy, no logos, no commercial towers). Stored on Cloudinary already cropped to 1080x1920 and brand-graded. Only clips listed here can ever appear in a Reel. Owner decision 2026-10-09: recognisable, universally revered mosques are allowed. pool: mosqueN = mosque at night/dusk, skyN = night/blue-hour sky, dusk = sunset/dusk nature, mosqueD = mosque in daylight, day = daytime nature. 7311579-a removed 2026-10-10 (a structure at the left edge shows when the clip is slowed). 2026-10-11: added 12279775 (dawn), 39003563 (skyN), 39553996 (rain), 38321872 (dusk, trimmed 0-8 s, as 38321872-b); new pools dawn = sunrise / first light, rain = rain clouds. 2026-10-12: Coverr clips (official API, checked by eye on scout run 38207788918 and the vertical crops) in their own pools cNight, cDusk, cDawn, cSun, cLight, cGold: only an explicit FOOTAGE_ARC uses them, never the Khatm arc.",
  "base": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/",
  "clips": [
   {
@@ -117,6 +117,36 @@
    "id": "38321872-b",
    "pool": "dusk",
    "what": "waves on a pebble beach at sunset (0-8 s only)"
+  },
+  {
+   "id": "coverr-QjW7fCpztu",
+   "pool": "cNight",
+   "what": "Coverr: stars over pine silhouettes"
+  },
+  {
+   "id": "coverr-PtDce945WL",
+   "pool": "cDusk",
+   "what": "Coverr: dusk shore, last light on the horizon"
+  },
+  {
+   "id": "coverr-ncFMIJ5yHJ",
+   "pool": "cDawn",
+   "what": "Coverr: mountain ridges at first light"
+  },
+  {
+   "id": "coverr-fsnU3mB4YK",
+   "pool": "cSun",
+   "what": "Coverr: sun over forest and mountains"
+  },
+  {
+   "id": "coverr-Clo38tKFcq",
+   "pool": "cLight",
+   "what": "Coverr: sun rays through an autumn forest"
+  },
+  {
+   "id": "coverr-CLew6kVZWU",
+   "pool": "cGold",
+   "what": "Coverr: golden sunrise over a calm lake"
   }
  ]
 }
