@@ -246,11 +246,11 @@ async function main() {
     lines.push(`[${prev}][${i + 1}:v]overlay=enable='${s.persist ? `gte(t,${s.startSec})` : `between(t,${s.startSec},${s.endSec})`}'[v${i}]`);
     prev = `v${i}`;
   });
-  // Audio wave (owner, 2026-10-13: "a wave bar for the audio in all reels"): a gold waveform of this clip's own audio in
+  // Audio wave (owner, 2026-10-13: "a wave bar for the audio in all reels"): gold audio bars (an equalizer of this clip's own audio, mirrored round a centre line) in
   // the free band between the words (they end above ~1100 px) and the @handle (1190 px); hidden while the save/share
   // prompt shows. The volume boost is for the drawing only, never the sound.
-  lines.push(`[${specs.length + 2}:a]aformat=channel_layouts=mono,volume=2.2,showwaves=s=840x80:mode=cline:rate=${FPS}:colors=0xF0CB6E:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.85[wave]`);
-  lines.push(`[${prev}][wave]overlay=120:1100:enable='lt(t,${ctaAt.toFixed(3)})'[vwave]`);
+  lines.push(`[${specs.length + 2}:a]aformat=channel_layouts=mono,aresample=8000,volume=9,showfreqs=s=40x40:mode=bar:ascale=cbrt:fscale=log:win_size=1024:colors=0xF0CB6E:averaging=3,scale=800:40:flags=neighbor,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(mod(X,20),7),0,alpha(X,Y))',split[wu][wd];[wd]vflip[wdf];[wu][wdf]vstack,colorchannelmixer=aa=0.92[wave]`);
+  lines.push(`[${prev}][wave]overlay=140:1100:enable='lt(t,${ctaAt.toFixed(3)})'[vwave]`);
   prev = 'vwave';
   const ctaIdx = specs.length + 1;
   lines.push(`[${ctaIdx}:v]format=rgba,fade=t=in:st=${ctaAt.toFixed(3)}:d=0.6:alpha=1[cta]`);

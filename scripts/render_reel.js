@@ -638,12 +638,12 @@ async function main() {
     prev = out;
   });
   const audioInputIdx = overlaySpecs.length + 1;
-  // Audio wave (owner, 2026-10-13: "a wave bar for the audio in all reels"): a gold waveform of the recitation itself, in
-  // the free band just above the progress line (200-280 px), so it never meets the ayah text or the translation.
+  // Audio wave (owner, 2026-10-13: "a wave bar for the audio in all reels"): gold audio bars (an equalizer of the recitation itself, mirrored round a centre line), in
+  // the free band just above the progress line (184-276 px), so it never meets the ayah text or the translation.
   // WAVE=0 turns it off. The volume boost is for the drawing only, never the sound.
   if (process.env.WAVE !== '0') {
-    filterLines.push(`[${audioInputIdx}:a]aformat=channel_layouts=mono,volume=2.2,showwaves=s=840x80:mode=cline:rate=${FPS}:colors=0xF0CB6E:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.85[wave]`);
-    filterLines.push(`[${prev}][wave]overlay=120:200[vout]`);
+    filterLines.push(`[${audioInputIdx}:a]aformat=channel_layouts=mono,aresample=8000,volume=9,showfreqs=s=40x46:mode=bar:ascale=cbrt:fscale=log:win_size=1024:colors=0xF0CB6E:averaging=3,scale=800:46:flags=neighbor,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(mod(X,20),7),0,alpha(X,Y))',split[wu][wd];[wd]vflip[wdf];[wu][wdf]vstack,colorchannelmixer=aa=0.92[wave]`);
+    filterLines.push(`[${prev}][wave]overlay=140:184[vout]`);
   } else {
     filterLines.push(`[${prev}]null[vout]`);
   }
