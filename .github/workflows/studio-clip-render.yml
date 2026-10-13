@@ -4,6 +4,8 @@ name: Studio clip - render (time the final text, render the Reel)
 # the owner's own wording) as spec JSON. The text is timed on the voice-only track by forced alignment (so any wording
 # the owner types is timed correctly), then rendered with scripts/render_series.js over approved library footage, with
 # the audio the owner chose (original or voice only). Result goes back to n8n (resumeUrl). Nothing is published here.
+# A typed poem (spec.poem, owner 2026-10-14): voiceUrl is the raw ElevenLabs voice; scripts/poem_audio.js builds the
+# lead-in voice (for timing) and the heard track (voice + music E1 32 dB under it, or voice only when spec.music is false).
 on:
   workflow_dispatch:
     inputs:
@@ -50,14 +52,22 @@ jobs:
           SPEC: ${{ github.event.inputs.spec }}
         run: node scripts/studio_clip_files.js "$SPEC" work/item
       - name: Time the text on the voice
+        env:
+          SPEC: ${{ github.event.inputs.spec }}
         run: |
-          curl -sSL --fail -o work/voice.mp3 "${{ github.event.inputs.voiceUrl }}"
+          if [ "$(node -e 'process.stdout.write(String(!!JSON.parse(process.env.SPEC).poem))')" = true ]; then
+            curl -sSL --fail -o work/voice_raw.mp3 "${{ github.event.inputs.voiceUrl }}"
+            node scripts/poem_audio.js work/voice_raw.mp3 work "$(node -e 'process.stdout.write(JSON.parse(process.env.SPEC).music === false ? "0" : "1")')"
+            echo "AUDIO_URL=file://$PWD/work/audio.mp3" >> "$GITHUB_ENV"
+          else
+            curl -sSL --fail -o work/voice.mp3 "${{ github.event.inputs.voiceUrl }}"
+            echo "AUDIO_URL=${{ github.event.inputs.audioUrl }}" >> "$GITHUB_ENV"
+          fi
           ffmpeg -nostdin -loglevel error -y -i work/voice.mp3 -ac 1 -ar 16000 work/voice.wav
           python scripts/series_align.py work/voice.wav work/item/phrases.json work/item/aligned.json
       - name: Render
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
-          AUDIO_URL: ${{ github.event.inputs.audioUrl }}
         run: node scripts/render_series.js work/item 1 out
       - name: Stills + upload
         run: |
