@@ -222,24 +222,31 @@ async function footage(total) {
   if (!key) throw new Error('COVERR_API_KEY missing');
   const shots = Math.max(1, Math.ceil((total - XF) / (SHOT_SEC - XF)));
   const files = [];
+  // Each clip is fetched from Coverr ONCE and kept on Cloudinary as a 1920x1080 copy (youtube-test/footage/<id>); later
+  // renders read that copy and never call the Coverr API (its key has a query limit).
   for (const id of CLIPS) {
     const cid = id.replace(/^coverr-/, '');
-    const res = await fetch(`https://api.coverr.co/videos/${cid}?urls=true`, { headers: { Authorization: `Bearer ${key}` } });
-    if (!res.ok) {
-      const body = (await res.text()).slice(0, 300);
-      const probe = await fetch('https://api.coverr.co/videos?query=lake&page_size=1', { headers: { Authorization: `Bearer ${key}` } });
-      throw new Error(`Coverr ${cid}: HTTP ${res.status} ${body.replace(/s+/g, ' ')} | search probe: HTTP ${probe.status} | key length ${key.length}`);
-    }
-    const v = await res.json();
-    const src = v.urls && (v.urls.mp4_download || v.urls.mp4);
-    if (!src) throw new Error(`Coverr ${cid}: no file url`);
     const raw = path.join(work, `${id}.mp4`);
-    sh(`curl -sSL --fail -o "${raw}" "${src}"`);
-    await fetch(`https://api.coverr.co/videos/${cid}/stats/downloads`, { method: 'PATCH', headers: { Authorization: `Bearer ${key}` } }).catch(() => {});
+    const cached = `https://res.cloudinary.com/b72gfdzx/video/upload/youtube-test/footage/${id}.mp4`;
+    let title = 'cached copy';
+    if (sh(`curl -s -o /dev/null -w "%{http_code}" "${cached}"`).trim() === '200') sh(`curl -sSfL -o "${raw}" "${cached}"`);
+    else {
+      const res = await fetch(`https://api.coverr.co/videos/${cid}?urls=true`, { headers: { Authorization: `Bearer ${key}` } });
+      if (!res.ok) throw new Error(`Coverr ${cid}: HTTP ${res.status} ${(await res.text()).slice(0, 200).replace(/s+/g, ' ')}`);
+      const v = await res.json();
+      const src = v.urls && (v.urls.mp4_download || v.urls.mp4);
+      if (!src) throw new Error(`Coverr ${cid}: no file url`);
+      const orig = path.join(work, `${id}-orig.mp4`);
+      sh(`curl -sSL --fail -o "${orig}" "${src}"`);
+      await fetch(`https://api.coverr.co/videos/${cid}/stats/downloads`, { method: 'PATCH', headers: { Authorization: `Bearer ${key}` } }).catch(() => {});
+      sh(`ffmpeg -nostdin -loglevel error -y -i "${orig}" -an -vf "scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p "${raw}"`);
+      sh(`node "${path.join(__dirname, 'upload_cloudinary.js')}" "${raw}" "youtube-test/footage/${id}" video`);
+      title = v.title;
+    }
     const d = ffDur(raw);
     const sheet = path.join(OUT, `sheet-${id}.jpg`);
     sh(`ffmpeg -nostdin -loglevel error -y -i "${raw}" -vf "fps=6/${Math.max(1, d).toFixed(2)},scale=480:-2,tile=6x1" -frames:v 1 "${sheet}"`);
-    files.push({ id, raw, d, title: v.title });
+    files.push({ id, raw, d, title });
   }
   const pieces = [];
   for (let k = 0; k < shots; k++) {
