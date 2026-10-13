@@ -103,9 +103,9 @@ function ayahHtml({ words, hi, english, surahAr, surahEn, ayahNo, total }) {
   .title { position:absolute; top:26px; left:0; width:100%; text-align:center; }
   .title-ar { font-family:'RQ'; font-size:62px; color:${GOLD_HI}; line-height:1.45; direction:rtl; ${glow} }
   .title-en { font-family:'CZ'; font-size:17px; letter-spacing:7px; font-weight:700; margin:0 0 10px; opacity:0.9; }
-  .count { position:absolute; top:46px; right:64px; text-align:center; border:1.5px solid rgba(240,203,110,0.7); border-radius:999px; padding:4px 26px 9px; background:rgba(6,18,25,0.45); }
-  .count-ar { font-family:'AQ'; font-size:26px; color:${GOLD_HI}; line-height:1.9; direction:rtl; }
-  .count-en { font-family:'CZ'; font-size:13px; letter-spacing:4px; font-weight:700; opacity:0.85; margin-top:-8px; }
+  .count { position:absolute; top:46px; right:64px; text-align:center; border:1.5px solid rgba(240,203,110,0.7); border-radius:999px; padding:2px 28px 12px; background:rgba(6,18,25,0.45); }
+  .count-ar { font-family:'AQ'; font-size:26px; color:${GOLD_HI}; line-height:1.7; direction:rtl; }
+  .count-en { font-family:'CZ'; font-size:13px; letter-spacing:4px; font-weight:700; opacity:0.85; margin-top:2px; }
   .content { position:absolute; top:210px; height:640px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .row { display:flex; direction:rtl; align-items:center; justify-content:center; gap:26px; max-width:1640px; }
   .arabic { font-family:'AQ'; direction:rtl; text-align:center; max-width:1520px; line-height:1.75; text-shadow:0 3px 22px rgba(0,0,0,0.85), 0 0 2px rgba(0,0,0,0.6); }
@@ -120,7 +120,7 @@ function ayahHtml({ words, hi, english, surahAr, surahEn, ayahNo, total }) {
   <div class="title"><div class="title-ar">سورة ${surahAr}</div><div class="title-en">SURAH ${surahEn.toUpperCase()}</div>${divider(110)}</div>
   <div class="count"><div class="count-ar">الآية ${arNum(ayahNo)} من ${arNum(total)}</div><div class="count-en">AYAH ${ayahNo} / ${total}</div></div>
   <div class="content">
-    <div class="row"><div class="arabic" id="arabic">${spans}</div>${medallion(ayahNo, 92)}</div>
+    <div class="row"><div class="arabic" id="arabic">${spans}</div><div style="margin-top:48px;">${medallion(ayahNo, 92)}</div></div>
     <div class="translation" id="translation">${english}</div>
   </div>
   <div class="rec">${portrait(100)}<div><div class="rec-ar">${RECITER_AR}</div><div class="rec-en">${RECITER_EN.toUpperCase()} · ${STYLE_EN.toUpperCase()}</div></div></div>
@@ -158,7 +158,7 @@ function introHtml({ surahAr, surahEn, surahMeaning, number, count, place }) {
   <div class="s">سورة</div>
   <div class="ar">${surahAr}</div>
   <div class="en">${surahEn.toUpperCase()}</div>
-  <div class="meta">${surahMeaning.toUpperCase()} · ${count} AYAHS · ${placeEn} · ${arNum(number)}</div>
+  <div class="meta">${surahMeaning.toUpperCase()} · ${count} AYAHS · ${placeEn}</div>
   ${divider(160)}
   <div class="rec">${portrait(140)}<div><div class="rec-ar">${RECITER_AR} · ${STYLE_AR}</div><div class="rec-en">${RECITER_EN.toUpperCase()}</div></div></div>
   <div class="brand">BASAER · بصائر · ${HANDLE}</div>
