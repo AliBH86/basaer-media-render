@@ -91,7 +91,10 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
     document.fonts.ready.then(() => {
       const ar = document.getElementById('arabic');
       // with line breaks (a poem's hemistichs) no line may wrap: the rendered lines must be exactly the phrase lines
-      const lines = () => new Set([...ar.children].filter((c) => c.tagName !== 'BR').map((c) => Math.round(c.offsetTop / 8))).size;
+      const lines = () => {
+        const fs = parseFloat(ar.style.fontSize), ys = [...ar.children].filter((c) => c.tagName !== 'BR').map((c) => { const r = c.getBoundingClientRect(); return (r.top + r.bottom) / 2; }).sort((a, b) => a - b);
+        return ys.reduce((n, y, i) => n + (i > 0 && y - ys[i - 1] > fs * 0.6 ? 1 : 0), ys.length ? 1 : 0);
+      };
       search(ar, ${breaks ? 34 : 46}, 110, () => ar.scrollWidth <= ${ARABIC_MAX_WIDTH} && ar.scrollHeight <= ${quranRef ? 420 : L.maxH}${breaks ? ` && lines() <= ${breaks.size + 1}` : ''});
       requestAnimationFrame(() => requestAnimationFrame(() => document.body.setAttribute('data-fonts-ready', '1')));
     });
