@@ -35,7 +35,7 @@ const getJson = (url) => new Promise((resolve, reject) => https.get(url, { heade
 // Layouts (px): default = verse 556-1160, handle 1190; 'scene' (an item with its own background film) = everything above
 // the scene's subject: verse 520-880, handle 890 (wave 940 and save/share 1015 are placed by the composite step).
 const LAYOUTS = { default: { top: 556, h: 604, maxH: 480, handle: 1190, cta: 1130, wave: 1256 }, scene: { top: 520, h: 360, maxH: 300, handle: 890, cta: 1015, wave: 940 } };
-function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, highlightIndex, progressFraction, quranRef, energetic, layout }) {
+function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, highlightIndex, progressFraction, quranRef, energetic, layout, breaks }) {
   const L = LAYOUTS[layout] || LAYOUTS.default;
   const spans = words.map((w, i) => {
     // energetic (owner, 2026-10-13): karaoke feel. Words already said are bright, words still to come are dimmed, and the
@@ -50,7 +50,7 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
     const color = i === highlightIndex ? '#C9A24B' : '#F2ECE1';
     const weight = i === highlightIndex ? '700' : '400';
     return `<span style="color:${color};font-weight:${weight};">${String(w).replace(/ /g, ' ')}</span>`;
-  }).join(' ');
+  }).map((h, i) => (breaks && i > 0 && breaks.has(i) ? '<br>' : (i > 0 ? ' ' : '')) + h).join('');
   const fillPct = Math.max(0, Math.min(1, progressFraction)) * 100;
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
@@ -233,7 +233,7 @@ async function main() {
   const qRef = { ar: 'آل عمران ٢٦–٢٧', en: "AAL 'IMRAN 3:26-27" };
   specs.forEach((s, i) => {
     s.png = path.join(work, `overlay_${i}.png`);
-    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null, energetic: meta.style === 'energetic', layout: meta.layout }), s.png);
+    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null, energetic: meta.style === 'energetic', layout: meta.layout, breaks: (meta.layout === 'scene' || meta.lineBreaks) ? new Set(s.page.words.map((w, i) => (i > 0 && w.phrase !== s.page.words[i - 1].phrase ? i : -1)).filter((i) => i > 0)) : null }), s.png);
   });
 
   // 5. Footage background (approved library), shots cut on page starts.
