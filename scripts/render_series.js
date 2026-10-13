@@ -90,7 +90,9 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
     function search(el, lo, hi, ok) { let best = lo; while (lo <= hi) { const mid = Math.floor((lo + hi) / 2); el.style.fontSize = mid + 'px'; void el.offsetHeight; if (ok()) { best = mid; lo = mid + 1; } else { hi = mid - 1; } } el.style.fontSize = best + 'px'; void el.offsetHeight; }
     document.fonts.ready.then(() => {
       const ar = document.getElementById('arabic');
-      search(ar, 46, 110, () => ar.scrollWidth <= ${ARABIC_MAX_WIDTH} && ar.scrollHeight <= ${quranRef ? 420 : L.maxH});
+      // with line breaks (a poem's hemistichs) no line may wrap: the rendered lines must be exactly the phrase lines
+      const lines = () => new Set([...ar.children].filter((c) => c.tagName !== 'BR').map((c) => Math.round(c.offsetTop / 8))).size;
+      search(ar, ${breaks ? 34 : 46}, 110, () => ar.scrollWidth <= ${ARABIC_MAX_WIDTH} && ar.scrollHeight <= ${quranRef ? 420 : L.maxH}${breaks ? ` && lines() <= ${breaks.size + 1}` : ''});
       requestAnimationFrame(() => requestAnimationFrame(() => document.body.setAttribute('data-fonts-ready', '1')));
     });
   </script>
