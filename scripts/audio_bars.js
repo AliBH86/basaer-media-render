@@ -19,11 +19,11 @@ const STYLES = {
 };
 
 // Returns the two filter_complex lines: audio input -> [out] picture of the bars, then [prevLabel]+bars -> [outLabel].
-function audioBarsLines(audioInputIdx, prevLabel, outLabel) {
+function audioBarsLines(audioInputIdx, prevLabel, outLabel, y = Y) {
   const style = STYLES[process.env.BARS_STYLE || DEFAULT] || STYLES[DEFAULT];
   return [
     `[${audioInputIdx}:a]${style('ab')}[bars]`,
-    `[${prevLabel}][bars]overlay=${X}:${Y}[${outLabel}]`,
+    `[${prevLabel}][bars]overlay=${X}:${y}[${outLabel}]`,
   ];
 }
 

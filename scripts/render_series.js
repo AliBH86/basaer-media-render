@@ -32,7 +32,11 @@ const getJson = (url) => new Promise((resolve, reject) => https.get(url, { heade
   const c = []; res.on('data', (d) => c.push(d)); res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(c).toString('utf8'))); } catch (e) { reject(new Error(`${url} -> HTTP ${res.statusCode}`)); } });
 }).on('error', reject));
 
-function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, highlightIndex, progressFraction, quranRef, energetic }) {
+// Layouts (px): default = verse 556-1160, handle 1190; 'scene' (an item with its own background film) = everything above
+// the scene's subject: verse 520-880, handle 890 (wave 940 and save/share 1015 are placed by the composite step).
+const LAYOUTS = { default: { top: 556, h: 604, maxH: 480, handle: 1190, cta: 1130, wave: 1256 }, scene: { top: 520, h: 360, maxH: 300, handle: 890, cta: 1015, wave: 940 } };
+function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, highlightIndex, progressFraction, quranRef, energetic, layout }) {
+  const L = LAYOUTS[layout] || LAYOUTS.default;
   const spans = words.map((w, i) => {
     // energetic (owner, 2026-10-13): karaoke feel. Words already said are bright, words still to come are dimmed, and the
     // word being said pops (gold, slightly larger, glowing). The transform does not move the other words.
@@ -64,11 +68,11 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
   .reciter-ar { font-family:'Amiri Quran Local',serif; font-size:34px; direction:rtl; }
   .reciter-sep { font-family:'Montserrat Local',sans-serif; font-size:26px; opacity:0.6; }
   .reciter-en { font-family:'Montserrat Local',sans-serif; font-size:28px; }
-  .content { position:absolute; top:556px; height:604px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .content { position:absolute; top:${L.top}px; height:${L.h}px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { direction:rtl; text-align:center; max-width:${ARABIC_MAX_WIDTH}px; max-height:480px; overflow:visible; line-height:1.65; text-shadow:0 2px 18px rgba(0,0,0,0.55); }
   .qref { font-family:'Montserrat Local',sans-serif; font-size:24px; color:#C9A24B; margin-top:34px; letter-spacing:1px; }
   .qref-ar { font-family:'Amiri Quran Local',serif; font-size:30px; }
-  .handle { position:absolute; top:1190px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
+  .handle { position:absolute; top:${L.handle}px; width:100%; text-align:center; font-family:'Montserrat Local',sans-serif; font-size:28px; font-weight:600; color:#C9A24B; letter-spacing:1px; }
 </style></head>
 <body>
   <div class="progress-track"></div><div class="progress-fill"></div>
@@ -86,7 +90,7 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
     function search(el, lo, hi, ok) { let best = lo; while (lo <= hi) { const mid = Math.floor((lo + hi) / 2); el.style.fontSize = mid + 'px'; void el.offsetHeight; if (ok()) { best = mid; lo = mid + 1; } else { hi = mid - 1; } } el.style.fontSize = best + 'px'; void el.offsetHeight; }
     document.fonts.ready.then(() => {
       const ar = document.getElementById('arabic');
-      search(ar, 46, 110, () => ar.scrollWidth <= ${ARABIC_MAX_WIDTH} && ar.scrollHeight <= ${quranRef ? 420 : 480});
+      search(ar, 46, 110, () => ar.scrollWidth <= ${ARABIC_MAX_WIDTH} && ar.scrollHeight <= ${quranRef ? 420 : L.maxH});
       requestAnimationFrame(() => requestAnimationFrame(() => document.body.setAttribute('data-fonts-ready', '1')));
     });
   </script>
@@ -97,7 +101,8 @@ function buildOverlayHtml({ titleAr, titleEn, sub, reciterAr, reciterEn, words, 
 // highly; a short, calm prompt at the end asks for them without cluttering the words. Sits at 1130-1244 px, above the
 // bottom 670 px Instagram covers; it covers the @handle line for those seconds only.
 const CTA_SEC = 3.5;
-function buildCtaHtml({ ar, en }) {
+function buildCtaHtml({ ar, en, layout }) {
+  const L = LAYOUTS[layout] || LAYOUTS.default;
   const bookmark = '<svg viewBox="0 0 24 24" width="50" height="50"><path d="M6 2.5h12a1 1 0 0 1 1 1V22l-7-4.2L5 22V3.5a1 1 0 0 1 1-1z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round"/></svg>';
   const send = '<svg viewBox="0 0 24 24" width="50" height="50"><path d="M21.5 2.5 10.6 13.4M21.5 2.5l-7 19-3.9-8.1-8.1-3.9z" fill="none" stroke="#C9A24B" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/></svg>';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
@@ -105,7 +110,7 @@ function buildCtaHtml({ ar, en }) {
   @font-face { font-family:'Montserrat Local'; src:url(data:font/woff2;base64,${montserratBase64}) format('woff2'); font-weight:100 900; }
   * { margin:0; padding:0; box-sizing:border-box; }
   body { width:${W}px; height:${H}px; background:transparent; position:relative; overflow:hidden; }
-  .pill { position:absolute; top:1130px; left:50%; transform:translateX(-50%); height:114px; padding:0 50px; display:flex; align-items:center; gap:26px; direction:rtl;
+  .pill { position:absolute; top:${L.cta}px; left:50%; transform:translateX(-50%); height:114px; padding:0 50px; display:flex; align-items:center; gap:26px; direction:rtl;
           background:rgba(11,31,42,0.86); border:1.5px solid rgba(201,162,75,0.9); border-radius:57px; box-shadow:0 8px 30px rgba(0,0,0,0.45); white-space:nowrap; }
   .t { font-family:'Amiri Quran Local',serif; font-size:44px; color:#F2ECE1; }
   .dot { color:#C9A24B; font-size:36px; }
@@ -228,7 +233,7 @@ async function main() {
   const qRef = { ar: 'آل عمران ٢٦–٢٧', en: "AAL 'IMRAN 3:26-27" };
   specs.forEach((s, i) => {
     s.png = path.join(work, `overlay_${i}.png`);
-    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null, energetic: meta.style === 'energetic' }), s.png);
+    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null, energetic: meta.style === 'energetic', layout: meta.layout }), s.png);
   });
 
   // 5. Footage background (approved library), shots cut on page starts.
@@ -247,7 +252,7 @@ async function main() {
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');
-  renderPng(buildCtaHtml({ ar: meta.cta || ['احفظه لصباحك', 'أرسله لمن تحب'], en: 'SAVE &nbsp;·&nbsp; SHARE' }), ctaPng);
+  renderPng(buildCtaHtml({ ar: meta.cta || ['احفظه لصباحك', 'أرسله لمن تحب'], en: 'SAVE &nbsp;·&nbsp; SHARE', layout: meta.layout }), ctaPng);
   const ctaAt = Math.max(0, dur - CTA_SEC);
   const inputs = [`-i "${bg}"`, ...specs.map((s) => `-i "${s.png}"`), `-loop 1 -t ${dur} -i "${ctaPng}"`, `-i "${audio}"`].join(' ');
   const lines = [];
@@ -260,7 +265,7 @@ async function main() {
   lines.push(`[${ctaIdx}:v]format=rgba,fade=t=in:st=${ctaAt.toFixed(3)}:d=0.6:alpha=1[cta]`);
   lines.push(`[${prev}][cta]overlay=enable='gte(t,${ctaAt.toFixed(3)})'[vcta]`);
   // audio bars under the handle, on to the very end (scripts/audio_bars.js)
-  lines.push(...audioBarsLines(specs.length + 2, 'vcta', 'vout'));
+  lines.push(...audioBarsLines(specs.length + 2, 'vcta', 'vout', (LAYOUTS[meta.layout] || LAYOUTS.default).wave));
   const fscript = path.join(work, 'filter.txt');
   fs.writeFileSync(fscript, lines.join(';\n'));
   const outPath = path.join(outDir, `series_part_${part.part}.mp4`);
