@@ -13,7 +13,8 @@ const eq = (bins, h) => `aformat=channel_layouts=mono,aresample=8000,volume=9,sh
 const STYLES = {
   1: (o) => `${eq(40, 32)},${gaps(20, 7)},split[${o}u][${o}d];[${o}d]vflip[${o}f];[${o}u][${o}f]vstack,colorchannelmixer=aa=0.92`,
   2: () => `${eq(40, 64)},${gaps(20, 7)},colorchannelmixer=aa=0.92`,
-  3: () => `aformat=channel_layouts=mono,volume=1.6,showwaves=s=800x64:mode=cline:rate=30:colors=${GOLD}:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.9`,
+  // 3: the drawing input is low-passed (280 Hz, twice) so the wave flows smoothly on recitation as on speech
+  3: () => `aformat=channel_layouts=mono,lowpass=f=280,lowpass=f=280,volume=12,showwaves=s=800x64:mode=cline:rate=30:colors=${GOLD}:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.9`,
   4: (o) => `${eq(80, 32)},${gaps(10, 5)},split[${o}u][${o}d];[${o}d]vflip[${o}f];[${o}u][${o}f]vstack,colorchannelmixer=aa=0.92`,
 };
 
