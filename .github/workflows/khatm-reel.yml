@@ -32,6 +32,10 @@ on:
       partLabel:
         description: "Split ayah only: part label shown in the header, e.g. 1/3"
         required: false
+      footageStyle:
+        description: "Footage look for tests: '' (approved calm), warm, energetic"
+        default: ""
+        required: false
       cloudFolder:
         description: "Cloudinary folder (default khatm-test)"
         default: "khatm-test"
@@ -72,6 +76,7 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
           KHATM: "1"
+          FOOTAGE_STYLE: ${{ github.event.inputs.footageStyle }}
           SOFT_CAP_SEC: "75"
           MAX_CAP_SEC: "95"
           TOTAL_BUDGET_SEC: "1200"

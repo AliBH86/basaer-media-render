@@ -17,7 +17,10 @@ const [, , tlPath, outPath] = process.argv;
 // FOOTAGE_STYLE=energetic (owner, 2026-10-13: "more energetic, our reels feel cold"): short shots with a steady push-in,
 // a warmer and brighter grade, a lighter scrim and quick white-flash cuts. Unset = the calm approved look.
 const ENERGETIC = process.env.FOOTAGE_STYLE === 'energetic';
-const W = 1080, H = 1920, FPS = 30, XF = ENERGETIC ? 0.35 : 0.6, MAX_SHOT = Number(process.env.FOOTAGE_MAX_SHOT) || (ENERGETIC ? 3.4 : 6.5); // FOOTAGE_MAX_SHOT: calmer, longer shots for a slow item
+// FOOTAGE_STYLE=warm (Quran Reels sample, 2026-10-13): the calm identity kept (soft fades, same scrim), with a warmer
+// grade, a slow push-in and ~5 s shots instead of 6.5 s.
+const WARM = process.env.FOOTAGE_STYLE === 'warm';
+const W = 1080, H = 1920, FPS = 30, XF = ENERGETIC ? 0.35 : 0.6, MAX_SHOT = Number(process.env.FOOTAGE_MAX_SHOT) || (ENERGETIC ? 3.4 : WARM ? 5 : 6.5); // FOOTAGE_MAX_SHOT: calmer, longer shots for a slow item
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
 const cfg = { scrim: 1.15 };
 const tl = JSON.parse(fs.readFileSync(tlPath, 'utf8'));
@@ -81,8 +84,11 @@ for (const [i, p] of pieces.entries()) {
   const seg = path.join(work, `seg_${i}.mp4`);
   // energetic: a steady push-in (every third shot pulls out), warmer and brighter; calm: the slow side drift
   const z = i % 3 === 2 ? `(1.16-0.14*t/${len.toFixed(3)})` : `(1.02+0.14*t/${len.toFixed(3)})`;
+  const zw = `(1.02+0.08*t/${len.toFixed(3)})`;
   const move = ENERGETIC
     ? `scale=w='trunc(${W}*${z}/2)*2':h=-2:eval=frame,crop=${W}:${H}:(iw-${W})/2:(ih-${H})/2,eq=brightness=0.03:saturation=1.18:contrast=1.06,colorbalance=rs=0.06:gs=0.02:bs=-0.06:rm=0.05:bm=-0.04`
+    : WARM
+    ? `scale=w='trunc(${W}*${zw}/2)*2':h=-2:eval=frame,crop=${W}:${H}:(iw-${W})/2:(ih-${H})/2,eq=brightness=0.02:saturation=1.1:contrast=1.04,colorbalance=rs=0.05:gs=0.015:bs=-0.05:rm=0.04:bm=-0.03`
     : `scale=-2:${H + 110},crop=${W}:${H}:x='(iw-${W})/2+${drift}*(t/${len.toFixed(3)}-0.5)':y='(ih-${H})/2+24*(t/${len.toFixed(3)}-0.5)'`;
   ff(`-ss ${s.at || 0} -i "${src}" -an -vf "setpts=${slow.toFixed(4)}*PTS,${move},fps=${FPS},format=yuv420p,setsar=1" ` +
     `-t ${len.toFixed(3)} -c:v libx264 -crf 17 -preset veryfast "${seg}"`);
