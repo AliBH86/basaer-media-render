@@ -33,8 +33,8 @@ on:
         description: "Split ayah only: part label shown in the header, e.g. 1/3"
         required: false
       footageStyle:
-        description: "Footage look for tests: '' (approved calm), warm, energetic"
-        default: ""
+        description: "Footage look: warm (live since 2026-10-13, owner OK), '' (the earlier calm look), energetic"
+        default: "warm"
         required: false
       cloudFolder:
         description: "Cloudinary folder (default khatm-test)"

@@ -45,7 +45,7 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
   const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_library.json'), 'utf8'));
   const seed = Number(process.env.FOOTAGE_SEED || 1);
   // FOOTAGE_ARC (series Reels, 2026-10-11): a comma list of pools matching the words of that part; unset = the Khatm arc.
-  const ARC = process.env.FOOTAGE_ARC ? process.env.FOOTAGE_ARC.split(',').map((p) => p.trim()).filter(Boolean) : ['mosqueN', 'skyN', 'dusk', 'mosqueN', 'dusk', 'day', 'mosqueD', 'day', 'dusk', 'skyN', 'mosqueN', 'dusk', 'skyN', 'mosqueN'];
+  const ARC = process.env.FOOTAGE_ARC ? process.env.FOOTAGE_ARC.split(',').map((p) => p.trim()).filter(Boolean) : ['mosqueN', 'skyN', 'lake', 'dusk', 'mosqueN', 'sea', 'day', 'stream', 'mosqueD', 'valley', 'dusk', 'skyDusk', 'mosqueN', 'snow', 'seaNight', 'skyN', 'mosqueN'];
   const pools = {};
   for (const c of lib.clips) (pools[c.pool] = pools[c.pool] || []).push(c);
   const used = new Set(), next = {};
