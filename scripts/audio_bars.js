@@ -5,7 +5,7 @@
 //
 // Styles (samples: Cloudinary studio-test/wave-style-1..4-a.mp4), chosen with BARS_STYLE; DEFAULT is the owner's pick.
 //   1 mirrored bars   2 bars from a baseline   3 smooth wave   4 fine mirrored bars
-const DEFAULT = '1';
+const DEFAULT = '3'; // owner's pick, 2026-10-13: smooth wave
 const X = 140, Y = 1256;
 const GOLD = '0xF0CB6E';
 const gaps = (period, gap) => `geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(mod(X,${period}),${gap}),0,alpha(X,Y))'`;
