@@ -89,23 +89,23 @@ function ayahHtml({ words, hi, english, surahAr, surahEn, surahMeaning, ayahNo, 
   const spans = words.map((w, i) => `<span style="color:${i === hi ? GOLD : CREAM};">${w.replace(/ /g, ' ')}</span>`).join(' ');
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${fontCss}
   body { width:${W}px; height:${H}px; overflow:hidden; background:transparent; position:relative; color:${CREAM}; }
-  .brand { position:absolute; top:48px; left:72px; display:flex; align-items:center; gap:16px; }
+  .brand { position:absolute; top:52px; left:72px; display:flex; align-items:baseline; gap:16px; }
   .brand-ar { font-family:'AQ'; font-size:44px; color:${GOLD}; line-height:1; }
   .brand-en { font-family:'MS'; font-size:15px; letter-spacing:6px; opacity:0.6; font-weight:600; }
-  .cart { position:absolute; top:40px; right:72px; border:1.5px solid rgba(201,162,75,0.75); border-radius:40px; padding:10px 34px 12px; text-align:center; background:rgba(6,18,25,0.35); }
-  .cart-ar { font-family:'AQ'; font-size:38px; color:${GOLD}; line-height:1.25; direction:rtl; }
-  .cart-en { font-family:'MS'; font-size:14px; letter-spacing:3px; opacity:0.75; font-weight:600; margin-top:2px; }
+  .cart { position:absolute; top:40px; right:72px; border:1.5px solid rgba(201,162,75,0.75); border-radius:40px; padding:6px 34px 14px; text-align:center; background:rgba(6,18,25,0.35); }
+  .cart-ar { font-family:'AQ'; font-size:36px; color:${GOLD}; line-height:1.9; direction:rtl; margin-top:-14px; }
+  .cart-en { font-family:'MS'; font-size:14px; letter-spacing:3px; opacity:0.75; font-weight:600; margin-top:-2px; }
   .rule { position:absolute; top:150px; left:50%; transform:translateX(-50%); width:220px; height:1px; background:linear-gradient(90deg, transparent, ${GOLD}, transparent); opacity:0.7; }
   .content { position:absolute; top:190px; height:640px; left:0; width:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
   .arabic { font-family:'AQ'; direction:rtl; text-align:center; max-width:1560px; line-height:1.7; text-shadow:0 3px 22px rgba(0,0,0,0.55); }
-  .translation { font-family:'MS'; font-weight:400; color:${CREAM}; opacity:0.86; text-align:center; max-width:1380px; line-height:1.45; margin-top:46px; }
+  .translation { font-family:'MS'; font-weight:400; color:${CREAM}; opacity:0.86; text-align:center; max-width:1380px; line-height:1.45; margin-top:84px; }
   .bottom { position:absolute; left:72px; right:72px; top:900px; height:120px; display:flex; align-items:center; justify-content:space-between; }
   .rec { display:flex; align-items:center; gap:22px; }
-  .rec-ar { font-family:'AQ'; font-size:34px; line-height:1.2; direction:rtl; }
-  .rec-en { font-family:'MS'; font-size:17px; opacity:0.72; letter-spacing:0.5px; margin-top:4px; }
-  .counter { position:absolute; left:50%; transform:translateX(-50%); top:912px; text-align:center; }
-  .counter-ar { font-family:'AQ'; font-size:28px; color:${GOLD}; direction:rtl; line-height:1.1; }
-  .counter-en { font-family:'MS'; font-size:13px; letter-spacing:4px; opacity:0.65; font-weight:600; margin-top:2px; }
+  .rec-ar { font-family:'AQ'; font-size:32px; line-height:1.9; direction:rtl; margin-top:-12px; }
+  .rec-en { font-family:'MS'; font-size:17px; opacity:0.72; letter-spacing:0.5px; margin-top:0; }
+  .counter { position:absolute; left:50%; transform:translateX(-50%); top:902px; text-align:center; }
+  .counter-ar { font-family:'AQ'; font-size:27px; color:${GOLD}; direction:rtl; line-height:1.9; }
+  .counter-en { font-family:'MS'; font-size:13px; letter-spacing:4px; opacity:0.65; font-weight:600; margin-top:-4px; }
   .handle { font-family:'MS'; font-size:20px; color:${GOLD}; font-weight:600; letter-spacing:1px; }
   .track { position:absolute; left:0; right:0; top:1062px; height:4px; background:rgba(242,236,225,0.14); }
   </style></head><body>
@@ -125,7 +125,7 @@ function ayahHtml({ words, hi, english, surahAr, surahEn, surahMeaning, ayahNo, 
   <script>
     document.fonts.ready.then(() => {
       const ar = document.getElementById('arabic'), tr = document.getElementById('translation');
-      const total = () => ar.offsetHeight + 46 + tr.offsetHeight;
+      const total = () => ar.offsetHeight + 84 + tr.offsetHeight;
       const search = (el, lo, hi, ok) => { let best = lo; while (lo <= hi) { const mid = Math.floor((lo + hi) / 2); el.style.fontSize = mid + 'px'; void el.offsetHeight; if (ok()) { best = mid; lo = mid + 1; } else hi = mid - 1; } el.style.fontSize = best + 'px'; void el.offsetHeight; };
       search(ar, 54, 118, () => ar.scrollWidth <= 1560 && ar.scrollHeight <= 430);
       tr.style.fontSize = '34px'; void tr.offsetHeight;
@@ -143,13 +143,13 @@ function introHtml({ surahAr, surahEn, surahMeaning, number, count, place }) {
   .num { width:84px; height:84px; border:2px solid ${GOLD}; transform:rotate(45deg); display:flex; align-items:center; justify-content:center; margin-bottom:34px; }
   .num span { transform:rotate(-45deg); font-family:'AQ'; font-size:40px; color:${GOLD}; }
   .ar { font-family:'AQ'; font-size:156px; color:${GOLD}; line-height:1.15; direction:rtl; text-shadow:0 4px 30px rgba(0,0,0,0.5); }
-  .en { font-family:'MS'; font-size:40px; letter-spacing:12px; font-weight:600; margin-top:6px; }
+  .en { font-family:'MS'; font-size:40px; letter-spacing:12px; font-weight:600; margin-top:58px; }
   .meta { font-family:'MS'; font-size:20px; letter-spacing:3px; opacity:0.7; margin-top:16px; }
   .meta-ar { font-family:'AQ'; font-size:30px; opacity:0.8; direction:rtl; margin-top:6px; }
   .rule { width:320px; height:1px; background:linear-gradient(90deg, transparent, ${GOLD}, transparent); margin:34px 0; }
   .rec { display:flex; align-items:center; gap:24px; }
-  .rec-ar { font-family:'AQ'; font-size:40px; direction:rtl; line-height:1.2; }
-  .rec-en { font-family:'MS'; font-size:19px; opacity:0.75; margin-top:4px; }
+  .rec-ar { font-family:'AQ'; font-size:38px; direction:rtl; line-height:1.9; margin-top:-14px; }
+  .rec-en { font-family:'MS'; font-size:19px; opacity:0.75; margin-top:0; }
   .pill { position:absolute; top:54px; left:50%; transform:translateX(-50%); border:1.5px solid rgba(201,162,75,0.8); border-radius:30px; padding:8px 26px; font-family:'MS'; font-size:15px; letter-spacing:4px; font-weight:600; color:${GOLD}; }
   .brand { position:absolute; bottom:52px; font-family:'MS'; font-size:16px; letter-spacing:6px; opacity:0.55; font-weight:600; }
   </style></head><body>
@@ -169,20 +169,20 @@ function introHtml({ surahAr, surahEn, surahMeaning, number, count, place }) {
 function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${fontCss}
   body { width:${W}px; height:${H}px; overflow:hidden; background:rgba(6,18,25,0.6); color:${CREAM}; position:relative; }
-  .top { position:absolute; top:120px; width:100%; text-align:center; }
+  .top { position:absolute; top:90px; width:100%; text-align:center; }
   .ar { font-family:'AQ'; font-size:64px; color:${GOLD}; direction:rtl; }
   .en { font-family:'MS'; font-size:22px; letter-spacing:6px; font-weight:600; opacity:0.8; margin-top:6px; }
   .box { position:absolute; border:2px dashed rgba(242,236,225,0.35); border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'MS'; font-size:16px; letter-spacing:2px; opacity:0.75; text-align:center; line-height:1.5; }
-  .next { position:absolute; left:250px; top:560px; text-align:center; width:680px; }
+  .next { position:absolute; left:250px; top:660px; text-align:center; width:680px; }
   .next-ar { font-family:'AQ'; font-size:40px; direction:rtl; color:${GOLD}; }
   .next-en { font-family:'MS'; font-size:18px; letter-spacing:3px; opacity:0.75; margin-top:4px; }
   .brand { position:absolute; bottom:56px; width:100%; text-align:center; font-family:'MS'; font-size:18px; letter-spacing:6px; opacity:0.6; font-weight:600; }
   </style></head><body>
   <div class="top"><div class="ar">ختام سورة ${surahAr}</div><div class="en">END OF SURAH ${surahEn.toUpperCase()}</div></div>
-  <div class="box" style="left:250px;top:300px;width:680px;height:240px;">YouTube end screen:<br>NEXT SURAH video</div>
+  <div class="box" style="left:250px;top:390px;width:680px;height:240px;">YouTube end screen:<br>NEXT SURAH video</div>
   <div class="next"><div class="next-ar">التالية: سورة ${nextAr}</div><div class="next-en">NEXT · SURAH ${nextEn.toUpperCase()}</div></div>
-  <div class="box" style="left:1090px;top:300px;width:240px;height:240px;border-radius:50%;">SUBSCRIBE</div>
-  <div class="box" style="left:1390px;top:300px;width:280px;height:240px;">PLAYLIST:<br>FULL SURAHS</div>
+  <div class="box" style="left:1090px;top:390px;width:240px;height:240px;border-radius:50%;">SUBSCRIBE</div>
+  <div class="box" style="left:1390px;top:390px;width:280px;height:240px;">PLAYLIST:<br>FULL SURAHS</div>
   <div class="brand">بصائر · BASAER · ${HANDLE}</div>
   </body></html>`;
 }
@@ -194,14 +194,14 @@ function thumbHtml({ surahAr, surahEn, number }) {
   .frame { position:absolute; inset:18px; border:2px solid rgba(201,162,75,0.55); border-radius:10px; }
   .num { position:absolute; top:46px; left:52px; width:62px; height:62px; border:2px solid ${GOLD}; transform:rotate(45deg); display:flex; align-items:center; justify-content:center; }
   .num span { transform:rotate(-45deg); font-family:'MS'; font-weight:700; font-size:26px; color:${GOLD}; }
-  .text { position:absolute; left:40px; width:740px; top:70px; text-align:center; }
+  .text { position:absolute; left:40px; width:740px; top:40px; text-align:center; }
   .s { font-family:'AQ'; font-size:72px; color:${CREAM}; opacity:0.9; line-height:1; direction:rtl; }
-  .name { font-family:'AQ'; font-size:228px; color:${GOLD}; line-height:1.05; direction:rtl; text-shadow:0 6px 26px rgba(0,0,0,0.6); }
-  .en { font-family:'MS'; font-weight:800; font-size:58px; letter-spacing:4px; margin-top:4px; }
+  .name { font-family:'AQ'; font-size:210px; color:${GOLD}; line-height:1.05; direction:rtl; text-shadow:0 6px 26px rgba(0,0,0,0.6); }
+  .en { font-family:'MS'; font-weight:800; font-size:58px; letter-spacing:4px; margin-top:58px; }
   .badge { display:inline-block; margin-top:22px; background:${GOLD}; color:#0B1F2A; font-family:'MS'; font-weight:800; font-size:26px; letter-spacing:3px; padding:9px 24px; border-radius:8px; }
-  .right { position:absolute; right:70px; top:100px; width:400px; text-align:center; }
-  .r-ar { font-family:'AQ'; font-size:46px; margin-top:22px; line-height:1.2; direction:rtl; }
-  .r-en { font-family:'MS'; font-weight:600; font-size:24px; opacity:0.85; margin-top:4px; }
+  .right { position:absolute; right:70px; top:70px; width:400px; text-align:center; }
+  .r-ar { font-family:'AQ'; font-size:44px; margin-top:6px; line-height:1.9; direction:rtl; }
+  .r-en { font-family:'MS'; font-weight:600; font-size:24px; opacity:0.85; margin-top:-6px; }
   .brand { position:absolute; bottom:40px; left:52px; font-family:'MS'; font-weight:700; font-size:18px; letter-spacing:6px; color:${GOLD}; opacity:0.85; }
   </style></head><body>
   <div class="frame"></div>
@@ -309,8 +309,8 @@ async function main() {
   L.push(`[v1][oc]overlay=enable='gte(t,${recEnd.toFixed(3)})'[v2]`);
   L.push(`color=c=0xC9A24B:s=${W}x4:r=${FPS},format=rgba[pb]`);
   L.push(`[v2][pb]overlay=x='-${W}+${W}*min(1,max(0,(t-${introEnd.toFixed(3)})/${(recEnd - introEnd).toFixed(3)}))':y=1062:enable='between(t,${introEnd.toFixed(3)},${recEnd.toFixed(3)})'[v3]`);
-  L.push(`[3:a]aformat=channel_layouts=mono,lowpass=f=280,lowpass=f=280,volume=12,showwaves=s=420x40:mode=cline:rate=${FPS}:colors=0xF0CB6E:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.85[w]`);
-  L.push(`[v3][w]overlay=x=${(W - 420) / 2}:y=1006:enable='between(t,${introEnd.toFixed(3)},${recEnd.toFixed(3)})'[vout]`);
+  L.push(`[3:a]aformat=channel_layouts=mono,lowpass=f=280,lowpass=f=280,volume=4,showwaves=s=360x26:mode=cline:rate=${FPS}:colors=0xF0CB6E:scale=sqrt:draw=full,format=rgba,colorchannelmixer=aa=0.6[w]`);
+  L.push(`[v3][w]overlay=x=${(W - 360) / 2}:y=1016:enable='between(t,${introEnd.toFixed(3)},${recEnd.toFixed(3)})'[vout]`);
   const fsPath = path.join(work, 'filter.txt');
   fs.writeFileSync(fsPath, L.join(';\n'));
   const mp4 = path.join(OUT, 'sample.mp4');
