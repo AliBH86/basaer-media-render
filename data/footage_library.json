@@ -1,5 +1,5 @@
 {
- "_comment": "Approved background clips (owner-picked on Pexels, checked frame by frame by Claude: no people, no writing or calligraphy, no logos, no commercial towers). Stored on Cloudinary already cropped to 1080x1920 and brand-graded. Only clips listed here can ever appear in a Reel. Owner decision 2026-10-09: recognisable, universally revered mosques are allowed. pool: mosqueN = mosque at night/dusk, skyN = night/blue-hour sky, dusk = sunset/dusk nature, mosqueD = mosque in daylight, day = daytime nature. 7311579-a removed 2026-10-10 (a structure at the left edge shows when the clip is slowed). 2026-10-11: added 12279775 (dawn), 39003563 (skyN), 39553996 (rain), 38321872 (dusk, trimmed 0-8 s, as 38321872-b); new pools dawn = sunrise / first light, rain = rain clouds. 2026-10-12: Coverr clips (official API, checked by eye on scout run 38207788918 and the vertical crops) in their own pools cNight, cDusk, cDawn, cSun, cLight, cGold, cClouds, cSea: only an explicit FOOTAGE_ARC uses them, never the Khatm arc. 2026-10-13: +20 Coverr clips (scout run 38329781912, checked by eye on sheets and vertical crops) in new pools seaNight, sea, falls, stream, valley, lake, skyDusk, snow; only an explicit FOOTAGE_ARC uses them.",
+ "_comment": "Approved background clips (owner-picked on Pexels, checked frame by frame by Claude: no people, no writing or calligraphy, no logos, no commercial towers). Stored on Cloudinary already cropped to 1080x1920 and brand-graded. Only clips listed here can ever appear in a Reel. Owner decision 2026-10-09: recognisable, universally revered mosques are allowed. pool: mosqueN = mosque at night/dusk, skyN = night/blue-hour sky, dusk = sunset/dusk nature, mosqueD = mosque in daylight, day = daytime nature. 7311579-a removed 2026-10-10 (a structure at the left edge shows when the clip is slowed). 2026-10-11: added 12279775 (dawn), 39003563 (skyN), 39553996 (rain), 38321872 (dusk, trimmed 0-8 s, as 38321872-b); new pools dawn = sunrise / first light, rain = rain clouds. 2026-10-12: Coverr clips (official API, checked by eye on scout run 38207788918 and the vertical crops) in their own pools cNight, cDusk, cDawn, cSun, cLight, cGold, cClouds, cSea: only an explicit FOOTAGE_ARC uses them, never the Khatm arc. 2026-10-13: +20 Coverr clips (scout run 38329781912, checked by eye on sheets and vertical crops) in new pools seaNight, sea, falls, stream, valley, lake, skyDusk, snow; only an explicit FOOTAGE_ARC uses them. 2026-10-13 (later): +16 Coverr clips (retry after the API hourly limit, crops checked by eye) in pools falls, snow, forest, leaves, sky, skyN, desert, field, birds; 39 (misty forest) left out: a line through the mist.",
  "base": "https://res.cloudinary.com/b72gfdzx/video/upload/cinematic-test/pexels/",
  "clips": [
   {
@@ -257,6 +257,86 @@
    "id": "coverr-ebyoNxa4bh",
    "pool": "snow",
    "what": "Coverr: snow slopes under a clear sky"
+  },
+  {
+   "id": "coverr-L7iQYa4N5Y",
+   "pool": "falls",
+   "what": "Coverr: waterfall in the mountains"
+  },
+  {
+   "id": "coverr-QyIve2hMwg",
+   "pool": "falls",
+   "what": "Coverr: rainforest waterfalls"
+  },
+  {
+   "id": "coverr-A22SRO662u",
+   "pool": "snow",
+   "what": "Coverr: mountain ridge above clouds"
+  },
+  {
+   "id": "coverr-0V5peQ9un0",
+   "pool": "forest",
+   "what": "Coverr: sunlit ferns in a forest"
+  },
+  {
+   "id": "coverr-I68972Om7F",
+   "pool": "forest",
+   "what": "Coverr: misty forest with sun rays"
+  },
+  {
+   "id": "coverr-hdorBTWXNY",
+   "pool": "forest",
+   "what": "Coverr: forest edge above the beach"
+  },
+  {
+   "id": "coverr-LRFCJa5vRR",
+   "pool": "forest",
+   "what": "Coverr: fog over a forest"
+  },
+  {
+   "id": "coverr-95N7qiWzte",
+   "pool": "leaves",
+   "what": "Coverr: sunlight through a green leaf"
+  },
+  {
+   "id": "coverr-xee53qcBr8",
+   "pool": "leaves",
+   "what": "Coverr: golden autumn leaves"
+  },
+  {
+   "id": "coverr-2v00OhJpqE",
+   "pool": "sky",
+   "what": "Coverr: sun behind moving clouds"
+  },
+  {
+   "id": "coverr-E0Zj8lC3HQ",
+   "pool": "sky",
+   "what": "Coverr: moon in a blue sky"
+  },
+  {
+   "id": "coverr-MsZyBam70M",
+   "pool": "skyN",
+   "what": "Coverr: palm silhouettes and the moon"
+  },
+  {
+   "id": "coverr-DnBhCNa6Tl",
+   "pool": "desert",
+   "what": "Coverr: golden dunes"
+  },
+  {
+   "id": "coverr-qXLxwV9w3a",
+   "pool": "desert",
+   "what": "Coverr: pink dunes at dusk"
+  },
+  {
+   "id": "coverr-Bdr5NfQZ19",
+   "pool": "field",
+   "what": "Coverr: wide golden field"
+  },
+  {
+   "id": "coverr-9d6jSSPYwm",
+   "pool": "birds",
+   "what": "Coverr: birds over the treetops"
   }
  ]
 }
