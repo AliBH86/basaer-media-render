@@ -234,7 +234,8 @@ async function main() {
   const bg = path.join(work, 'bg.mp4');
   const tlBg = path.join(work, 'timeline_bg.json');
   fs.writeFileSync(tlBg, JSON.stringify({ durationSec: dur, ayahs: pages.map((p) => ({ ayahStartMs: Math.max(0, rel(p.words[0].start)) * 1000 })) }));
-  sh(`FOOTAGE_SEED=${7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} FOOTAGE_STYLE=${meta.style || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
+  // seed: per item (studio clips: from its text) so two clips never pick the same footage in the same order
+  sh(`FOOTAGE_SEED=${meta.seed || 7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} FOOTAGE_STYLE=${meta.style || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');
