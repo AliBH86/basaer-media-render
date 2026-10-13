@@ -225,7 +225,11 @@ async function footage(total) {
   for (const id of CLIPS) {
     const cid = id.replace(/^coverr-/, '');
     const res = await fetch(`https://api.coverr.co/videos/${cid}?urls=true`, { headers: { Authorization: `Bearer ${key}` } });
-    if (!res.ok) throw new Error(`Coverr ${cid}: HTTP ${res.status}`);
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 300);
+      const probe = await fetch('https://api.coverr.co/videos?query=lake&page_size=1', { headers: { Authorization: `Bearer ${key}` } });
+      throw new Error(`Coverr ${cid}: HTTP ${res.status} ${body.replace(/s+/g, ' ')} | search probe: HTTP ${probe.status} | key length ${key.length}`);
+    }
     const v = await res.json();
     const src = v.urls && (v.urls.mp4_download || v.urls.mp4);
     if (!src) throw new Error(`Coverr ${cid}: no file url`);
