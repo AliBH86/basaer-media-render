@@ -174,8 +174,9 @@ async function main() {
   const first = words[0], last = words[words.length - 1];
   const prevEnd = al.words[first.k - 1] ? al.words[first.k - 1].end : 0;
   const nextStart = al.words[last.k + 1] ? al.words[last.k + 1].start : al.audioSec;
-  const clipStart = Math.max(prevEnd + 0.05, first.start - LEAD_SEC, 0);
-  const clipEnd = Math.min(nextStart - 0.08, last.end + TAIL_MAX_SEC, al.audioSec);
+  // fullAudio (an item with its own scene, e.g. a code-drawn poem film): the whole track is the Reel, lead-in included
+  const clipStart = meta.fullAudio ? 0 : Math.max(prevEnd + 0.05, first.start - LEAD_SEC, 0);
+  const clipEnd = meta.fullAudio ? al.audioSec : Math.min(nextStart - 0.08, last.end + TAIL_MAX_SEC, al.audioSec);
   const dur = +(clipEnd - clipStart).toFixed(3);
   const rel = (t) => +(t - clipStart).toFixed(3);
   const rec = path.join(work, 'rec.mp3');
@@ -234,6 +235,13 @@ async function main() {
   const bg = path.join(work, 'bg.mp4');
   const tlBg = path.join(work, 'timeline_bg.json');
   fs.writeFileSync(tlBg, JSON.stringify({ durationSec: dur, ayahs: pages.map((p) => ({ ayahStartMs: Math.max(0, rel(p.words[0].start)) * 1000 })) }));
+  // bgUrl (2026-10-13): the item brings its own background film (a lemo-opuscar scene drawn in code), fitted to the
+  // Reel's length (the last frame held if it is shorter); otherwise footage from the approved library.
+  if (meta.bgUrl) {
+    const raw = path.join(work, 'bg_src.mp4');
+    sh(`curl -sSL --fail -o "${raw}" "${meta.bgUrl}"`);
+    sh(`ffmpeg -nostdin -loglevel error -y -i "${raw}" -an -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=${FPS},tpad=stop_mode=clone:stop_duration=${dur},format=yuv420p,setsar=1" -t ${dur} -c:v libx264 -crf 17 -preset veryfast "${bg}"`);
+  } else
   // seed: per item (studio clips: from its text) so two clips never pick the same footage in the same order
   sh(`FOOTAGE_SEED=${meta.seed || 7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} FOOTAGE_STYLE=${meta.style || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 

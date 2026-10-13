@@ -31,6 +31,7 @@ fs.writeFileSync(path.join(outDir, 'phrases.json'), JSON.stringify({
   cta: Array.isArray(spec.cta) && spec.cta.length === 2 ? spec.cta : ['احفظه', 'أرسله لمن تحب'],
   pageStarts: starts,
   style: spec.style === 'energetic' ? 'energetic' : '',
+  bgUrl: spec.bgUrl || '', fullAudio: !!spec.fullAudio,
   seed: 1 + [...lines.join('|')].reduce((h, ch) => (h * 31 + ch.codePointAt(0)) % 99991, 7),
   phrases: lines.map((text, i) => ({ i, text })),
 }, null, 1));
