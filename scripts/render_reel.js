@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { amiriQuranBase64, montserratBase64 } = require('./font_data');
+const { audioBarsLines } = require('./audio_bars');
 
 const REPO_ROOT = path.join(__dirname, '..');
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
@@ -638,12 +639,10 @@ async function main() {
     prev = out;
   });
   const audioInputIdx = overlaySpecs.length + 1;
-  // Audio wave (owner, 2026-10-13: "a wave bar for the audio in all reels"): gold audio bars (an equalizer of the recitation itself, mirrored round a centre line), in
-  // the free band just above the progress line (184-276 px), so it never meets the ayah text or the translation.
-  // WAVE=0 turns it off. The volume boost is for the drawing only, never the sound.
+  // Audio bars of the recitation under the @handle, on to the end (scripts/audio_bars.js; owner, 2026-10-13).
+  // WAVE=0 turns them off.
   if (process.env.WAVE !== '0') {
-    filterLines.push(`[${audioInputIdx}:a]aformat=channel_layouts=mono,aresample=8000,volume=9,showfreqs=s=40x46:mode=bar:ascale=cbrt:fscale=log:win_size=1024:colors=0xF0CB6E:averaging=3,scale=800:46:flags=neighbor,format=rgba,geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)':a='if(lt(mod(X,20),7),0,alpha(X,Y))',split[wu][wd];[wd]vflip[wdf];[wu][wdf]vstack,colorchannelmixer=aa=0.92[wave]`);
-    filterLines.push(`[${prev}][wave]overlay=140:184[vout]`);
+    filterLines.push(...audioBarsLines(audioInputIdx, prev, 'vout'));
   } else {
     filterLines.push(`[${prev}]null[vout]`);
   }
