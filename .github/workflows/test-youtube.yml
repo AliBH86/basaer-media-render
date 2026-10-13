@@ -1,0 +1,59 @@
+name: TEST - YouTube design sample (exploration only)
+
+# 16:9 full-surah design sample for the owner's review (branch test/youtube). Renders scripts/yt_sample.js and uploads
+# the video, thumbnail and stills to Cloudinary youtube-test/. Nothing here publishes and nothing touches n8n.
+on:
+  workflow_dispatch:
+    inputs:
+      surah:
+        description: "Surah number"
+        default: "1"
+      sampleAyahs:
+        description: "How many ayahs from the start of the surah"
+        default: "2"
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then
+              echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "No Chrome/Chromium binary found" >&2
+          exit 1
+
+      - name: Integrity guard self-test (offline)
+        run: node scripts/verify_text.js --selftest
+
+      - name: Render sample
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          SURAH: ${{ github.event.inputs.surah }}
+          SAMPLE_AYAHS: ${{ github.event.inputs.sampleAyahs }}
+        run: node scripts/yt_sample.js out
+
+      - name: Upload to Cloudinary (youtube-test/)
+        run: |
+          R=${{ github.run_id }}
+          node scripts/upload_cloudinary.js out/sample.mp4 "youtube-test/sample-$R" video out video
+          node scripts/upload_cloudinary.js out/thumbnail.png "youtube-test/thumb-$R" image out thumbnail
+          for f in out/still-*.png; do
+            n=$(basename "$f" .png)
+            node scripts/upload_cloudinary.js "$f" "youtube-test/$n-$R" image out "$n"
+          done
+          cat out/uploads.json
