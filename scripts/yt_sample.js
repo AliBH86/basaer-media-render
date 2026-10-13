@@ -224,7 +224,9 @@ async function footage(total) {
   const files = [];
   for (const id of CLIPS) {
     const cid = id.replace(/^coverr-/, '');
-    const v = await getJson(`https://api.coverr.co/videos/${cid}?urls=true`, { Authorization: `Bearer ${key}` });
+    const res = await fetch(`https://api.coverr.co/videos/${cid}?urls=true`, { headers: { Authorization: `Bearer ${key}` } });
+    if (!res.ok) throw new Error(`Coverr ${cid}: HTTP ${res.status}`);
+    const v = await res.json();
     const src = v.urls && (v.urls.mp4_download || v.urls.mp4);
     if (!src) throw new Error(`Coverr ${cid}: no file url`);
     const raw = path.join(work, `${id}.mp4`);
