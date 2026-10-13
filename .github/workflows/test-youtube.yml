@@ -3,6 +3,8 @@ name: TEST - YouTube design sample (exploration only)
 # 16:9 full-surah design sample for the owner's review (branch test/youtube). Renders scripts/yt_sample.js and uploads
 # the video, thumbnail and stills to Cloudinary youtube-test/. Nothing here publishes and nothing touches n8n.
 on:
+  push:
+    branches: [test/youtube]
   workflow_dispatch:
     inputs:
       surah:
@@ -43,8 +45,8 @@ jobs:
       - name: Render sample
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
-          SURAH: ${{ github.event.inputs.surah }}
-          SAMPLE_AYAHS: ${{ github.event.inputs.sampleAyahs }}
+          SURAH: ${{ github.event.inputs.surah || '1' }}
+          SAMPLE_AYAHS: ${{ github.event.inputs.sampleAyahs || '2' }}
         run: node scripts/yt_sample.js out
 
       - name: Upload to Cloudinary (youtube-test/)
