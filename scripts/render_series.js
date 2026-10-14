@@ -253,7 +253,7 @@ async function main() {
     sh(`ffmpeg -nostdin -loglevel error -y -i "${raw}" -an -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=${FPS},tpad=stop_mode=clone:stop_duration=${dur},format=yuv420p,setsar=1" -t ${dur} -c:v libx264 -crf 17 -preset veryfast "${bg}"`);
   } else
   // seed: per item (studio clips: from its text) so two clips never pick the same footage in the same order
-  sh(`FOOTAGE_SEED=${meta.seed || 7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} FOOTAGE_STYLE=${meta.style || ''} timeout 300 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
+  sh(`FOOTAGE_SEED=${meta.seed || 7000 + part.part * 37} FOOTAGE_ARC="${part.arc || ''}" FOOTAGE_MAX_SHOT=${part.maxShot || ''} FOOTAGE_STYLE=${meta.style || ''} timeout 1200 node "${path.join(REPO_ROOT, 'scripts', 'footage_background.js')}" "${tlBg}" "${bg}"`);
 
   // 6. Composite (the save/share prompt last, on top, fading in).
   const ctaPng = path.join(work, 'cta.png');
