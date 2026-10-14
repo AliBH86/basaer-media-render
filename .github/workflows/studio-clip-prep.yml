@@ -38,7 +38,13 @@ jobs:
           CLIP_URL: ${{ github.event.inputs.url }}
         run: |
           mkdir -p work
-          yt-dlp --no-playlist -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --write-info-json -o "work/clip.%(ext)s" "$CLIP_URL" 2>&1 | tail -20
+          # Instagram sometimes refuses anonymous downloads for a while (2026-10-14: "exceeded the rate-limit"); a retry later works
+          for n in 1 2 3 4 5; do
+            yt-dlp --no-playlist -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --write-info-json -o "work/clip.%(ext)s" "$CLIP_URL" 2>&1 | tail -20
+            test -s work/clip.mp3 && break
+            echo "download attempt $n failed, waiting $((n * 45)) s"
+            [ "$n" -lt 5 ] && sleep $((n * 45))
+          done
           ls -la work
           test -s work/clip.mp3
           D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 work/clip.mp3)
