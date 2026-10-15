@@ -1,0 +1,49 @@
+name: Series remux (Instagram spec)
+
+# Repackages already-rendered series Reels without re-encoding: moov atom moved to the
+# front (faststart) and edit lists removed, as Instagram's video spec asks. Picture and
+# sound are copied bit for bit. Uploads each result plus a stills tile to check by eye.
+on:
+  workflow_dispatch:
+    inputs:
+      items:
+        description: 'Space-separated "part=url" pairs'
+        required: true
+      series:
+        default: "dua-sabah"
+      cloudFolder:
+        default: "series-v3"
+
+jobs:
+  remux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - name: Remux, check, upload
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          for pair in ${{ github.event.inputs.items }}; do
+            P="${pair%%=*}"; URL="${pair#*=}"
+            curl -sSL -o "in_$P.mp4" "$URL"
+            ffmpeg -nostdin -loglevel error -y -i "in_$P.mp4" -map 0 -c copy -movflags +faststart -use_editlist 0 "out/part_$P.mp4"
+            echo "== part $P"
+            for f in "in_$P.mp4" "out/part_$P.mp4"; do
+              ffprobe -v error -show_entries stream=codec_type,start_time,duration,nb_frames:format=duration -of compact "$f"
+            done
+            node scripts/mp4_check.js "out/part_$P.mp4"
+            D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "out/part_$P.mp4")
+            for k in 0 1 2 3; do
+              T=$(echo "if ($k==0) 0.05 else $D*$k/3-0.3" | bc -l)
+              ffmpeg -nostdin -loglevel error -y -ss "$T" -i "out/part_$P.mp4" -frames:v 1 "out/s_${P}_$k.png"
+            done
+            ffmpeg -nostdin -loglevel error -y -i out/s_${P}_0.png -i out/s_${P}_1.png -i out/s_${P}_2.png -i out/s_${P}_3.png -filter_complex "hstack=4,scale=1600:-2" "out/tile_$P.jpg"
+            node scripts/upload_cloudinary.js "out/part_$P.mp4" "${{ github.event.inputs.cloudFolder }}/${{ github.event.inputs.series }}-part$P-${{ github.run_id }}" video out "reel_$P"
+            node scripts/upload_cloudinary.js "out/tile_$P.jpg" "${{ github.event.inputs.cloudFolder }}/${{ github.event.inputs.series }}-part$P-tile-${{ github.run_id }}" image out "tile_$P"
+          done
+          cat out/uploads.json
+      - uses: actions/upload-artifact@v4
+        with: { name: series-remux, path: out/uploads.json, retention-days: 7 }
