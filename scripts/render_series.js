@@ -182,7 +182,7 @@ async function main() {
 
   // Studio clip (owner, 2026-10-15): lines n8n marked as Quran (words already from the Quran.com API) get the surah / ayah label,
   // like the Khatm and dua series. meta.quranLines = [{ from, to, ref: "19:25" }] (line = phrase index).
-  const qLines = Array.isArray(meta.quranLines) ? meta.quranLines.filter((q) => q && /^d{1,3}:d{1,3}$/.test(String(q.ref))) : [];
+  const qLines = Array.isArray(meta.quranLines) ? meta.quranLines.filter((q) => q && /^[0-9]{1,3}:[0-9]{1,3}$/.test(String(q.ref))) : [];
   const qLabel = {};
   if (qLines.length) {
     const names = {};
