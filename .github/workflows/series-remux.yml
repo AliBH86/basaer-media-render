@@ -40,7 +40,7 @@ jobs:
               ffprobe -v error -show_entries stream=codec_type,start_time,duration,nb_frames:format=duration -of compact "$f"
             done
             node scripts/mp4_check.js "out/part_$P.mp4" | tee chk.json
-            grep -q '"top":["ftyp@0(32)","moov' chk.json && ! grep -q '"elst"' chk.json || { echo "part $P not to spec"; exit 1; }
+            grep -qF '"top":["ftyp@0(32)","moov' chk.json && ! grep -q '"elst"' chk.json || { echo "part $P not to spec"; exit 1; }
             D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "out/part_$P.mp4")
             for k in 0 1 2 3; do
               T=$(awk -v d="$D" -v k="$k" "BEGIN{printf \"%.3f\", k==0 ? 0.2 : d*k/3-0.3}")
