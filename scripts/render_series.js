@@ -180,6 +180,22 @@ async function main() {
     }
   }
 
+  // Studio clip (owner, 2026-10-15): lines n8n marked as Quran (words already from the Quran.com API) get the surah / ayah label,
+  // like the Khatm and dua series. meta.quranLines = [{ from, to, ref: "19:25" }] (line = phrase index).
+  const qLines = Array.isArray(meta.quranLines) ? meta.quranLines.filter((q) => q && /^d{1,3}:d{1,3}$/.test(String(q.ref))) : [];
+  const qLabel = {};
+  if (qLines.length) {
+    const names = {};
+    for (const q of qLines) {
+      const sn = q.ref.split(':')[0];
+      if (!names[sn]) { const c = (await getJson(`https://api.quran.com/api/v4/chapters/${sn}?language=en`)).chapter; names[sn] = { ar: c.name_arabic, en: c.name_simple }; }
+      const an = q.ref.split(':')[1];
+      qLabel[q.from + '-' + q.to] = { ar: `${names[sn].ar} ${toEastern(an)}`, en: `${names[sn].en.toUpperCase()} ${q.ref}` };
+    }
+    for (const w of words) if (qLines.some((q) => w.phrase >= q.from && w.phrase <= q.to)) w.quran = true;
+  }
+  const qIdOf = (ph) => qLines.findIndex((q) => ph >= q.from && ph <= q.to);
+
   // 2. Clip window: a short lead-in before the first word, the reverb tail after the last (never into the next phrase).
   const first = words[0], last = words[words.length - 1];
   const prevEnd = al.words[first.k - 1] ? al.words[first.k - 1].end : 0;
@@ -203,7 +219,8 @@ async function main() {
     const isQ = pw.some((w) => w.quran);
     // pageStarts (phrases.json, optional): phrases that open a new screen, so one sentence never runs into the next
     const brk = meta.pageStarts ? meta.pageStarts.includes(ph) : cur && cur.words.length + pw.length > PAGE_MAX_WORDS;
-    if (!cur || cur.quran !== isQ || brk) { cur = { quran: isQ, words: [] }; pages.push(cur); }
+    const qid = qLines.length && isQ ? qIdOf(ph) : -1;
+    if (!cur || cur.quran !== isQ || brk || (qLines.length && cur.qid !== qid)) { cur = { quran: isQ, qid, qref: qid >= 0 ? qLabel[qLines[qid].from + '-' + qLines[qid].to] : null, words: [] }; pages.push(cur); }
     cur.words.push(...pw);
   }
   // a single item (Studio clip, 2026-10-12) sets its own line in phrases.json (sub: "" hides it)
@@ -238,7 +255,7 @@ async function main() {
   const qRef = { ar: 'آل عمران ٢٦–٢٧', en: "AAL 'IMRAN 3:26-27" };
   specs.forEach((s, i) => {
     s.png = path.join(work, `overlay_${i}.png`);
-    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? qRef : null, energetic: meta.style === 'energetic', layout: meta.layout, breaks: (meta.layout === 'scene' || meta.lineBreaks) ? new Set(s.page.words.map((w, i) => (i > 0 && w.phrase !== s.page.words[i - 1].phrase ? i : -1)).filter((i) => i > 0)) : null }), s.png);
+    renderPng(buildOverlayHtml({ titleAr: meta.title, titleEn: meta.titleEn || 'DUA AL-SABAH', sub, reciterAr: meta.reciter || '', reciterEn: meta.reciterEn !== undefined ? meta.reciterEn : 'Ali Hamadi', words: s.page.words.map((w) => w.show), highlightIndex: s.highlightIndex, progressFraction: s.startSec / dur, quranRef: s.page.quran ? (qLines.length ? s.page.qref : qRef) : null, energetic: meta.style === 'energetic', layout: meta.layout, breaks: (meta.layout === 'scene' || meta.lineBreaks) ? new Set(s.page.words.map((w, i) => (i > 0 && w.phrase !== s.page.words[i - 1].phrase ? i : -1)).filter((i) => i > 0)) : null }), s.png);
   });
 
   // 5. Footage background (approved library), shots cut on page starts.

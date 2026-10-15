@@ -30,6 +30,7 @@ fs.writeFileSync(path.join(outDir, 'phrases.json'), JSON.stringify({
   reciter: spec.reciter || '', reciterEn: spec.reciterEn || '',
   cta: Array.isArray(spec.cta) && spec.cta.length === 2 ? spec.cta : ['احفظه', 'أرسله لمن تحب'],
   pageStarts: starts,
+  quranLines: Array.isArray(spec.quranLines) ? spec.quranLines : [],
   style: spec.style === 'energetic' ? 'energetic' : '',
   bgUrl: spec.bgUrl || '', fullAudio: !!spec.fullAudio || !!spec.poem, lineBreaks: !!spec.lineBreaks || !!spec.poem, layout: spec.layout || (spec.bgUrl ? 'scene' : 'default'),
   seed: 1 + [...lines.join('|')].reduce((h, ch) => (h * 31 + ch.codePointAt(0)) % 99991, 7),
