@@ -29,15 +29,21 @@ jobs:
           for pair in ${{ github.event.inputs.items }}; do
             P="${pair%%=*}"; URL="${pair#*=}"
             curl -sSL -o "in_$P.mp4" "$URL"
-            ffmpeg -nostdin -loglevel error -y -i "in_$P.mp4" -map 0 -c copy -movflags +faststart -use_editlist 0 "out/part_$P.mp4"
+            # Without edit lists the video starts 2 frames late (B-frame delay) and the 1024 AAC priming
+            # samples play. Delay the audio by (video start - priming) so sync matches the original exactly.
+            ffmpeg -nostdin -loglevel error -y -i "in_$P.mp4" -map 0 -c copy -movflags +faststart -use_editlist 0 "tmp_$P.mp4"
+            V=$(ffprobe -v error -select_streams v:0 -show_entries stream=start_time -of csv=p=0 "tmp_$P.mp4")
+            OFF=$(awk -v v="$V" "BEGIN{printf \"%.6f\", v-1024/48000}")
+            ffmpeg -nostdin -loglevel error -y -i "in_$P.mp4" -itsoffset "$OFF" -i "in_$P.mp4" -map 0:v -map 1:a -c copy -movflags +faststart -use_editlist 0 "out/part_$P.mp4"
             echo "== part $P"
             for f in "in_$P.mp4" "out/part_$P.mp4"; do
               ffprobe -v error -show_entries stream=codec_type,start_time,duration,nb_frames:format=duration -of compact "$f"
             done
-            node scripts/mp4_check.js "out/part_$P.mp4"
+            node scripts/mp4_check.js "out/part_$P.mp4" | tee chk.json
+            grep -q '"top":["ftyp@0(32)","moov' chk.json && ! grep -q '"elst"' chk.json || { echo "part $P not to spec"; exit 1; }
             D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "out/part_$P.mp4")
             for k in 0 1 2 3; do
-              T=$(echo "if ($k==0) 0.05 else $D*$k/3-0.3" | bc -l)
+              T=$(awk -v d="$D" -v k="$k" "BEGIN{printf \"%.3f\", k==0 ? 0.2 : d*k/3-0.3}")
               ffmpeg -nostdin -loglevel error -y -ss "$T" -i "out/part_$P.mp4" -frames:v 1 "out/s_${P}_$k.png"
             done
             ffmpeg -nostdin -loglevel error -y -i out/s_${P}_0.png -i out/s_${P}_1.png -i out/s_${P}_2.png -i out/s_${P}_3.png -filter_complex "hstack=4,scale=1600:-2" "out/tile_$P.jpg"

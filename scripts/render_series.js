@@ -274,7 +274,7 @@ async function main() {
   const fscript = path.join(work, 'filter.txt');
   fs.writeFileSync(fscript, lines.join(';\n'));
   const outPath = path.join(outDir, `series_part_${part.part}.mp4`);
-  sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${fscript}" -map "[vout]" -map ${specs.length + 2}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 160k -shortest -movflags +faststart -use_editlist 0 "${outPath}"`); // Instagram spec: moov at the front, no edit lists
+  sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${fscript}" -map "[vout]" -map ${specs.length + 2}:a -c:v libx264 -bf 0 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 160k -shortest -movflags +faststart -use_editlist 0 "${outPath}"`); // Instagram spec: moov at the front, no edit lists (-bf 0 so video still starts at 0)
 
   const stats = { series: meta.title, part: part.part, parts, phrases: [part.from, part.to], clipStartSec: +clipStart.toFixed(3), clipEndSec: +clipEnd.toFixed(3), durationSec: dur, pages: pages.length, words: words.length, quranWords: words.filter((w) => w.quran).length, lowestWordScore: Math.min(...words.map((w) => w.score)), elapsedSec: (Date.now() - t0) / 1000 };
   fs.writeFileSync(path.join(outDir, 'render_stats.json'), JSON.stringify(stats, null, 2));
