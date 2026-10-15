@@ -1,0 +1,19 @@
+Basaer scene library (motion-graphic backgrounds for Studio speech Reels)
+
+Code
+- Lemo-Opuscar style library, MIT License, Copyright (c) 2026 LemoLab (github.com/lemomo-ai/lemo-opuscar, commit
+  fdc46d7f0e20cc953a71d56241a92d1b4cb7298e). Engine files copied and adapted: road/src and garden/src paper.js,
+  post.js, stage.js, lib.js (Paper-cut Lightbox engine, via the Basaer door-poem project); deco-dawn/engine/deco.js
+  (Art Deco engine). The renderer (core/render) is used from the library at that commit. The MIT notice:
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+  documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+  persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice
+  and this permission notice shall be included in all copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+- three.js (MIT), from the library's node_modules.
+
+Everything else (scene designs, drawings, motion) is original to Basaer, drawn in code. No images, fonts, music,
+sound, footage or photos are used in the scenes.

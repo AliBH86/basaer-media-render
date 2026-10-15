@@ -1,0 +1,96 @@
+name: Scene library - render takes (lemo-opuscar)
+# Basaer scene library (owner, 2026-10-15): motion-graphic backgrounds for Studio speech Reels, drawn in code with the
+# Lemo-Opuscar library (MIT, pinned commit). Each scene in scenes/<name>/ renders as 4 takes of 6 s (1080x1920, 30 fps,
+# silent), one job per take, and is uploaded to Cloudinary next to the approved footage as
+# cinematic-test/pexels/<id>-vertical.mp4 so footage_background.js can use it once data/footage_library.json lists it.
+# Nothing here changes a Reel: a scene is only used after the owner approves it and it is added to the library.
+on:
+  workflow_dispatch:
+    inputs:
+      scenes:
+        description: 'comma list of scenes/<name> to render'
+        default: 'road,garden,deco-dawn'
+      takes:
+        description: 'comma list of takes'
+        default: '1,2,3,4'
+      ssaa:
+        description: 'supersampling for the paper-cut scenes (1-2)'
+        default: '1.5'
+      upload:
+        description: 'upload to Cloudinary (true/false)'
+        default: 'true'
+
+env:
+  LEMO_COMMIT: fdc46d7f0e20cc953a71d56241a92d1b4cb7298e
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        env:
+          SCENES: ${{ github.event.inputs.scenes }}
+          TAKES: ${{ github.event.inputs.takes }}
+        run: |
+          node -e '
+            const ID = { road: "mg-road", garden: "mg-garden", "deco-dawn": "mg-deco" };
+            const s = process.env.SCENES.split(",").map(x => x.trim()).filter(Boolean), k = process.env.TAKES.split(",").map(x => x.trim()).filter(Boolean);
+            const include = s.flatMap(scene => k.map(take => ({ scene, take, id: (ID[scene] || "mg-" + scene) + "-" + take })));
+            require("fs").appendFileSync(process.env.GITHUB_OUTPUT, "matrix=" + JSON.stringify({ include }) + "\n");
+            console.log(include.map(i => i.id).join(" "));'
+
+  render:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null && ffmpeg -version | head -1
+      - name: Lemo-Opuscar library (pinned, no demos)
+        run: |
+          git clone --filter=blob:none --no-checkout https://github.com/lemomo-ai/lemo-opuscar.git lemo
+          cd lemo
+          git sparse-checkout set --no-cone '/*' '!/styles/*/demo/' '!/styleboard/' '!/docs/' '!/styles/*/poster.jpg'
+          git checkout -q "$LEMO_COMMIT"
+          npm ci --no-audit --no-fund --loglevel=error
+          node node_modules/playwright-core/cli.js install --with-deps chromium-headless-shell
+      - name: Render take ${{ matrix.take }} of ${{ matrix.scene }}
+        env:
+          SSAA: ${{ github.event.inputs.ssaa }}
+        run: |
+          mkdir -p out
+          cd lemo
+          # no GPU on the runner: WebGL runs on SwiftShader (slow but exact); the deco scene is plain Canvas2D
+          node core/render/video.mjs "$GITHUB_WORKSPACE/scenes/${{ matrix.scene }}" --fps 30 --size 1080x1920 \
+            --q "take=${{ matrix.take }}&ssaa=$SSAA" --workers 2 --out "$GITHUB_WORKSPACE/out/${{ matrix.id }}.mp4"
+      - name: Check (length, size, black frames) and review frames
+        run: |
+          f="out/${{ matrix.id }}.mp4"
+          ffprobe -v error -show_entries stream=width,height,r_frame_rate:format=duration -of default=nw=1 "$f"
+          ffmpeg -v error -i "$f" -vf blackdetect=d=0.2:pix_th=0.04 -an -f null - 2>&1 | tee out/black.txt
+          if grep -q black_start out/black.txt; then echo "black frames found"; exit 1; fi
+          for t in 0.3 2.5 5.7; do ffmpeg -v error -y -ss $t -i "$f" -frames:v 1 -q:v 3 "out/${{ matrix.id }}_$t.jpg"; done
+      - name: Upload to Cloudinary
+        if: github.event.inputs.upload == 'true'
+        run: |
+          r=$(curl -sS -X POST https://api.cloudinary.com/v1_1/b72gfdzx/video/upload \
+            -F "file=@out/${{ matrix.id }}.mp4" -F upload_preset=ml_default \
+            -F "public_id=cinematic-test/pexels/${{ matrix.id }}-vertical")
+          echo "$r" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s); if(!j.secure_url){console.error(s);process.exit(1)} console.log(j.secure_url, j.duration, j.width+"x"+j.height)})'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.id }}
+          path: |
+            out/${{ matrix.id }}.mp4
+            out/*.jpg
+          retention-days: 14
