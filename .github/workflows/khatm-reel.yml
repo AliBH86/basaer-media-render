@@ -36,6 +36,9 @@ on:
         description: "Footage look: warm (live since 2026-10-13, owner OK), '' (the earlier calm look), energetic"
         default: "warm"
         required: false
+      handle:
+        description: "On-screen handle (YouTube Shorts: @Basaermedia_bh). Empty = @basaer.media.bh"
+        required: false
       cloudFolder:
         description: "Cloudinary folder (default khatm-test)"
         default: "khatm-test"
@@ -87,6 +90,7 @@ jobs:
           PART_LABEL: ${{ github.event.inputs.partLabel }}
           TRANSLATION_ID: "20"
           TRANSLATION_NAME: "Saheeh International"
+          HANDLE: ${{ github.event.inputs.handle }}
         run: |
           mkdir -p out
           node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId }}" "${{ github.event.inputs.style || 'gradient' }}" out "${{ github.event.inputs.ayahEnd }}"

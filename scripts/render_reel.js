@@ -404,7 +404,8 @@ async function main() {
   if (!reciterInfo) throw new Error(`reciter ${timeline.reciterId} is not in data/reciters.json - refusing to render without an approved name`);
   const reciterName = reciterInfo.en;
   const reciterNameArabic = reciterInfo.ar;
-  const handle = '@basaer.media.bh';
+  // HANDLE (2026-10-21): YouTube Shorts show the YouTube handle; unset = the Instagram handle, unchanged for Reels.
+  const handle = process.env.HANDLE || '@basaer.media.bh';
   const credit = `Text and recitation: Quran.com / Quran Foundation. Translation: ${process.env.TRANSLATION_NAME || 'Saheeh International'}.`;
 
   // 3. Audio: download chapter, trim to [clipStartSec, clipEndSec], optional fade-in
