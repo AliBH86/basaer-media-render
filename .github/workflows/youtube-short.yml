@@ -1,0 +1,103 @@
+name: YouTube Short (Khatm part)
+
+# YouTube Shorts (owner, 2026-10-21): picks the next Khatm part estimated at 55 s or less (scripts/pick_short.js), renders
+# it exactly like a Khatm Reel but with the YouTube handle on screen, uploads it to Cloudinary youtube/shorts/ and POSTs the
+# result back to n8n. Nothing here touches YouTube or Instagram: the upload to YouTube (as PRIVATE) is done by n8n.
+on:
+  workflow_dispatch:
+    inputs:
+      startPart:
+        description: "First Khatm part to consider (n8n's yt_short_next_part)"
+        required: true
+      resumeUrl:
+        description: "n8n resumeUrl to POST results back to (optional)"
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then
+              echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "No Chrome/Chromium binary found" >&2
+          exit 1
+
+      - name: Integrity guard self-test (offline)
+        run: node scripts/verify_text.js --selftest
+
+      - name: Pick the Khatm part
+        id: pick
+        run: node scripts/pick_short.js "${{ github.event.inputs.startPart }}" out
+
+      - name: Render the Short
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          KHATM: "1"
+          FOOTAGE_STYLE: "warm"
+          SOFT_CAP_SEC: "58"
+          MAX_CAP_SEC: "59"
+          TOTAL_BUDGET_SEC: "1200"
+          BG_BUDGET_SEC: "300"
+          BISMILLAH: "auto"
+          WORD_START: ${{ steps.pick.outputs.wordStart }}
+          WORD_END: ${{ steps.pick.outputs.wordEnd }}
+          PART_LABEL: ${{ steps.pick.outputs.partLabel }}
+          TRANSLATION_ID: "20"
+          TRANSLATION_NAME: "Saheeh International"
+          HANDLE: "@Basaermedia_bh"
+        run: |
+          node scripts/render_reel.js "${{ steps.pick.outputs.surah }}" "${{ steps.pick.outputs.ayahStart }}" "${{ steps.pick.outputs.reciterId }}" "${{ steps.pick.outputs.style }}" out "${{ steps.pick.outputs.ayahEnd }}"
+
+      - name: Upload the Short to Cloudinary
+        run: |
+          REEL_FILE=$(ls out/reel_*.mp4)
+          node scripts/upload_cloudinary.js "$REEL_FILE" "youtube/shorts/short-${{ steps.pick.outputs.khatmPart }}-${{ github.run_id }}" video out reelUrl
+          ffprobe -v error -show_entries format=duration,size -show_entries stream=width,height,codec_name -of default=noprint_wrappers=1 "$REEL_FILE"
+          cat out/uploads.json
+
+      - name: Upload artifacts (7-day retention)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: youtube-short-outputs
+          path: out/
+          retention-days: 7
+
+      - name: Notify n8n (resumeUrl callback, only if provided)
+        if: ${{ github.event.inputs.resumeUrl != '' }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const uploads = JSON.parse(fs.readFileSync('out/uploads.json', 'utf8'));
+            const s = JSON.parse(fs.readFileSync('out/render_stats.json', 'utf8'));
+            const pick = JSON.parse(fs.readFileSync('out/short_pick.json', 'utf8'));
+            const stats = { surah: s.surah, ayahStart: s.ayahStart, ayahEnd: s.ayahEnd, surahNameArabic: s.surahNameArabic, surahNameEnglish: s.surahNameEnglish, reciterName: s.reciterName, reciterNameArabic: s.reciterNameArabic, fileDurationSec: s.fileDurationSec };
+            fs.writeFileSync('out/callback_payload.json', JSON.stringify({ ...uploads, stats, pick, runId: '${{ github.run_id }}' }));
+          "
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" -H "Content-Type: application/json" -d @out/callback_payload.json
+
+      - name: Notify n8n of a FAILED render (only if provided)
+        if: ${{ failure() && github.event.inputs.resumeUrl != '' }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            let pick = {}; try { pick = JSON.parse(fs.readFileSync('out/short_pick.json', 'utf8')); } catch (e) {}
+            fs.writeFileSync('out/failure_payload.json', JSON.stringify({ failed: true, pick, runId: '${{ github.run_id }}', runUrl: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}' }));
+          "
+          curl -sS -X POST "${{ github.event.inputs.resumeUrl }}" -H "Content-Type: application/json" -d @out/failure_payload.json
