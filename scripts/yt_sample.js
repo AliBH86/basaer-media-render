@@ -29,6 +29,9 @@ const HANDLE = '@Basaermedia_bh';
 const RECITER_AR = 'محمد صديق المنشاوي'; // data/reciters.json (approved display name)
 const RECITER_EN = 'Mohamed Siddiq Al-Minshawi';
 const STYLE_AR = 'مجوَّد', STYLE_EN = 'Mujawwad';
+// Owner, 2026-10-21: the reciter is shown with his title on YouTube, and the brand reads Basaer Media / بصائر ميديا.
+const TITLE_AR = 'الشيخ', TITLE_EN = 'Sheikh';
+const BRAND_AR = 'بصائر ميديا', BRAND_EN = 'BASAER MEDIA';
 const GOLD = '#D9B45A', GOLD_HI = '#F0CB6E', CREAM = '#F7F1E6';
 const HIZB = String.fromCharCode(0x06DE), ANNOT = String.fromCharCode(0x06ED, 0x06E2);
 // Owner-approved Coverr clips (data/footage_library.json), used here as their landscape originals. Order = the mood arc.
@@ -116,14 +119,14 @@ function ayahHtml({ words, hi, english, surahAr, surahEn, ayahNo, total }) {
   .handle { position:absolute; right:64px; bottom:66px; font-family:'CZ'; font-size:19px; color:${GOLD_HI}; font-weight:700; letter-spacing:2px; }
   .track { position:absolute; left:0; right:0; top:1066px; height:3px; background:rgba(247,241,230,0.16); }
   </style></head><body>
-  <div class="brand"><span class="brand-ar">بصائر</span><span class="brand-en">BASAER</span></div>
+  <div class="brand"><span class="brand-ar">${BRAND_AR}</span><span class="brand-en">${BRAND_EN}</span></div>
   <div class="title"><div class="title-ar">سورة ${surahAr}</div><div class="title-en">SURAH ${surahEn.toUpperCase()}</div>${divider(110)}</div>
   <div class="count"><div class="count-ar">الآية ${arNum(ayahNo)} من ${arNum(total)}</div><div class="count-en">AYAH ${ayahNo} / ${total}</div></div>
   <div class="content">
     <div class="row"><div class="arabic" id="arabic">${spans}</div><div style="margin-top:48px;">${medallion(ayahNo, 92)}</div></div>
     <div class="translation" id="translation">${english}</div>
   </div>
-  <div class="rec">${portrait(100)}<div><div class="rec-ar">${RECITER_AR}</div><div class="rec-en">${RECITER_EN.toUpperCase()} · ${STYLE_EN.toUpperCase()}</div></div></div>
+  <div class="rec">${portrait(100)}<div><div class="rec-ar">${TITLE_AR} ${RECITER_AR}</div><div class="rec-en">${TITLE_EN.toUpperCase()} ${RECITER_EN.toUpperCase()} · ${STYLE_EN.toUpperCase()}</div></div></div>
   <div class="handle">${HANDLE}</div>
   <div class="track"></div>
   <script>
@@ -160,8 +163,8 @@ function introHtml({ surahAr, surahEn, surahMeaning, number, count, place }) {
   <div class="en">${surahEn.toUpperCase()}</div>
   <div class="meta">${surahMeaning.toUpperCase()} · ${count} AYAHS · ${placeEn}</div>
   ${divider(160)}
-  <div class="rec">${portrait(140)}<div><div class="rec-ar">${RECITER_AR} · ${STYLE_AR}</div><div class="rec-en">${RECITER_EN.toUpperCase()}</div></div></div>
-  <div class="brand">BASAER · بصائر · ${HANDLE}</div>
+  <div class="rec">${portrait(140)}<div><div class="rec-ar">${TITLE_AR} ${RECITER_AR} · ${STYLE_AR}</div><div class="rec-en">${TITLE_EN.toUpperCase()} ${RECITER_EN.toUpperCase()}</div></div></div>
+  <div class="brand">${BRAND_EN} · ${BRAND_AR} · ${HANDLE}</div>
   </body></html>`;
 }
 
@@ -183,7 +186,7 @@ function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
   <div class="next"><div class="next-ar">التالية: سورة ${nextAr}</div><div class="next-en">NEXT · SURAH ${nextEn.toUpperCase()}</div></div>
   <div class="box" style="left:1090px;top:390px;width:240px;height:240px;border-radius:50%;">SUBSCRIBE</div>
   <div class="box" style="left:1390px;top:390px;width:280px;height:240px;">PLAYLIST:<br>FULL SURAHS</div>
-  <div class="brand">BASAER · بصائر · ${HANDLE}</div>
+  <div class="brand">${BRAND_EN} · ${BRAND_AR} · ${HANDLE}</div>
   </body></html>`;
 }
 
@@ -191,16 +194,19 @@ function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
 // Thumbnail v3 (owner, 2026-10-21; checked with the yt-package rules): no English surah name (the title carries it, the
 // thumbnail must not repeat the title), the Arabic badge المصحف المجوّد, the reciter's full name under his photo.
 // sheikh=true adds الشيخ above the name.
-function thumbHtml({ surahAr, number }, stillPath, sheikh = false) {
+function thumbHtml({ surahAr, surahEn, number }, stillPath, sheikh = true) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${fontCss}
   body { width:1280px; height:720px; overflow:hidden; color:${CREAM}; position:relative; background:#0B1F2A url(data:image/jpeg;base64,${fs.readFileSync(stillPath).toString('base64')}) center/cover; }
   .shade { position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,18,25,0.86) 0%, rgba(6,18,25,0.62) 48%, rgba(6,18,25,0.15) 75%, rgba(6,18,25,0.35) 100%), linear-gradient(0deg, rgba(6,18,25,0.6), rgba(6,18,25,0) 30%); }
   .frame { position:absolute; inset:16px; border:2px solid rgba(240,203,110,0.6); border-radius:10px; }
-  .text { position:absolute; left:40px; width:740px; top:52px; text-align:center; }
+  .text { position:absolute; left:40px; width:740px; top:18px; text-align:center; }
   .s { font-family:'RQ'; font-size:70px; color:${CREAM}; line-height:1.3; ${glow} }
-  .name { font-family:'RQ'; font-size:250px; color:${GOLD_HI}; line-height:1.15; direction:rtl; text-shadow:0 0 30px rgba(240,203,110,0.55), 0 6px 26px rgba(0,0,0,0.85); }
+  .name { font-family:'RQ'; font-size:224px; color:${GOLD_HI}; line-height:1.15; direction:rtl; text-shadow:0 0 30px rgba(240,203,110,0.55), 0 6px 26px rgba(0,0,0,0.85); }
   .en { font-family:'CZ'; font-weight:900; font-size:66px; letter-spacing:5px; margin-top:6px; text-shadow:0 4px 20px rgba(0,0,0,0.9); }
   .badge { display:inline-block; margin-top:26px; background:linear-gradient(180deg, ${GOLD_HI}, #B98E35); color:#0B1F2A; font-family:'RQ'; font-size:58px; line-height:1.5; padding:0 40px 8px; border-radius:10px; direction:rtl; box-shadow:0 6px 22px rgba(0,0,0,0.55); }
+  .t-en { font-family:'CZ'; font-weight:900; font-size:46px; letter-spacing:5px; margin-top:-4px; text-shadow:0 4px 20px rgba(0,0,0,0.9); }
+  .b-en { font-family:'CZ'; font-weight:900; font-size:21px; letter-spacing:5px; display:block; margin-top:-10px; }
+  .r-en2 { font-family:'CZ'; font-weight:800; font-size:19px; letter-spacing:2px; color:${GOLD_HI}; text-align:center; text-shadow:0 2px 12px rgba(0,0,0,0.9); }
   .sh { font-family:'RQ'; font-size:34px; color:${GOLD_HI}; line-height:1.3; margin-top:14px; ${glow} }
   .right { position:absolute; right:48px; top:${sheikh ? 70 : 92}px; width:430px; display:flex; flex-direction:column; align-items:center; }
   .r-ar { font-family:'RQ'; font-size:48px; line-height:1.45; direction:rtl; margin-top:6px; white-space:nowrap; ${glow} }
@@ -210,9 +216,9 @@ function thumbHtml({ surahAr, number }, stillPath, sheikh = false) {
   </style></head><body>
   <div class="shade"></div><div class="frame"></div>
   <div class="num">${String(number).padStart(3, '0')}</div>
-  <div class="text"><div class="s">سورة</div><div class="name">${surahAr}</div><div class="badge">المصحف المجوَّد</div></div>
-  <div class="right">${portrait(300)}${sheikh ? '<div class="sh">الشيخ</div>' : ''}<div class="r-ar"${sheikh ? ' style="margin-top:-6px"' : ''}>${RECITER_AR}</div></div>
-  <div class="brand">BASAER · بصائر</div>
+  <div class="text"><div class="s">سورة</div><div class="name">${surahAr}</div><div class="t-en">SURAH ${surahEn.toUpperCase()}</div><div class="badge">المصحف المجوَّد<span class="b-en">THE MUJAWWAD MUSHAF</span></div></div>
+  <div class="right">${portrait(300)}${sheikh ? '<div class="sh">الشيخ</div>' : ''}<div class="r-ar"${sheikh ? ' style="margin-top:-6px"' : ''}>${RECITER_AR}</div><div class="r-en2">${sheikh ? TITLE_EN.toUpperCase() + ' ' : ''}${RECITER_EN.toUpperCase()}</div></div>
+  <div class="brand">${BRAND_EN} · ${BRAND_AR}</div>
   </body></html>`;
 }
 
@@ -346,7 +352,6 @@ async function main() {
   shot(introHtml(meta), path.join(work, 'intro.png'));
   shot(outroHtml({ ...meta, nextAr: next ? next.name_arabic : '', nextEn: next ? enName(next) : '' }), path.join(work, 'outro.png'));
   shot(thumbHtml(meta, still), path.join(OUT, 'thumbnail.png'), 1280, 720, false);
-  shot(thumbHtml(meta, still, true), path.join(OUT, 'thumbnail-sheikh.png'), 1280, 720, false);
   const cache = new Map();
   live.forEach((s) => {
     const key = `${s.a.no}_${s.hi}`;

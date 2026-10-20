@@ -55,7 +55,6 @@ jobs:
           R=${{ github.run_id }}
           node scripts/upload_cloudinary.js out/sample.mp4 "youtube-test/sample-$R" video out video
           node scripts/upload_cloudinary.js out/thumbnail.png "youtube-test/thumb-$R" image out thumbnail
-          node scripts/upload_cloudinary.js out/thumbnail-sheikh.png "youtube-test/thumb-sheikh-$R" image out thumbnailSheikh
           for f in out/still-*.png out/sheet-*.jpg; do
             n=$(basename "$f"); n=${n%.*}
             node scripts/upload_cloudinary.js "$f" "youtube-test/$n-$R" image out "$n"
