@@ -151,17 +151,18 @@ function introHtml({ surahAr, surahEn, surahMeaning, number, count, place }) {
   .s { font-family:'RQ'; font-size:62px; color:${CREAM}; line-height:1.2; ${glow} }
   .ar { font-family:'RQ'; font-size:210px; color:${GOLD_HI}; line-height:1.25; direction:rtl; ${glow} }
   .en { font-family:'CZ'; font-size:56px; letter-spacing:14px; font-weight:800; margin-top:4px; text-shadow:0 3px 18px rgba(0,0,0,0.8); }
-  .meta { font-family:'CZ'; font-size:19px; letter-spacing:5px; font-weight:700; opacity:0.85; margin:14px 0 26px; }
+  .meta { font-family:'CZ'; font-size:19px; letter-spacing:5px; font-weight:700; opacity:0.85; margin:14px 0 0; }
+  .meta-ar { font-family:'AQ'; font-size:28px; opacity:0.9; direction:rtl; line-height:1.8; margin-bottom:16px; text-shadow:0 2px 12px rgba(0,0,0,0.8); }
   .rec { display:flex; align-items:center; gap:24px; margin-top:30px; }
   .rec-ar { font-family:'AQ'; font-size:38px; direction:rtl; line-height:1.9; margin-top:-14px; text-shadow:0 2px 12px rgba(0,0,0,0.8); }
   .rec-en { font-family:'CZ'; font-size:17px; letter-spacing:2px; font-weight:700; color:${GOLD_HI}; }
   .brand { position:absolute; bottom:44px; font-family:'CZ'; font-size:16px; letter-spacing:6px; opacity:0.75; font-weight:700; }
   </style></head><body>
-  <div class="pill">FULL SURAH · ${STYLE_EN.toUpperCase()}</div>
+  <div class="pill"><span style="font-family:'AQ';font-size:24px;letter-spacing:0;">سورة كاملة · المصحف المجوَّد</span> &nbsp;|&nbsp; FULL SURAH · ${STYLE_EN.toUpperCase()}</div>
   <div class="s">سورة</div>
   <div class="ar">${surahAr}</div>
   <div class="en">${surahEn.toUpperCase()}</div>
-  <div class="meta">${surahMeaning.toUpperCase()} · ${count} AYAHS · ${placeEn}</div>
+  <div class="meta">${surahMeaning.toUpperCase()} · ${count} AYAHS · ${placeEn}</div><div class="meta-ar">${arNum(count)} آيات · ${placeAr}</div>
   ${divider(160)}
   <div class="rec">${portrait(140)}<div><div class="rec-ar">${TITLE_AR} ${RECITER_AR} · ${STYLE_AR}</div><div class="rec-en">${TITLE_EN.toUpperCase()} ${RECITER_EN.toUpperCase()}</div></div></div>
   <div class="brand">${BRAND_EN} · ${BRAND_AR} · ${HANDLE}</div>
@@ -206,7 +207,7 @@ function thumbHtml({ surahAr, surahEn, number }, stillPath, sheikh = true) {
   .badge { display:inline-block; margin-top:26px; background:linear-gradient(180deg, ${GOLD_HI}, #B98E35); color:#0B1F2A; font-family:'RQ'; font-size:58px; line-height:1.5; padding:0 40px 8px; border-radius:10px; direction:rtl; box-shadow:0 6px 22px rgba(0,0,0,0.55); }
   .t-en { font-family:'CZ'; font-weight:900; font-size:46px; letter-spacing:5px; margin-top:-4px; text-shadow:0 4px 20px rgba(0,0,0,0.9); }
   .b-en { font-family:'CZ'; font-weight:900; font-size:21px; letter-spacing:5px; display:block; margin-top:-10px; }
-  .r-en2 { font-family:'CZ'; font-weight:800; font-size:19px; letter-spacing:2px; color:${GOLD_HI}; text-align:center; text-shadow:0 2px 12px rgba(0,0,0,0.9); }
+  .r-en2 { font-family:'CZ'; font-weight:800; font-size:16px; letter-spacing:1px; white-space:nowrap; color:${GOLD_HI}; text-align:center; text-shadow:0 2px 12px rgba(0,0,0,0.9); }
   .sh { font-family:'RQ'; font-size:34px; color:${GOLD_HI}; line-height:1.3; margin-top:14px; ${glow} }
   .right { position:absolute; right:48px; top:${sheikh ? 70 : 92}px; width:430px; display:flex; flex-direction:column; align-items:center; }
   .r-ar { font-family:'RQ'; font-size:48px; line-height:1.45; direction:rtl; margin-top:6px; white-space:nowrap; ${glow} }
