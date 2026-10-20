@@ -50,6 +50,8 @@ jobs:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
           KHATM: "1"
           FOOTAGE_STYLE: "warm"
+          # Owner, 2026-10-21: Shorts always over NATURE footage (approved library pools only, no mosque or city pools).
+          FOOTAGE_ARC: "falls,cGold,lake,forest,sea,valley,dawn,stream,skyDusk,cLight,snow,leaves,dusk,cSea,day,field,cSun,desert"
           SOFT_CAP_SEC: "58"
           MAX_CAP_SEC: "59"
           TOTAL_BUDGET_SEC: "1200"
@@ -62,7 +64,7 @@ jobs:
           TRANSLATION_NAME: "Saheeh International"
           HANDLE: "@Basaermedia_bh"
         run: |
-          node scripts/render_reel.js "${{ steps.pick.outputs.surah }}" "${{ steps.pick.outputs.ayahStart }}" "${{ steps.pick.outputs.reciterId }}" "${{ steps.pick.outputs.style }}" out "${{ steps.pick.outputs.ayahEnd }}"
+          node scripts/render_reel.js "${{ steps.pick.outputs.surah }}" "${{ steps.pick.outputs.ayahStart }}" "${{ steps.pick.outputs.reciterId }}" "footage" out "${{ steps.pick.outputs.ayahEnd }}"
 
       - name: Upload the Short to Cloudinary
         run: |
