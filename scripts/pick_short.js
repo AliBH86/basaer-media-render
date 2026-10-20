@@ -1,6 +1,7 @@
 // YouTube Shorts (owner, 2026-10-21): the Khatm parts in order (data/khatm_plan.json, "day" = part number), only those
 // estimated at MAX_EST seconds or less, so the Short stays under 60 s (a Short over a minute with any Content ID claim is
-// blocked). Longer parts are skipped for now. Prints the pick as GitHub step outputs and writes <outDir>/short_pick.json.
+// blocked). Longer parts are skipped for now, and so are the pieces of a long ayah split across parts (a Short never
+// starts or ends mid-ayah). Prints the pick as GitHub step outputs and writes <outDir>/short_pick.json.
 //
 // Usage: node scripts/pick_short.js <startPart> <outDir>
 const fs = require('fs');
@@ -11,7 +12,8 @@ const MAX_EST = Number(process.env.SHORT_MAX_EST || 55);
 const start = Number(startArg || 1);
 const { plan } = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'khatm_plan.json'), 'utf8'));
 
-const pick = plan.find((e) => e.day >= start && e.estSec <= MAX_EST);
+const fits = (e) => e.estSec <= MAX_EST && !e.parts;
+const pick = plan.find((e) => e.day >= start && fits(e));
 if (!pick) throw new Error(`no Khatm part from ${start} on is estimated at ${MAX_EST} s or less`);
 
 const out = {
@@ -33,4 +35,4 @@ fs.writeFileSync(path.join(outDir, 'short_pick.json'), JSON.stringify(out, null,
 const lines = Object.entries(out).filter(([, v]) => !Array.isArray(v)).map(([k, v]) => `${k}=${v}`);
 if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, lines.join('\n') + '\n');
 console.log(`Short: Khatm part ${out.khatmPart} (${out.surah}:${out.ayahStart}-${out.ayahEnd}, ~${out.estSec} s)` +
-  (out.skippedParts.length ? `, skipped parts ${out.skippedParts.join(', ')} (too long)` : ''));
+  (out.skippedParts.length ? `, skipped parts ${out.skippedParts.join(', ')} (too long or a split ayah)` : ''));
