@@ -1,0 +1,383 @@
+// Fetches surah/verse/audio-timing data from the Quran.com API and builds a timeline for a Reel.
+//
+// Two modes:
+//  - EXPLICIT (ayahEnd given): exactly ayahStart..ayahEnd, nothing more. Used for the approved Reel list.
+//    Duration > 40 s is flagged (soft cap), duration > 45 s fails the render (hard cap).
+//  - AUTO (no ayahEnd): consecutive ayahs from ayahStart, extended ayah-by-ayah until the audio is
+//    ~15 s, stopping at the 45 s hard cap or at the end of the surah.
+//
+// The Arabic words come from the API's own word list (the same words the audio timing refers to),
+// NOT from splitting the verse text on spaces: waqf signs and the hizb marker are separate tokens in
+// the plain text but part of a word in the API's word list, so splitting would shift every highlight
+// after the first stop-sign.
+//
+// Usage: node fetch_timeline.js <surah> <ayahStart> <reciterId> <outFile> [ayahEnd]
+const https = require('https');
+const fs = require('fs');
+
+const REPLACEMENT_CHAR = String.fromCharCode(0xFFFD);
+// Translation resource id: ONE config value (n8n Config.TRANSLATION_ID -> workflow input -> env). 20 = Saheeh International.
+const TRANSLATION_ID = Number(process.env.TRANSLATION_ID) || 20;
+// Approved surah display-name overrides (data/surah_names.json, section 'approved' only).
+const SURAH_NAMES = JSON.parse(fs.readFileSync(require('path').join(__dirname, '..', 'data', 'surah_names.json'), 'utf8')).approved;
+const HIZB_MARKER = String.fromCharCode(0x06DE);
+// The per-word texts of the API carry two small tajweed marks (U+06ED, U+06E2) that the verse-level text does not
+// have. The Reel shows the verse-level form (identical to the Daily Post and the captions), so they are removed
+// from the display words; the guard proves that the result equals the verse text.
+const WORD_ANNOTATIONS = String.fromCharCode(0x06ED, 0x06E2);
+
+function getJson(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
+      // Collect raw Buffers and decode once at the end. Appending chunks to a string decoded each
+      // chunk separately, so a 2-byte Arabic character split across a chunk boundary became two
+      // U+FFFD replacement chars (seen as a broken "Allah" in 112:1 - the fatha was corrupted).
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        const data = Buffer.concat(chunks).toString('utf8');
+        if (res.statusCode !== 200) return reject(new Error(`${url} -> HTTP ${res.statusCode}: ${data.slice(0, 200)}`));
+        if (data.includes(REPLACEMENT_CHAR)) return reject(new Error(`${url} -> response contains U+FFFD (corrupted text) - refusing to render`));
+        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+// API word timings in recitation order. Reciters sometimes go back a few words and recite them again (waqf and
+// ibtida'); those repeats are kept so the highlight follows the voice. An entry far ahead of everything recited so far
+// is a data error (e.g. a "word 118" among words 30-40 of 2:282, Al-Shatri) and is dropped. "Far ahead" is counted from
+// the next word that has any timing at all: some files leave a few words untimed (2:93 words 23-25, 2:282 words 47-50,
+// AbdulBaset Mujawwad), and the words after such a gap are not a data error (checked 2026-10-11).
+function cleanSegments(segments, wordCount = Infinity) {
+  const segs = (segments || []).filter((s) => Array.isArray(s) && s.length >= 3 && s[0] >= 1 && s[0] <= wordCount).sort((a, b) => a[1] - b[1]);
+  const timed = new Set(segs.map((s) => s[0]));
+  const lastTimed = Math.max(0, ...timed);
+  const nextTimed = (m) => { let n = m + 1; while (n < lastTimed && !timed.has(n)) n++; return n; };
+  const out = [];
+  let maxSeen = 0;
+  for (const s of segs) {
+    if (s[0] > nextTimed(maxSeen) + 2) continue;
+    out.push(s);
+    maxSeen = Math.max(maxSeen, s[0]);
+  }
+  return out;
+}
+// A split part (words ws..we): from the first time word ws is recited until the reciter moves past word we.
+function partInterval(segs, ws, we) {
+  let i0 = segs.findIndex((s) => s[0] === ws);
+  if (i0 < 0) i0 = segs.findIndex((s) => s[0] >= ws);
+  if (i0 < 0) return null;
+  let i1 = segs.findIndex((s, i) => i > i0 && s[0] > we);
+  if (i1 < 0) i1 = segs.length;
+  const inside = segs.slice(i0, i1);
+  return { startMs: inside[0][1], endMs: inside[inside.length - 1][2], prevEndMs: i0 > 0 ? segs[i0 - 1][2] : null, nextStartMs: i1 < segs.length ? segs[i1][1] : null, inside };
+}
+
+// Footnote markers and any other HTML removed; same normalisation as scripts/verify_text.js.
+function cleanTranslation(text) {
+  return text.replace(/<sup[^>]*>.*?<\/sup>/g, '').replace(/<[^>]+>/g, '').trim();
+}
+
+// One display word per API word. The hizb marker is hidden (display only; the guard applies the same rule).
+function wordsFromApi(verse) {
+  return verse.words
+    .filter(w => w.char_type_name === 'word')
+    .map(w => [...w.text_uthmani].filter(c => c !== HIZB_MARKER && !WORD_ANNOTATIONS.includes(c)).join('').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+
+// AL-AJMI (reciter 900, owner 2026-10-10): not on Quran.com, so his audio comes from alquran.cloud, one file per ayah,
+// without word timings (scripts/ajmi_audio.js). The TEXT still comes from the Quran.com API exactly as for every reciter.
+// Each ayah file is trimmed to his speech plus a short lead-in/tail and the pieces are joined into one clip; an ayah-1
+// file starts with his Bismillah, which is cut off at his pause and handed to render_reel.js as the Bismillah. Word
+// "timings" are only an even spread over the ayah so the renderer can page long ayahs; timeline.ayahLevel tells it to
+// highlight no word.
+async function ajmiTimeline({ surah, ayahStart, explicitEnd, outFile, MAX_CAP_MS }) {
+  const { execSync } = require('child_process');
+  const os = require('os');
+  const { AJMI_ID, surahAudio, measure, bismillahCut } = require('./ajmi_audio');
+  if (explicitEnd === null) throw new Error('al-Ajmi Reels need an explicit ayah range');
+  if (process.env.WORD_START) throw new Error('al-Ajmi has no word timings: an ayah cannot be split into parts');
+  const LEAD = 0.15, TAIL = 0.45;
+  const s = parseInt(surah, 10);
+  const dir = fs.mkdtempSync(require('path').join(os.tmpdir(), 'ajmi-'));
+  const run = (c) => execSync(c, { shell: '/bin/bash', stdio: ['ignore', 'pipe', 'inherit'] }).toString();
+  const chapterInfo = await getJson(`https://api.quran.com/api/v4/chapters/${surah}?language=en`);
+  const urls = await surahAudio(s);
+  const f11 = `${dir}/b11.mp3`;
+  run(`curl -sSL --fail -o "${f11}" "https://cdn.islamic.network/quran/audio/128/ar.ahmedajamy/1.mp3"`);
+  const m11 = measure(f11);
+  const bismSec = m11.speechEnd - m11.speechStart;
+  const pieces = [];
+  let bismillah = null;
+  for (let n = ayahStart; n <= explicitEnd; n++) {
+    const key = `${s}:${n}`;
+    if (!urls[key]) throw new Error(`alquran.cloud has no al-Ajmi audio for ${key}`);
+    const file = `${dir}/a${n}.mp3`;
+    run(`curl -sSL --fail -o "${file}" "${urls[key]}"`);
+    const m = measure(file);
+    let from = Math.max(0, m.speechStart - LEAD);
+    if (n === 1 && ![1, 9].includes(s)) {
+      const p = bismillahCut(file, m, bismSec);
+      if (p) {
+        if (process.env.BISMILLAH === 'auto') {
+          const b = (await getJson(`https://api.quran.com/api/v4/verses/by_key/1:1?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
+          const words = wordsFromApi(b);
+          const b0 = m.speechStart * 1000, b1 = p[0] * 1000, len = words.reduce((t, w) => t + w.length, 0);
+          let c = 0;
+          bismillah = { audioUrl: 'file://' + file, fromMs: Math.round(b0), toMs: Math.round(b1), words,
+            wordTimingsAbs: words.map((w, i) => { const a = b0 + (b1 - b0) * c / len; c += w.length; return { wordIndex: i, startMs: Math.round(a), endMs: Math.round(b0 + (b1 - b0) * c / len) }; }) };
+        }
+        from = Math.max(0, p[1] - LEAD); // the ayah itself starts after his Bismillah
+      } else {
+        console.warn(`NOTE: ${key}: no pause after al-Ajmi's Bismillah found - the file is used whole and no separate Bismillah is shown`);
+      }
+    }
+    const to = Math.min(m.durationSec, m.speechEnd + TAIL);
+    pieces.push({ n, file, from, to });
+  }
+  const clip = `${dir}/clip.mp3`;
+  const inputs = pieces.map((p) => `-i "${p.file}"`).join(' ');
+  const fc = pieces.map((p, i) => `[${i}:a]atrim=${p.from.toFixed(3)}:${p.to.toFixed(3)},asetpts=PTS-STARTPTS,aresample=44100,aformat=channel_layouts=stereo[a${i}]`).join(';')
+    + ';' + pieces.map((_, i) => `[a${i}]`).join('') + `concat=n=${pieces.length}:v=0:a=1[out]`;
+  run(`ffmpeg -nostdin -loglevel error -y ${inputs} -filter_complex "${fc}" -map "[out]" -c:a libmp3lame -q:a 2 "${clip}"`);
+  const ayahs = [];
+  let t = 0;
+  for (const p of pieces) {
+    const verse = (await getJson(`https://api.quran.com/api/v4/verses/by_key/${s}:${p.n}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
+    const arabicWords = wordsFromApi(verse);
+    const startMs = t * 1000, endMs = (t + (p.to - p.from)) * 1000;
+    const a0 = startMs + LEAD * 1000, a1 = Math.max(a0 + 100, endMs - TAIL * 1000);
+    const len = arabicWords.reduce((x, w) => x + w.length, 0);
+    let c = 0;
+    const wordTimings = arabicWords.map((w, i) => { const st = a0 + (a1 - a0) * c / len; c += w.length; return { wordIndex: i, startMs: Math.round(st), endMs: Math.round(a0 + (a1 - a0) * c / len) }; });
+    ayahs.push({ number: p.n, arabicWords, translation: cleanTranslation(verse.translations[0].text), ayahStartMs: Math.round(startMs), ayahEndMs: Math.round(endMs), wordTimings });
+    t += p.to - p.from;
+  }
+  const durMs = Math.round(t * 1000);
+  if (durMs > MAX_CAP_MS) throw new Error(`passage ${s}:${ayahStart}-${explicitEnd} is ${(durMs / 1000).toFixed(1)} s with al-Ajmi: over the ${MAX_CAP_MS / 1000} s hard cap`);
+  const timeline = {
+    bismillah, ayahLevel: true, partEndsMidAyah: false, surah: s,
+    surahNameArabic: (SURAH_NAMES[String(s)] || {}).ar || chapterInfo.chapter.name_arabic,
+    surahNameEnglish: (SURAH_NAMES[String(s)] || {}).en || chapterInfo.chapter.name_simple,
+    translationId: TRANSLATION_ID, reciterId: AJMI_ID, audioUrl: 'file://' + clip, audioSource: 'alquran.cloud ar.ahmedajamy',
+    explicitRange: true, ayahStart, ayahEnd: explicitEnd, clipStartSec: 0, clipEndSec: t, durationSec: t,
+    softCapExceeded: false, requestedLeadInMs: 200, availableLeadInMs: LEAD * 1000, fadeInMs: 15, stoppedBySurahEnd: false, ayahs,
+  };
+  fs.writeFileSync(outFile, JSON.stringify(timeline, null, 2));
+  console.log(`Timeline (al-Ajmi, per ayah): surah ${s} ayahs ${ayahStart}-${explicitEnd}, duration ${t.toFixed(3)}s${bismillah ? ', Bismillah from his ayah-1 file' : ''}`);
+}
+
+async function main() {
+  const [surah, ayahStartArg, reciterId, outFile, ayahEndArg] = process.argv.slice(2);
+  const ayahStart = parseInt(ayahStartArg, 10);
+  const explicitEnd = ayahEndArg && String(ayahEndArg).trim() !== '' ? parseInt(ayahEndArg, 10) : null;
+  const MIN_TARGET_MS = 15000;
+  // Khatm series (2026-10-04): longer passages (target 45-75 s, hard cap 90 s) via env; curated Reels keep 40/45 s.
+  const SOFT_CAP_MS = Number(process.env.SOFT_CAP_SEC || 40) * 1000;
+  const MAX_CAP_MS = Number(process.env.MAX_CAP_SEC || 45) * 1000;
+  // Khatm split ayahs: WORD_START..WORD_END (1-based, inclusive) of a single ayah. Only valid with ayahEnd = ayahStart.
+  const WORD_START = process.env.WORD_START ? parseInt(process.env.WORD_START, 10) : null;
+  const WORD_END = process.env.WORD_END ? parseInt(process.env.WORD_END, 10) : null;
+
+  if (parseInt(reciterId, 10) === 900) return ajmiTimeline({ surah, ayahStart, explicitEnd, outFile, MAX_CAP_MS });
+
+  const chapterInfo = await getJson(`https://api.quran.com/api/v4/chapters/${surah}?language=en`);
+  const audioInfo = await getJson(`https://api.qurancdn.com/api/qdc/audio/reciters/${reciterId}/audio_files?chapter=${surah}&segments=true`);
+  const verseTimings = audioInfo.audio_files[0].verse_timings;
+  const audioUrl = audioInfo.audio_files[0].audio_url;
+  const totalAyahs = chapterInfo.chapter.verses_count;
+  const timingOf = (n) => verseTimings.find(v => v.verse_key === `${surah}:${n}`);
+
+  const includedAyahs = [];
+  let accumulatedMs = 0;
+  let stoppedBySurahEnd = false;
+
+  if (explicitEnd !== null) {
+    if (!(explicitEnd >= ayahStart && explicitEnd <= totalAyahs)) {
+      throw new Error(`ayahEnd ${explicitEnd} is not valid for surah ${surah} (ayahStart ${ayahStart}, ${totalAyahs} ayahs)`);
+    }
+    for (let n = ayahStart; n <= explicitEnd; n++) {
+      const timing = timingOf(n);
+      if (!timing) throw new Error(`no audio timing for ${surah}:${n} (reciter ${reciterId})`);
+      includedAyahs.push({ number: n, timing });
+    }
+    accumulatedMs = includedAyahs[includedAyahs.length - 1].timing.timestamp_to - includedAyahs[0].timing.timestamp_from;
+    if (WORD_START !== null && includedAyahs.length === 1) {
+      // Duration of the word range only (the clip is cut to it further down).
+      const iv = partInterval(cleanSegments(includedAyahs[0].timing.segments), WORD_START, WORD_END || Infinity);
+      if (iv) accumulatedMs = iv.endMs - iv.startMs;
+    }
+    if (accumulatedMs > MAX_CAP_MS) {
+      throw new Error(`passage ${surah}:${ayahStart}-${explicitEnd} is ${(accumulatedMs / 1000).toFixed(1)} s with reciter ${reciterId}: over the ${MAX_CAP_MS / 1000} s hard cap`);
+    }
+  } else {
+    // Walk forward from ayahStart, accumulating ayahs until we hit the target duration,
+    // the hard cap, or the end of the surah.
+    let ayahNum = ayahStart;
+    while (ayahNum <= totalAyahs) {
+      const timing = timingOf(ayahNum);
+      if (!timing) break;
+      accumulatedMs = timing.timestamp_to - timingOf(ayahStart).timestamp_from;
+      includedAyahs.push({ number: ayahNum, timing });
+      ayahNum++;
+      if (accumulatedMs >= MIN_TARGET_MS) break;
+      if (accumulatedMs >= MAX_CAP_MS) break;
+    }
+    stoppedBySurahEnd = ayahNum > totalAyahs && accumulatedMs < MIN_TARGET_MS;
+  }
+  const softCapExceeded = accumulatedMs > SOFT_CAP_MS;
+  if (softCapExceeded) console.warn(`WARNING: ${(accumulatedMs / 1000).toFixed(1)} s is over the ${SOFT_CAP_MS / 1000} s soft cap (hard cap ${MAX_CAP_MS / 1000} s)`);
+
+  // Text, words and translation for exactly the included ayahs (same endpoint family the guard re-checks).
+  const verseMap = {};
+  for (const a of includedAyahs) {
+    const key = `${surah}:${a.number}`;
+    const r = await getJson(`https://api.quran.com/api/v4/verses/by_key/${key}?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`);
+    verseMap[key] = r.verse;
+  }
+
+  const firstTiming = includedAyahs[0].timing;
+  const lastTiming = includedAyahs[includedAyahs.length - 1].timing;
+
+  // Lead-in: pull 200ms of audio from BEFORE the first word if available in the source.
+  const REQUESTED_LEAD_IN_MS = 200;
+  // Split ayah (Khatm): cut at the first/last word of the range. The lead-in never reaches back into the previous word.
+  const partial = WORD_START !== null && includedAyahs.length === 1;
+  const firstSegs = cleanSegments(firstTiming.segments);
+  let firstWordStartMs = firstSegs[0][1]; // [wordNum, startMs, endMs]
+  let leadInRoomMs = firstWordStartMs;
+  let clipEndMs = lastTiming.timestamp_to;
+  let partIv = null;
+  if (partial) {
+    partIv = partInterval(firstSegs, WORD_START, WORD_END || Infinity);
+    if (!partIv) throw new Error(`no word timings for ${surah}:${ayahStart} words ${WORD_START}-${WORD_END}`);
+    firstWordStartMs = partIv.startMs;
+    leadInRoomMs = partIv.prevEndMs !== null ? Math.max(0, partIv.startMs - partIv.prevEndMs) : firstWordStartMs;
+    if (partIv.nextStartMs !== null) clipEndMs = partIv.endMs; // the last part keeps the ayah's natural end
+  }
+  const availableLeadInMs = Math.min(REQUESTED_LEAD_IN_MS, leadInRoomMs);
+  const clipStartMs = firstWordStartMs - availableLeadInMs;
+  const needsFadeIn = availableLeadInMs < REQUESTED_LEAD_IN_MS;
+  // 15 ms is enough to avoid a click when the clip starts at the very beginning of the source file (which starts in
+  // silence); the old 80 ms softened the first letter by up to ~19 dB.
+  const fadeInMs = needsFadeIn ? 15 : 0;
+
+  const ayahs = includedAyahs.map(({ number, timing }) => {
+    const key = `${surah}:${number}`;
+    const verse = verseMap[key];
+    const arabicWords = wordsFromApi(verse);
+    const translation = cleanTranslation(verse.translations[0].text);
+    // Segments are [wordNumber(1-based), startMs, endMs]. Some reciters also time the end-of-ayah marker as an
+    // extra "word"; it is not drawn, so its segment is dropped.
+    // Word range shown and timed: the whole ayah, or WORD_START..WORD_END for a split ayah (0-based inclusive).
+    const from = partial ? WORD_START - 1 : 0;
+    const to = partial ? Math.min((WORD_END || arabicWords.length), arabicWords.length) - 1 : arabicWords.length - 1;
+    // Recitation order, repeats kept, impossible jumps dropped (see cleanSegments). For a split part only the words
+    // recited inside its interval are timed.
+    const segsC = cleanSegments(timing.segments, arabicWords.length);
+    const inClip = partial ? partIv.inside : segsC;
+    const timed = new Map(); // first occurrence per word, used to place a word that has no timing at all
+    segsC.forEach(seg => { if (!timed.has(seg[0] - 1)) timed.set(seg[0] - 1, { startMs: seg[1], endMs: seg[2] }); });
+    // A few ayahs have one word without a timing in the API (e.g. Alafasy 2:214). Fill it from its neighbours:
+    // it gets the gap between the previous word's end and the next word's start (or an equal share of the
+    // neighbours when they touch), so every word is highlighted in order. Only timings are filled; text never.
+    const filled = [];
+    for (let i = from; i <= to; i++) {
+      if (timed.has(i)) continue;
+      let p = i - 1; while (p >= 0 && !timed.has(p)) p--;
+      let n = i + 1; while (n < arabicWords.length && !timed.has(n)) n++;
+      const prevEnd = p >= 0 ? timed.get(p).endMs : timing.timestamp_from;
+      const nextStart = n < arabicWords.length ? timed.get(n).startMs : timing.timestamp_to;
+      const missing = n - p - 1;
+      let a = prevEnd, b = nextStart;
+      if (b - a < 150 * missing) { // neighbours touch: borrow time from them
+        const left = p >= 0 ? timed.get(p) : null, right = n < arabicWords.length ? timed.get(n) : null;
+        a = left ? left.startMs + (left.endMs - left.startMs) / 2 : a;
+        b = right ? right.startMs + (right.endMs - right.startMs) / 2 : b;
+        if (left) left.endMs = a;
+        if (right) right.startMs = b;
+      }
+      const step = (b - a) / missing;
+      // every word of the gap is filled here (several in a row: 2:93 words 23-25, AbdulBaset), so all are recorded
+      for (let k = 0; k < missing; k++) {
+        timed.set(p + 1 + k, { startMs: Math.round(a + k * step), endMs: Math.round(a + (k + 1) * step) });
+        filled.push(`${key} word ${p + 2 + k}`);
+      }
+    }
+    if (filled.length) console.warn(`NOTE: word timing filled from neighbours: ${filled.join(', ')}`);
+    // Every recitation of a shown word (repeats included), plus the filled ones, in time order; no two overlap.
+    const filledIdx = new Set(filled.map((f) => Number(f.split(' word ')[1]) - 1));
+    const list = inClip
+      .filter((s) => s[0] - 1 >= from && s[0] - 1 <= to)
+      .map((s) => ({ wordIndex: s[0] - 1, startMs: s[1], endMs: s[2] }));
+    for (const i of filledIdx) if (i >= from && i <= to) list.push({ wordIndex: i, ...timed.get(i) });
+    list.sort((x, y) => x.startMs - y.startMs);
+    for (let k = 1; k < list.length; k++) if (list[k].startMs < list[k - 1].endMs) list[k - 1].endMs = list[k].startMs;
+    const wordTimings = list.filter((t) => t.endMs > t.startMs).map((t) => ({ wordIndex: t.wordIndex, startMs: t.startMs - clipStartMs, endMs: t.endMs - clipStartMs }));
+    return {
+      number,
+      arabicWords,
+      translation,
+      ayahStartMs: timing.timestamp_from - clipStartMs,
+      ayahEndMs: timing.timestamp_to - clipStartMs,
+      wordTimings,
+      ...(partial ? { wordRange: [from, to] } : {}),
+      ...(filled.length ? { filledTimings: filled } : {}),
+    };
+  });
+
+  // Bismillah (Khatm, BISMILLAH=auto; checked 2026-10-04): the chapter files of the approved reciters start directly
+  // with ayah 1 (the first word is timed from ~0 ms and has its normal length), so they do NOT contain the Bismillah.
+  // For a surah's first Reel (not Al-Fatiha, where it IS ayah 1, and not At-Tawbah, which has none) the SAME reciter's
+  // Bismillah is taken from his Al-Fatiha file (1:1) with its own word timings and placed before ayah 1. The text is
+  // the API's 1:1 text, fetched fresh. If the reciter has no timed 1:1, no Bismillah is shown or played.
+  let bismillah = null;
+  if (process.env.BISMILLAH === 'auto' && ayahStart === 1 && !partial && ![1, 9].includes(parseInt(surah, 10))) {
+    const fat = await getJson(`https://api.qurancdn.com/api/qdc/audio/reciters/${reciterId}/audio_files?chapter=1&segments=true`);
+    const f1 = fat.audio_files && fat.audio_files[0];
+    const t11 = f1 && f1.verse_timings.find((v) => v.verse_key === '1:1');
+    const segs11 = t11 ? t11.segments.filter((s) => Array.isArray(s) && s.length >= 3) : [];
+    const b = (await getJson(`https://api.quran.com/api/v4/verses/by_key/1:1?language=en&words=true&word_fields=text_uthmani&fields=text_uthmani&translations=${TRANSLATION_ID}`)).verse;
+    const words = wordsFromApi(b);
+    if (f1 && f1.audio_url && segs11.length >= words.length) {
+      bismillah = {
+        audioUrl: f1.audio_url,
+        fromMs: segs11[0][1], toMs: t11.timestamp_to, // absolute in the Al-Fatiha file
+        words,
+        wordTimingsAbs: segs11.slice(0, words.length).map((s) => ({ wordIndex: s[0] - 1, startMs: s[1], endMs: s[2] })),
+      };
+    } else {
+      console.warn(`NOTE: reciter ${reciterId} has no fully timed 1:1 - no Bismillah will be shown`);
+    }
+  }
+
+  const timeline = {
+    bismillah,
+    partEndsMidAyah: !!(partial && partIv && partIv.nextStartMs !== null),
+    surah: parseInt(surah, 10),
+    surahNameArabic: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).ar || chapterInfo.chapter.name_arabic,
+    surahNameEnglish: (SURAH_NAMES[String(parseInt(surah, 10))] || {}).en || chapterInfo.chapter.name_simple,
+    translationId: TRANSLATION_ID,
+    reciterId: parseInt(reciterId, 10),
+    audioUrl,
+    explicitRange: explicitEnd !== null,
+    ayahStart,
+    ayahEnd: includedAyahs[includedAyahs.length - 1].number,
+    clipStartSec: clipStartMs / 1000,
+    clipEndSec: clipEndMs / 1000,
+    durationSec: (clipEndMs - clipStartMs) / 1000,
+    softCapExceeded,
+    requestedLeadInMs: REQUESTED_LEAD_IN_MS,
+    availableLeadInMs,
+    fadeInMs,
+    stoppedBySurahEnd,
+    ayahs,
+  };
+
+  fs.writeFileSync(outFile, JSON.stringify(timeline, null, 2));
+  console.log(`Timeline: surah ${surah} ayahs ${ayahStart}-${timeline.ayahEnd} (${explicitEnd !== null ? 'explicit range' : 'auto range'}), duration ${timeline.durationSec.toFixed(3)}s, lead-in ${availableLeadInMs}ms (requested ${REQUESTED_LEAD_IN_MS}ms), fade-in ${fadeInMs}ms`);
+}
+
+main().catch(e => { console.error(e); process.exit(1); });

@@ -1,0 +1,47 @@
+{
+  "1": {
+    "ar": "عبد الباسط عبد الصمد",
+    "en": "Abdul Basit Abdus-Samad"
+  },
+  "2": {
+    "ar": "عبد الباسط عبد الصمد",
+    "en": "Abdul Basit Abdus-Samad"
+  },
+  "3": {
+    "ar": "عبدالرحمن السديس",
+    "en": "Abdur-Rahman As-Sudais"
+  },
+  "4": {
+    "ar": "أبو بكر الشاطري",
+    "en": "Abu Bakr Al-Shatri"
+  },
+  "5": {
+    "ar": "هاني الرفاعي",
+    "en": "Hani Ar-Rifai"
+  },
+  "6": {
+    "ar": "محمود خليل الحصري",
+    "en": "Mahmoud Khalil Al-Husary"
+  },
+  "7": {
+    "ar": "مشاري راشد العفاسي",
+    "en": "Mishary Alafasy"
+  },
+  "9": {
+    "ar": "محمد صديق المنشاوي",
+    "en": "Mohamed Siddiq Al-Minshawi"
+  },
+  "10": {
+    "ar": "سعود الشريم",
+    "en": "Saud Ash-Shuraim"
+  },
+  "97": {
+    "ar": "ياسر الدوسري",
+    "en": "Yasser Al-Dosari"
+  },
+  "900": {
+    "ar": "أحمد بن علي العجمي",
+    "en": "Ahmed bin Ali Al-Ajmi"
+  },
+  "_comment": "Approved by the user 2026-10-03 (900 added 2026-10-10 with the owner's new reciter list). Key = reciter ID: Quran.com audio API IDs, plus 900 = Ahmed bin Ali al-Ajmi (alquran.cloud edition ar.ahmedajamy; not on Quran.com, no word timings). 'ar' and 'en' are the DISPLAY names shown on every Reel. 1 = AbdulBaset Mujawwad (same display name as 2). Minshawi Mujawwad (Quran.com id 8) is NOT used: its audio files are missing on the server (all 114, checked 2026-10-10); the owner chose Minshawi Murattal (9)."
+}

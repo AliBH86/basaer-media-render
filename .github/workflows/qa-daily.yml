@@ -1,0 +1,38 @@
+name: QA - Daily Post slides (all ayahs)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "No Chrome found" >&2; exit 1
+
+      - name: Install puppeteer-core
+        run: npm install --no-save --no-audit --no-fund puppeteer-core@23
+
+      - name: Render every Daily Post slide and check it (nothing is published)
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+        run: node scripts/qa_daily.js out/qa
+
+      - name: Upload QA output (7-day retention)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-qa
+          path: |
+            out/qa/*.json
+            out/qa/*.md
+            out/qa/sheet-*.png
+          retention-days: 7

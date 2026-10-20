@@ -1,0 +1,30 @@
+name: Khatm research (audio measurements, no rendering)
+
+# Measures where reciters really pause inside the split ayahs of data/khatm_plan.json (numbers only; nothing is
+# published or uploaded). Output in the log and as an artifact.
+on:
+  workflow_dispatch:
+    inputs:
+      extraAyahs:
+        description: "Optional extra ayahs to measure, e.g. 2:282@7,33:50@2 (key@reciterId)"
+        required: false
+
+jobs:
+  measure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+      - name: Measure pauses at word boundaries of split ayahs
+        env:
+          EXTRA_AYAHS: ${{ github.event.inputs.extraAyahs }}
+        run: node scripts/khatm_split_pauses.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: khatm-split-pauses
+          path: out/split_pauses.json
+          retention-days: 7

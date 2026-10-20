@@ -1,0 +1,13 @@
+{
+ "series": "دعاء الشعراوي",
+ "parts": [
+  {
+   "from": 0,
+   "to": 8,
+   "part": 1,
+   "sec": 46.1,
+   "arc": "cNight,cDusk,cDawn,cSun,cLight,cClouds,cSea,cGold",
+   "maxShot": 8
+  }
+ ]
+}

@@ -1,0 +1,71 @@
+name: Khatm re-plan - finish from an earlier run (research only)
+
+# Reuses the coverage scan and the long-ayah pause measurements of an earlier "Khatm re-plan" run, then runs plan v1,
+# the ayah-end pauses and the final plan. Numbers only; nothing is rendered, published or uploaded.
+on:
+  push:
+    branches: [feature/reciters-footage]
+    paths: ['.github/workflows/khatm-replan-finish.yml', 'scripts/khatm_build_plan.js']
+
+permissions:
+  contents: read
+  actions: read   # download the artifacts of the earlier re-plan run
+
+env:
+  ROTATION: "1,9,3,5,900"
+  RESUME: "2:20"
+  PREFIX_DAYS: "6"
+  FROM_RUN: "38080398678"   # the Khatm re-plan run whose scan + pauses artifacts are reused
+
+jobs:
+  plan1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: art, run-id: "${{ env.FROM_RUN }}", github-token: "${{ github.token }}" }
+      - name: Plan v1 (assigns the reciters)
+        run: |
+          mkdir -p logs && cp art/pauses-*/*.txt logs/ && cp -r art/scan logs/scan
+          KHATM_COVERAGE=$PWD/art/scan/coverage.json KHATM_SCAN=$PWD/art/scan/scan_translation.json KHATM_LOGS=$PWD/logs \
+          KHATM_ROTATION="$ROTATION" KHATM_PREFIX_PLAN=$PWD/data/khatm_plan.json KHATM_PREFIX_DAYS=$PREFIX_DAYS KHATM_RESUME=$RESUME \
+          KHATM_PLAN_OUT=$PWD/logs/plan_v1.json KHATM_RECITERS_JSON=$PWD/data/reciters.json node scripts/khatm_build_plan.js
+      - uses: actions/upload-artifact@v4
+        with: { name: plan1, path: logs/, retention-days: 7 }
+
+  ends:
+    needs: plan1
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        range: ["2 2", "3 4", "5 7", "8 12", "13 20", "21 30", "31 45", "46 70", "71 114"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - uses: actions/download-artifact@v4
+        with: { name: plan1, path: plan1 }
+      - name: Measure ayah-end pauses for the assigned reciters
+        run: KHATM_PLAN_FILE=$PWD/plan1/plan_v1.json node scripts/khatm_ayah_end_pauses.js ${{ matrix.range }}
+      - uses: actions/upload-artifact@v4
+        with: { name: "ends-${{ strategy.job-index }}", path: out/*.json, retention-days: 7 }
+
+  final:
+    needs: ends
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: { path: art }
+      - name: Final plan
+        run: |
+          mkdir -p logs && cp art/plan1/research_log_*.txt logs/ && cp art/ends-*/*.json logs/
+          KHATM_COVERAGE=$PWD/art/plan1/scan/coverage.json KHATM_SCAN=$PWD/art/plan1/scan/scan_translation.json KHATM_LOGS=$PWD/logs \
+          KHATM_ROTATION="$ROTATION" KHATM_PREFIX_PLAN=$PWD/data/khatm_plan.json KHATM_PREFIX_DAYS=$PREFIX_DAYS KHATM_RESUME=$RESUME \
+          KHATM_PLAN_OUT=$PWD/logs/khatm_plan_new.json KHATM_RECITERS_JSON=$PWD/data/reciters.json node scripts/khatm_build_plan.js
+      - uses: actions/upload-artifact@v4
+        with: { name: plan-final, path: logs/khatm_plan_new.json, retention-days: 14 }
