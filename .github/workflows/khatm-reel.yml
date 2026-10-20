@@ -95,6 +95,7 @@ jobs:
           TRANSLATION_NAME: "Saheeh International"
           HANDLE: ${{ github.event.inputs.handle }}
           FOOTAGE_ARC: ${{ github.event.inputs.footageArc }}
+          FOOTAGE_ARC_ROTATE: "1"
         run: |
           mkdir -p out
           node scripts/render_reel.js "${{ github.event.inputs.surah }}" "${{ github.event.inputs.ayahStart }}" "${{ github.event.inputs.reciterId }}" "${{ github.event.inputs.style || 'gradient' }}" out "${{ github.event.inputs.ayahEnd }}"

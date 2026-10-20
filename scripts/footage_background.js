@@ -45,7 +45,10 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
   const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_library.json'), 'utf8'));
   const seed = Number(process.env.FOOTAGE_SEED || 1);
   // FOOTAGE_ARC (series Reels, 2026-10-11): a comma list of pools matching the words of that part; unset = the Khatm arc.
-  const ARC = process.env.FOOTAGE_ARC ? process.env.FOOTAGE_ARC.split(',').map((p) => p.trim()).filter(Boolean) : ['mosqueN', 'skyN', 'lake', 'dusk', 'mosqueN', 'sea', 'day', 'stream', 'mosqueD', 'valley', 'dusk', 'skyDusk', 'mosqueN', 'snow', 'seaNight', 'skyN', 'mosqueN'];
+  let ARC = process.env.FOOTAGE_ARC ? process.env.FOOTAGE_ARC.split(',').map((p) => p.trim()).filter(Boolean) : ['mosqueN', 'skyN', 'lake', 'dusk', 'mosqueN', 'sea', 'day', 'stream', 'mosqueD', 'valley', 'dusk', 'skyDusk', 'mosqueN', 'snow', 'seaNight', 'skyN', 'mosqueN'];
+  // FOOTAGE_ARC_ROTATE=1 (nature Reels/Shorts, owner 2026-10-21: "new scenes so it will not be boring"): start the arc at a
+  // seed-dependent pool, so consecutive videos open on different kinds of scene instead of always the first pool.
+  if (process.env.FOOTAGE_ARC && process.env.FOOTAGE_ARC_ROTATE === '1') { const r = (seed * 7) % ARC.length; ARC = ARC.slice(r).concat(ARC.slice(0, r)); }
   const pools = {};
   for (const c of lib.clips) (pools[c.pool] = pools[c.pool] || []).push(c);
   const used = new Set(), next = {};
