@@ -188,26 +188,30 @@ function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
 }
 
 // ---------- thumbnail 1280x720 over a still of the opening clip ----------
-function thumbHtml({ surahAr, surahEn, number }, stillPath) {
+// Thumbnail v3 (owner, 2026-10-21; checked with the yt-package rules): no English surah name (the title carries it, the
+// thumbnail must not repeat the title), the Arabic badge المصحف المجوّد, the reciter's full name under his photo.
+// sheikh=true adds الشيخ above the name.
+function thumbHtml({ surahAr, number }, stillPath, sheikh = false) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${fontCss}
   body { width:1280px; height:720px; overflow:hidden; color:${CREAM}; position:relative; background:#0B1F2A url(data:image/jpeg;base64,${fs.readFileSync(stillPath).toString('base64')}) center/cover; }
   .shade { position:absolute; inset:0; background:linear-gradient(90deg, rgba(6,18,25,0.86) 0%, rgba(6,18,25,0.62) 48%, rgba(6,18,25,0.15) 75%, rgba(6,18,25,0.35) 100%), linear-gradient(0deg, rgba(6,18,25,0.6), rgba(6,18,25,0) 30%); }
   .frame { position:absolute; inset:16px; border:2px solid rgba(240,203,110,0.6); border-radius:10px; }
-  .text { position:absolute; left:40px; width:740px; top:22px; text-align:center; }
+  .text { position:absolute; left:40px; width:740px; top:52px; text-align:center; }
   .s { font-family:'RQ'; font-size:70px; color:${CREAM}; line-height:1.3; ${glow} }
-  .name { font-family:'RQ'; font-size:226px; color:${GOLD_HI}; line-height:1.15; direction:rtl; text-shadow:0 0 30px rgba(240,203,110,0.55), 0 6px 26px rgba(0,0,0,0.85); }
+  .name { font-family:'RQ'; font-size:250px; color:${GOLD_HI}; line-height:1.15; direction:rtl; text-shadow:0 0 30px rgba(240,203,110,0.55), 0 6px 26px rgba(0,0,0,0.85); }
   .en { font-family:'CZ'; font-weight:900; font-size:66px; letter-spacing:5px; margin-top:6px; text-shadow:0 4px 20px rgba(0,0,0,0.9); }
-  .badge { display:inline-block; margin-top:20px; background:linear-gradient(180deg, ${GOLD_HI}, #B98E35); color:#0B1F2A; font-family:'CZ'; font-weight:900; font-size:27px; letter-spacing:4px; padding:9px 26px 7px; border-radius:6px; box-shadow:0 4px 18px rgba(0,0,0,0.5); }
-  .right { position:absolute; right:58px; top:96px; width:400px; display:flex; flex-direction:column; align-items:center; }
-  .r-ar { font-family:'RQ'; font-size:50px; line-height:1.5; direction:rtl; margin-top:8px; ${glow} }
+  .badge { display:inline-block; margin-top:26px; background:linear-gradient(180deg, ${GOLD_HI}, #B98E35); color:#0B1F2A; font-family:'RQ'; font-size:58px; line-height:1.5; padding:0 40px 8px; border-radius:10px; direction:rtl; box-shadow:0 6px 22px rgba(0,0,0,0.55); }
+  .sh { font-family:'RQ'; font-size:34px; color:${GOLD_HI}; line-height:1.3; margin-top:14px; ${glow} }
+  .right { position:absolute; right:48px; top:${sheikh ? 70 : 92}px; width:430px; display:flex; flex-direction:column; align-items:center; }
+  .r-ar { font-family:'RQ'; font-size:48px; line-height:1.45; direction:rtl; margin-top:6px; white-space:nowrap; ${glow} }
   .r-en { font-family:'CZ'; font-weight:800; font-size:23px; letter-spacing:2px; color:${GOLD_HI}; text-shadow:0 2px 12px rgba(0,0,0,0.9); }
   .num { position:absolute; top:40px; left:46px; font-family:'CZ'; font-weight:900; font-size:22px; color:${GOLD_HI}; letter-spacing:2px; }
   .brand { position:absolute; bottom:34px; left:48px; font-family:'CZ'; font-weight:800; font-size:18px; letter-spacing:6px; color:${GOLD_HI}; }
   </style></head><body>
   <div class="shade"></div><div class="frame"></div>
   <div class="num">${String(number).padStart(3, '0')}</div>
-  <div class="text"><div class="s">سورة</div><div class="name">${surahAr}</div><div class="en">${surahEn.toUpperCase()}</div><div class="badge">FULL SURAH · ${STYLE_EN.toUpperCase()}</div></div>
-  <div class="right">${portrait(320)}<div class="r-ar">المنشاوي</div><div class="r-en">AL-MINSHAWI</div></div>
+  <div class="text"><div class="s">سورة</div><div class="name">${surahAr}</div><div class="badge">المصحف المجوَّد</div></div>
+  <div class="right">${portrait(300)}${sheikh ? '<div class="sh">الشيخ</div>' : ''}<div class="r-ar"${sheikh ? ' style="margin-top:-6px"' : ''}>${RECITER_AR}</div></div>
   <div class="brand">BASAER · بصائر</div>
   </body></html>`;
 }
@@ -342,6 +346,7 @@ async function main() {
   shot(introHtml(meta), path.join(work, 'intro.png'));
   shot(outroHtml({ ...meta, nextAr: next ? next.name_arabic : '', nextEn: next ? enName(next) : '' }), path.join(work, 'outro.png'));
   shot(thumbHtml(meta, still), path.join(OUT, 'thumbnail.png'), 1280, 720, false);
+  shot(thumbHtml(meta, still, true), path.join(OUT, 'thumbnail-sheikh.png'), 1280, 720, false);
   const cache = new Map();
   live.forEach((s) => {
     const key = `${s.a.no}_${s.hi}`;
