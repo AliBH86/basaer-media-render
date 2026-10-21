@@ -5,6 +5,7 @@ name: TEST - YouTube full surah sample
 on:
   push:
     branches: [test/youtube]
+    paths: ["scripts/yt_surah.js", ".github/workflows/test-youtube.yml"]
   workflow_dispatch:
     inputs:
       surah:

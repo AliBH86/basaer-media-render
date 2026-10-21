@@ -1,0 +1,28 @@
+name: TEST - YouTube 16:9 footage cache
+
+# Fetches each approved Coverr nature clip's landscape original ONCE (scripts/yt_cache_footage.js), keeps a 1920x1080 copy on
+# Cloudinary youtube-test/footage/ and uploads a contact sheet per clip for the eye check. Touches nothing else.
+on:
+  push:
+    branches: [test/youtube]
+    paths: ["scripts/yt_cache_footage.js", ".github/workflows/yt-cache-footage.yml"]
+
+jobs:
+  cache:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - name: Cache clips
+        env:
+          COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
+        run: node scripts/yt_cache_footage.js out
+      - name: Upload contact sheets
+        run: |
+          for f in out/sheet-*.jpg; do
+            n=$(basename "$f" .jpg)
+            node scripts/upload_cloudinary.js "$f" "youtube-test/sheets/$n" image out "$n"
+          done
+          cat out/cache_report.json
