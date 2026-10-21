@@ -1,0 +1,111 @@
+name: YouTube full surah (render + upload)
+
+# Owner decisions 2026-10-21: one complete surah per 16:9 video (Mondays Minshawi Mujawwad = 8, Thursdays Abdul Basit
+# Mujawwad = 1), from the END of the Quran backwards, published automatically with a Telegram notice.
+# 1. scripts/yt_surah.js renders the video (text from the Quran.com API, checked against a fresh copy), the thumbnail and
+#    meta.json (title, description with chapters, tags).
+# 2. The video is uploaded STRAIGHT to YouTube with the one-time resumable-upload link that n8n created (n8n keeps the
+#    Google login; this job never sees it). The link is masked in the log. The video stays private until n8n has set the
+#    title, description, thumbnail and playlist, then n8n makes it public.
+# 3. The thumbnail, meta and stills go to Cloudinary youtube/surahs/ and everything is POSTed back to n8n.
+on:
+  workflow_dispatch:
+    inputs:
+      surah:
+        description: "Surah number"
+        required: true
+      reciter:
+        description: "8 = Minshawi Mujawwad, 1 = Abdul Basit Mujawwad"
+        required: true
+      uploadUrl:
+        description: "YouTube resumable upload link created by n8n (empty = render only, no upload)"
+        required: false
+      resumeUrl:
+        description: "n8n resumeUrl to POST results back to (optional)"
+        required: false
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      # Public repo (2026-10-21): the n8n return link and the YouTube upload link are read from the event file (never written
+      # into a printed command) and masked, so they never appear in the public run log.
+      - name: Mask private links
+        run: |
+          for k in resumeUrl uploadUrl; do
+            v=$(jq -r ".inputs.$k // empty" "$GITHUB_EVENT_PATH")
+            if [ -n "$v" ]; then
+              echo "::add-mask::$v"
+              if [ "$k" = resumeUrl ]; then echo "RESUME_URL=$v" >> "$GITHUB_ENV"; else echo "UPLOAD_URL=$v" >> "$GITHUB_ENV"; fi
+            fi
+          done
+
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then
+              echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          done
+          echo "No Chrome/Chromium binary found" >&2
+          exit 1
+
+      - name: Integrity guard self-test (offline)
+        run: node scripts/verify_text.js --selftest
+
+      - name: Render the surah
+        env:
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          SURAH: ${{ github.event.inputs.surah }}
+          RECITER: ${{ github.event.inputs.reciter }}
+        run: node scripts/yt_surah.js out
+
+      - name: Upload thumbnail, meta and stills to Cloudinary
+        run: |
+          F="youtube/surahs/s${{ github.event.inputs.surah }}-r${{ github.event.inputs.reciter }}-${{ github.run_id }}"
+          node scripts/upload_cloudinary.js out/thumbnail.png "$F/thumbnail" image out thumbnailUrl
+          node scripts/upload_cloudinary.js out/meta.json "$F/meta.json" raw out metaUrl
+          for f in out/still-*.png; do
+            n=$(basename "$f" .png)
+            node scripts/upload_cloudinary.js "$f" "$F/$n" image out "$n"
+          done
+
+      - name: Upload the video to YouTube (one-time link from n8n)
+        if: ${{ github.event.inputs.uploadUrl != '' }}
+        env:
+        run: |
+          size=$(stat -c %s out/surah.mp4)
+          code=$(curl -sS -X PUT -H "Content-Type: video/mp4" -H "Content-Length: $size" --data-binary @out/surah.mp4 -o out/youtube.json -w "%{http_code}" "$UPLOAD_URL")
+          echo "YouTube answered HTTP $code"
+          node -e "const r=require('./out/youtube.json');if(!r.id){console.error(JSON.stringify(r).slice(0,500));process.exit(1)}console.log('video id',r.id)"
+
+      - name: Notify n8n (resumeUrl callback, only if provided)
+        if: ${{ github.event.inputs.resumeUrl != '' }}
+        run: |
+          node -e "
+            const fs = require('fs');
+            const uploads = JSON.parse(fs.readFileSync('out/uploads.json', 'utf8'));
+            const meta = JSON.parse(fs.readFileSync('out/meta.json', 'utf8'));
+            const stats = JSON.parse(fs.readFileSync('out/stats.json', 'utf8'));
+            let videoId = '';
+            try { videoId = JSON.parse(fs.readFileSync('out/youtube.json', 'utf8')).id || ''; } catch (e) {}
+            fs.writeFileSync('out/callback_payload.json', JSON.stringify({ ...uploads, meta, stats, videoId, runId: '${{ github.run_id }}' }));
+          "
+          curl -sS -X POST "$RESUME_URL" -H "Content-Type: application/json" -d @out/callback_payload.json
+
+      - name: Notify n8n of a FAILED run (only if provided)
+        if: ${{ failure() && github.event.inputs.resumeUrl != '' }}
+        run: |
+          echo '{"failed":true,"runId":"${{ github.run_id }}","runUrl":"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' > out_failure.json
+          curl -sS -X POST "$RESUME_URL" -H "Content-Type: application/json" -d @out_failure.json

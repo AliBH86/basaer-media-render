@@ -25,6 +25,18 @@ jobs:
     env:
       MAX_SEC: "180"
     steps:
+      # Public repo (2026-10-21): the n8n return link and the YouTube upload link are read from the event file (never written
+      # into a printed command) and masked, so they never appear in the public run log.
+      - name: Mask private links
+        run: |
+          for k in resumeUrl uploadUrl; do
+            v=$(jq -r ".inputs.$k // empty" "$GITHUB_EVENT_PATH")
+            if [ -n "$v" ]; then
+              echo "::add-mask::$v"
+              if [ "$k" = resumeUrl ]; then echo "RESUME_URL=$v" >> "$GITHUB_ENV"; else echo "UPLOAD_URL=$v" >> "$GITHUB_ENV"; fi
+            fi
+          done
+
       - uses: actions/checkout@v4
       - name: Install ffmpeg
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
@@ -75,7 +87,6 @@ jobs:
       - name: Report to n8n
         if: ${{ always() && github.event.inputs.resumeUrl != '' }}
         env:
-          RESUME_URL: ${{ github.event.inputs.resumeUrl }}
           JOB_OK: ${{ job.status == 'success' }}
         run: |
           node -e "
