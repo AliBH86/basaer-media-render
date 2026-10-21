@@ -2,7 +2,7 @@
 // the official Coverr API (download reported back, as their terms ask), stores a 1920x1080 copy on Cloudinary
 // youtube-test/footage/<id>.mp4 and a 6-frame contact sheet, so every wide frame can be checked by eye before a clip is used
 // in a full-surah video (the clips were approved as vertical centre crops). Clips already cached are only re-sheeted.
-// Stops cleanly at Coverr's query limit and reports what is left.
+// Stops cleanly at Coverr's query limit and reports what is left (re-run to continue).
 //
 // Usage: COVERR_API_KEY=... node scripts/yt_cache_footage.js <outDir>
 const { execSync } = require('child_process');
