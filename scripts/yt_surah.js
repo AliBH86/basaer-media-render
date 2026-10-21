@@ -188,10 +188,9 @@ function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
   .brand { position:absolute; bottom:52px; width:100%; text-align:center; font-family:'CZ'; font-size:18px; letter-spacing:6px; opacity:0.8; font-weight:700; }
   </style></head><body>
   <div class="top"><div class="ar">ختام سورة ${surahAr}</div><div class="en">END OF SURAH ${surahEn.toUpperCase()}</div>${divider(140)}</div>
-  <div class="box" style="left:250px;top:390px;width:680px;height:240px;">YouTube end screen:<br>NEXT SURAH video</div>
+  ${process.env.SHOW_GUIDES === '1' ? `<div class="box" style="left:250px;top:390px;width:680px;height:240px;">YouTube end screen:<br>NEXT SURAH video</div>` : ''}
   <div class="next"><div class="next-ar">التالية: سورة ${nextAr}</div><div class="next-en">NEXT · SURAH ${nextEn.toUpperCase()}</div></div>
-  <div class="box" style="left:1090px;top:390px;width:240px;height:240px;border-radius:50%;">SUBSCRIBE</div>
-  <div class="box" style="left:1390px;top:390px;width:280px;height:240px;">PLAYLIST:<br>FULL SURAHS</div>
+  ${process.env.SHOW_GUIDES === '1' ? `<div class="box" style="left:1090px;top:390px;width:240px;height:240px;border-radius:50%;">SUBSCRIBE</div><div class="box" style="left:1390px;top:390px;width:280px;height:240px;">PLAYLIST:<br>FULL SURAHS</div>` : ''}
   <div class="brand">${BRAND_EN} · ${BRAND_AR} · ${HANDLE}</div>
   </body></html>`;
 }
@@ -380,14 +379,28 @@ async function main() {
   });
 
   // 6. COMPOSITE (same as the approved sample): footage + scrim, screens, intro/outro with fades, progress bar, gold wave.
-  const pngs = [...cache.values()];
-  const idx = new Map(pngs.map((p, i) => [p, i + 5]));
-  const inputs = [`-i "${bg}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'intro.png')}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'outro.png')}"`, `-i "${audio}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'scrim.png')}"`, ...pngs.map((p) => `-i "${p}"`)];
+  // One overlay stream for all screens (concat demuxer: each PNG with its duration, a transparent PNG in the gaps), so the
+  // final encode costs the same whether the surah has 30 or 3,000 screens (one overlay per screen made long surahs crawl).
+  const blank = path.join(work, 'blank.png');
+  sh(`ffmpeg -nostdin -loglevel error -y -f lavfi -i "color=c=black@0.0:s=${W}x${H},format=rgba" -frames:v 1 "${blank}"`);
+  const seq = [];
+  let cursor = 0;
+  for (const s of [...live].sort((x, y) => x.from - y.from)) {
+    const from = Math.max(s.from, cursor), to = Math.min(s.to, recEnd);
+    if (to - from < 0.02) continue;
+    if (from - cursor > 0.001) seq.push([blank, from - cursor]);
+    seq.push([s.png, to - from]); cursor = to;
+  }
+  if (total - cursor > 0.001) seq.push([blank, total - cursor]);
+  const ovList = path.join(work, 'overlays.txt');
+  fs.writeFileSync(ovList, seq.map(([p, d]) => `file '${p}'\nduration ${d.toFixed(3)}`).join('\n') + `\nfile '${seq[seq.length - 1][0]}'\n`);
+  const inputs = [`-i "${bg}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'intro.png')}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'outro.png')}"`, `-i "${audio}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'scrim.png')}"`, `-f concat -safe 0 -i "${ovList}"`];
   const L = [];
   L.push(`[0:v]fps=${FPS},format=yuv420p[f0]`);
   L.push(`[f0][4:v]overlay=enable='between(t,${introEnd.toFixed(3)},${recEnd.toFixed(3)})'[b0]`);
-  let prev = 'b0';
-  live.forEach((s, k) => { const o = `s${k}`; L.push(`[${prev}][${idx.get(s.png)}:v]overlay=enable='between(t,${s.from.toFixed(3)},${(s.to + 0.001).toFixed(3)})'[${o}]`); prev = o; });
+  L.push(`[5:v]fps=${FPS},format=rgba[ov]`);
+  L.push(`[b0][ov]overlay=0:0:eof_action=pass[s0]`);
+  let prev = 's0';
   L.push(`[1:v]format=rgba,fade=t=in:st=0:d=1.0:alpha=1,fade=t=out:st=${(introEnd - 0.7).toFixed(3)}:d=0.7:alpha=1[ic]`);
   L.push(`[${prev}][ic]overlay=enable='lte(t,${introEnd.toFixed(3)})'[v1]`);
   L.push(`[2:v]format=rgba,fade=t=in:st=${recEnd.toFixed(3)}:d=0.9:alpha=1[oc]`);
@@ -403,14 +416,20 @@ async function main() {
 
   // 7. METADATA (SEO from real YouTube searches, owner 2026-10-21; no claims, credit always included).
   const ayahs = units.filter((u) => u.no > 0);
-  const chapters = [{ t: 0, label: 'المقدمة · Intro' }];
-  const MIN_CH = 10, MAX_CH = 25;
-  const per = Math.max(1, Math.ceil(ayahs.length / (MAX_CH - 1)));
-  for (let i = 0; i < ayahs.length; i += per) {
-    const g = ayahs.slice(i, i + per), a = g[0].no, b = g[g.length - 1].no;
-    const t = Math.max(lead + g[0].offset, chapters[chapters.length - 1].t + MIN_CH);
-    if (t < recEnd - MIN_CH) chapters.push({ t, label: a === b ? `الآية ${a} · Ayah ${a}` : `الآيات ${a}-${b} · Ayahs ${a}-${b}` });
+  // YouTube chapters: first at 0:00, at least 3, each at least 10 s. Every chapter starts exactly where its first ayah
+  // starts (never shifted), short ayahs are grouped into one range, and long surahs get at most ~30 chapters.
+  const MIN_CH = Math.max(10, Math.ceil(total / 30));
+  const groups = [];
+  for (const u of ayahs) {
+    const t = lead + u.offset, g = groups[groups.length - 1];
+    if (!g || t - g.t >= MIN_CH) groups.push({ t, a: u.no, b: u.no }); else g.b = u.no;
   }
+  if (groups.length > 1 && total - groups[groups.length - 1].t < MIN_CH) { const last = groups.pop(); groups[groups.length - 1].b = last.b; }
+  const label = (g) => (g.a === g.b ? `الآية ${g.a} · Ayah ${g.a}` : `الآيات ${g.a}-${g.b} · Ayahs ${g.a}-${g.b}`);
+  const chapters = [];
+  if (groups.length && groups[0].t >= MIN_CH) chapters.push({ t: 0, label: 'المقدمة · Intro' });
+  else if (groups.length) groups[0].t = 0;
+  for (const g of groups) chapters.push({ t: g.t, label: label(g) });
   const chapterLines = chapters.length >= 3 ? chapters.map((c) => `${mmss(c.t)} ${c.label}`) : [];
   const [sAr, sEn] = SHORT;
   let title = `سورة ${meta.surahAr} كاملة مكتوبة | الشيخ ${sAr} مجود · تلاوة خاشعة تريح القلب | Surah ${meta.surahEn} ${sEn}`;
