@@ -1,4 +1,4 @@
-name: TEST - YouTube design sample (exploration only)
+name: TEST - YouTube full surah sample
 
 # 16:9 full-surah design sample for the owner's review (branch test/youtube). Renders scripts/yt_sample.js and uploads
 # the video, thumbnail and stills to Cloudinary youtube-test/. Nothing here publishes and nothing touches n8n.
@@ -9,15 +9,15 @@ on:
     inputs:
       surah:
         description: "Surah number"
-        default: "1"
-      sampleAyahs:
-        description: "How many ayahs from the start of the surah"
-        default: "2"
+        default: "114"
+      reciter:
+        description: "8 = Minshawi Mujawwad, 1 = Abdul Basit Mujawwad"
+        default: "8"
 
 jobs:
   sample:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
 
@@ -46,14 +46,15 @@ jobs:
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
           COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
-          SURAH: ${{ github.event.inputs.surah || '1' }}
-          SAMPLE_AYAHS: ${{ github.event.inputs.sampleAyahs || '2' }}
-        run: node scripts/yt_sample.js out
+          SURAH: ${{ github.event.inputs.surah || '114' }}
+          RECITER: ${{ github.event.inputs.reciter || '8' }}
+        run: node scripts/yt_surah.js out
 
       - name: Upload to Cloudinary (youtube-test/)
         run: |
           R=${{ github.run_id }}
-          node scripts/upload_cloudinary.js out/sample.mp4 "youtube-test/sample-$R" video out video
+          node scripts/upload_cloudinary.js out/surah.mp4 "youtube-test/surah-$R" video out video
+          node scripts/upload_cloudinary.js out/meta.json "youtube-test/meta-$R.json" raw out meta
           node scripts/upload_cloudinary.js out/thumbnail.png "youtube-test/thumb-$R" image out thumbnail
           for f in out/still-*.png out/sheet-*.jpg; do
             n=$(basename "$f"); n=${n%.*}
