@@ -2,7 +2,7 @@ name: YouTube Short (Khatm part)
 
 # YouTube Shorts (owner, 2026-10-21): picks the next Khatm part estimated at 55 s or less (scripts/pick_short.js), renders
 # it exactly like a Khatm Reel but with the YouTube handle on screen, uploads it to Cloudinary youtube/shorts/ and POSTs the
-# result back to n8n. Nothing here touches YouTube or Instagram: the upload to YouTube (as PRIVATE) is done by n8n.
+# result back to n8n. Nothing here touches YouTube or Instagram: n8n does the YouTube upload (videos.insert).
 on:
   workflow_dispatch:
     inputs:
