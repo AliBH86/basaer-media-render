@@ -1,5 +1,23 @@
 {
-  "_comment": "Reciter photos for YouTube ONLY (owner exception 2026-10-09, see CLAUDE.md). Every photo needs its source and licence recorded here and the owner's OK before first use. Never on Instagram/Facebook.",
+  "1": {
+    "file": "assets/reciters/abdulbasit.png",
+    "reciter": "Abdul Basit Abdus-Samad",
+    "source": "Provided by the owner in chat on 2026-10-21 (colorized portrait, 600x600). Original publisher not recorded.",
+    "sha1": "945a8766ad656829c04736de477a834d334f7949",
+    "licence": "Owner confirms the right to use it (owner decision 2026-10-21: \"use this\"). Original copyright holder unknown; replace if a rights holder objects.",
+    "approvedByOwner": "2026-10-21",
+    "size": "600x600"
+  },
+  "2": {
+    "file": "assets/reciters/abdulbasit.png",
+    "reciter": "Abdul Basit Abdus-Samad",
+    "source": "Provided by the owner in chat on 2026-10-21 (colorized portrait, 600x600). Original publisher not recorded.",
+    "sha1": "945a8766ad656829c04736de477a834d334f7949",
+    "licence": "Owner confirms the right to use it (owner decision 2026-10-21: \"use this\"). Original copyright holder unknown; replace if a rights holder objects.",
+    "approvedByOwner": "2026-10-21",
+    "size": "600x600",
+    "note": "same photo for the Murattal recording"
+  },
   "8": {
     "file": "assets/reciters/minshawi.jpg",
     "reciter": "Mohamed Siddiq al-Minshawi",
@@ -10,5 +28,6 @@
     "licence": "Public domain in Egypt (Wikimedia Commons template PD-Egypt). Commons flags Not-PD-US-expired-min-year: US status not certain.",
     "approvedByOwner": "2026-10-13",
     "size": "290x330"
-  }
+  },
+  "_comment": "Reciter photos for YouTube ONLY (owner exception 2026-10-09, see CLAUDE.md). Every photo needs its source and licence recorded here and the owner's OK before first use. Never on Instagram/Facebook."
 }
