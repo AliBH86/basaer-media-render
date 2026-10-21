@@ -83,7 +83,6 @@ jobs:
 
       - name: Upload the video to YouTube (one-time link from n8n)
         if: ${{ github.event.inputs.uploadUrl != '' }}
-        env:
         run: |
           size=$(stat -c %s out/surah.mp4)
           code=$(curl -sS -X PUT -H "Content-Type: video/mp4" -H "Content-Length: $size" --data-binary @out/surah.mp4 -o out/youtube.json -w "%{http_code}" "$UPLOAD_URL")
