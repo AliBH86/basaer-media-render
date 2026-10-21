@@ -1,0 +1,18 @@
+name: TEST - YouTube 16:9 footage grading
+
+# Grades each approved 16:9 clip ONCE into a ready 14 s shot (scripts/yt_grade_footage.js, list data/youtube_footage.json).
+on:
+  push:
+    branches: [test/youtube]
+    paths: ["data/youtube_footage.json", "scripts/yt_grade_footage.js", ".github/workflows/yt-grade-footage.yml"]
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - name: Grade clips
+        run: node scripts/yt_grade_footage.js out

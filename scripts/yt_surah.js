@@ -229,55 +229,25 @@ function thumbHtml({ surahAr, surahEn, number }, stillPath, sheikh = true) {
 
 const ffDur = (f) => Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${f}"`).trim());
 
-// FOOTAGE: landscape originals via the official Coverr API (download reported back, as their terms ask), slowed, graded
-// toward the brand (navy shadows, warm highlights) and joined with long crossfades. A contact sheet of every clip is saved
-// so each landscape frame can be checked by eye (the clips were approved as vertical centre crops).
+// FOOTAGE (2026-10-21): eye-checked, pre-graded 14 s nature shots (list data/youtube_footage.json, files on Cloudinary
+// youtube-test/footage-graded/, made once by scripts/yt_grade_footage.js with fades from/to black) strung together with
+// the concat demuxer, so no footage is re-encoded per video and long surahs stay fast. The starting shot depends on the
+// surah and the reciter, so consecutive videos open on different scenes; a video uses up to 16 different shots in a loop.
 async function footage(total) {
-  const key = process.env.COVERR_API_KEY;
-  if (!key) throw new Error('COVERR_API_KEY missing');
-  const shots = Math.max(1, Math.ceil((total - XF) / (SHOT_SEC - XF)));
+  const list = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'youtube_footage.json'), 'utf8')).clips;
+  if (!list.length) throw new Error('data/youtube_footage.json has no approved clips');
+  const need = Math.ceil(total / 14) + 1;
+  const n = Math.min(list.length, Math.max(4, Math.min(need, 16)));
+  const start = (SURAH * 7 + RECITER * 3) % list.length;
   const files = [];
-  // Each clip is fetched from Coverr ONCE and kept on Cloudinary as a 1920x1080 copy (youtube-test/footage/<id>); later
-  // renders read that copy and never call the Coverr API (its key has a query limit).
-  for (const id of CLIPS) {
-    const cid = id.replace(/^coverr-/, '');
-    const raw = path.join(work, `${id}.mp4`);
-    const cached = `https://res.cloudinary.com/b72gfdzx/video/upload/youtube-test/footage/${id}.mp4`;
-    let title = 'cached copy';
-    if (sh(`curl -s -o /dev/null -w "%{http_code}" "${cached}"`).trim() === '200') sh(`curl -sSfL -o "${raw}" "${cached}"`);
-    else {
-      const res = await fetch(`https://api.coverr.co/videos/${cid}?urls=true`, { headers: { Authorization: `Bearer ${key}` } });
-      if (!res.ok) throw new Error(`Coverr ${cid}: HTTP ${res.status} ${(await res.text()).slice(0, 200).replace(/s+/g, ' ')}`);
-      const v = await res.json();
-      const src = v.urls && (v.urls.mp4_download || v.urls.mp4);
-      if (!src) throw new Error(`Coverr ${cid}: no file url`);
-      const orig = path.join(work, `${id}-orig.mp4`);
-      sh(`curl -sSL --fail -o "${orig}" "${src}"`);
-      await fetch(`https://api.coverr.co/videos/${cid}/stats/downloads`, { method: 'PATCH', headers: { Authorization: `Bearer ${key}` } }).catch(() => {});
-      sh(`ffmpeg -nostdin -loglevel error -y -i "${orig}" -an -vf "scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H}" -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p "${raw}"`);
-      sh(`node "${path.join(__dirname, 'upload_cloudinary.js')}" "${raw}" "youtube-test/footage/${id}" video`);
-      title = v.title;
-    }
-    const d = ffDur(raw);
-    const sheet = path.join(OUT, `sheet-${id}.jpg`);
-    sh(`ffmpeg -nostdin -loglevel error -y -i "${raw}" -vf "fps=6/${Math.max(1, d).toFixed(2)},scale=480:-2,tile=6x1" -frames:v 1 "${sheet}"`);
-    files.push({ id, raw, d, title });
+  for (let k = 0; k < n; k++) {
+    const id = list[(start + k) % list.length];
+    const raw = path.join(work, id + '.mp4');
+    sh('curl -sSfL --retry 3 -o "' + raw + '" "https://res.cloudinary.com/b72gfdzx/video/upload/youtube-test/footage-graded/' + id + '.mp4"');
+    files.push({ id, raw });
   }
-  const pieces = [];
-  for (let k = 0; k < shots; k++) {
-    const f = files[k % files.length], len = SHOT_SEC;
-    const p = path.join(work, `shot${k}.mp4`);
-    // slow down, cover-crop to 16:9, brand grade; loop the source if it is shorter than the slowed shot needs
-    sh(`ffmpeg -nostdin -loglevel error -y -stream_loop -1 -i "${f.raw}" -t ${(len / SLOW + 0.5).toFixed(2)} -an -vf "setpts=${SLOW}*PTS,fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase:flags=lanczos,crop=${W}:${H},eq=saturation=0.88:brightness=-0.03:contrast=1.04,colorbalance=bs=0.08:bm=0.03:rh=0.05:gh=0.02,vignette=PI/4.5" -t ${len} -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p "${p}"`);
-    pieces.push(p);
-  }
-  const bg = path.join(work, 'footage.mp4');
-  if (pieces.length === 1) fs.copyFileSync(pieces[0], bg);
-  else {
-    const L = []; let prev = '0:v', t = SHOT_SEC - XF;
-    for (let k = 1; k < pieces.length; k++) { const o = `x${k}`; L.push(`[${prev}][${k}:v]xfade=transition=fade:duration=${XF}:offset=${t.toFixed(3)}[${o}]`); prev = o; t += SHOT_SEC - XF; }
-    sh(`ffmpeg -nostdin -loglevel error -y ${pieces.map((p) => `-i "${p}"`).join(' ')} -filter_complex "${L.join(';')}" -map "[${prev}]" -c:v libx264 -preset veryfast -crf 18 -pix_fmt yuv420p "${bg}"`);
-  }
+  const bg = path.join(work, 'bg.txt');
+  fs.writeFileSync(bg, Array.from({ length: need }, (_, k) => "file '" + files[k % files.length].raw + "'").join('\n') + '\n');
   return { bg, files };
 }
 
@@ -394,7 +364,7 @@ async function main() {
   if (total - cursor > 0.001) seq.push([blank, total - cursor]);
   const ovList = path.join(work, 'overlays.txt');
   fs.writeFileSync(ovList, seq.map(([p, d]) => `file '${p}'\nduration ${d.toFixed(3)}`).join('\n') + `\nfile '${seq[seq.length - 1][0]}'\n`);
-  const inputs = [`-i "${bg}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'intro.png')}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'outro.png')}"`, `-i "${audio}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'scrim.png')}"`, `-f concat -safe 0 -i "${ovList}"`];
+  const inputs = [`-f concat -safe 0 -i "${bg}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'intro.png')}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'outro.png')}"`, `-i "${audio}"`, `-loop 1 -framerate ${FPS} -t ${total} -i "${path.join(work, 'scrim.png')}"`, `-f concat -safe 0 -i "${ovList}"`];
   const L = [];
   L.push(`[0:v]fps=${FPS},format=yuv420p[f0]`);
   L.push(`[f0][4:v]overlay=enable='between(t,${introEnd.toFixed(3)},${recEnd.toFixed(3)})'[b0]`);
