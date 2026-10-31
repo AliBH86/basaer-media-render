@@ -1,0 +1,51 @@
+name: Build Footage Pool
+
+# Downloads every approved clip in data/footage_pool.json (Pixabay via PIXABAY_API_KEY, Coverr via COVERR_API_KEY),
+# grades + crops each to a vertical 1080x1920 library clip, and COMMITS them into data/footage/ so renders read them
+# locally and never fetch footage from Cloudinary. Review only: nothing publishes. Run with workflow_dispatch.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild every clip even if already present"
+        default: "false"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Build footage pool
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          COVERR_API_KEY: ${{ secrets.COVERR_API_KEY }}
+        run: |
+          node scripts/build_footage_pool.js ${{ github.event.inputs.force == 'true' && '--force' || '' }}
+          echo "--- index.json ---"
+          cat data/footage/index.json | head -c 4000; echo
+          echo "clips on disk:"; ls data/footage/*.mp4 | wc -l
+          du -sh data/footage
+
+      - name: Commit clips
+        run: |
+          git config user.name "basaer-bot"
+          git config user.email "bot@basaer.local"
+          git add data/footage data/footage_pool.json
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "Build footage pool: download+grade approved Pixabay/Coverr clips into data/footage/"
+            git push origin HEAD:${{ github.ref_name }}
+          fi
