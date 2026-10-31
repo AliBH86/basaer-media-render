@@ -14,7 +14,7 @@ if (!lines.length) throw new Error('spec has no lines');
 if (lines.some((l) => /[﴾﴿]/.test(l))) throw new Error('Quran brackets in the text: Quran is only shown from the API');
 
 // footage: only pools that exist in the approved library
-const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_library.json'), 'utf8'));
+const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_pool.json'), 'utf8'));
 const pools = new Set(lib.clips.map((c) => c.pool));
 const arc = String(spec.arc || '').split(',').map((p) => p.trim()).filter((p) => pools.has(p));
 const fallback = ['cNight', 'cDusk', 'cDawn', 'cSun', 'cLight', 'cClouds', 'cSea', 'cGold'].filter((p) => pools.has(p));

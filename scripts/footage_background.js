@@ -42,17 +42,27 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
 
 // 1b. shots from the approved library (see the header).
 {
-  const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_library.json'), 'utf8'));
+  const lib = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'footage_pool.json'), 'utf8'));
+  // Clips are COMMITTED in the repo at data/footage/<id>-vertical.mp4 (owner, 2026-10-31): renders read them locally and
+  // never fetch footage from Cloudinary. coverr ids are prefixed so they can't collide with Pixabay's numeric ids.
+  const FOOTAGE_DIR = path.join(__dirname, '..', 'data', 'footage');
+  const localOf = (c) => path.join(FOOTAGE_DIR, (c.source === 'coverr' ? 'coverr-' + c.id : String(c.id)) + '-vertical.mp4');
   const seed = Number(process.env.FOOTAGE_SEED || 1);
   // FOOTAGE_ARC (series Reels, 2026-10-11): a comma list of pools matching the words of that part; unset = the Khatm arc.
   let ARC = process.env.FOOTAGE_ARC ? process.env.FOOTAGE_ARC.split(',').map((p) => p.trim()).filter(Boolean) : ['mosqueN', 'skyN', 'lake', 'dusk', 'mosqueN', 'sea', 'day', 'stream', 'mosqueD', 'valley', 'dusk', 'skyDusk', 'mosqueN', 'snow', 'seaNight', 'skyN', 'mosqueN'];
   // FOOTAGE_ARC_ROTATE=1 (nature Reels/Shorts, owner 2026-10-21: "new scenes so it will not be boring"): start the arc at a
   // seed-dependent pool, so consecutive videos open on different kinds of scene instead of always the first pool.
   if (process.env.FOOTAGE_ARC && process.env.FOOTAGE_ARC_ROTATE === '1') { const r = (seed * 7) % ARC.length; ARC = ARC.slice(r).concat(ARC.slice(0, r)); }
+  // only clips whose committed file is present can be picked
   const pools = {};
-  for (const c of lib.clips) (pools[c.pool] = pools[c.pool] || []).push(c);
+  for (const c of lib.clips) { if (fs.existsSync(localOf(c))) (pools[c.pool] = pools[c.pool] || []).push(c); }
+  // pools lost with the old Cloudinary library (mosque/dusk/day) map to present nature pools so the Khatm arc still works
+  const ALIAS = { mosqueN: ['skyN', 'seaNight', 'snow', 'sky'], mosqueD: ['valley', 'sky', 'desert', 'field'], dusk: ['dawn', 'skyDusk', 'sky'], day: ['sky', 'valley', 'field', 'lake'] };
+  const resolvePool = (p) => ((pools[p] && pools[p].length) ? p : ((ALIAS[p] || []).find((a) => pools[a] && pools[a].length) || p));
+  const have = Object.values(pools).flat();
   const used = new Set(), next = {};
-  const pick = (pool) => {
+  const pick = (poolRaw) => {
+    const pool = resolvePool(poolRaw);
     const list = pools[pool] || [];
     for (let k = 0; k < list.length; k++) {
       next[pool] = (next[pool] ?? (seed * 3) % list.length);
@@ -61,22 +71,20 @@ console.log(`footage: ${pieces.length} shots over ${TOTAL.toFixed(2)}s, cuts at 
     }
     return null;
   };
+  if (!have.length) throw new Error('no local footage clips present (build_footage_pool.js has not run)');
   // the last piece echoes the opening pool so the Reel ends where it began (unless the arc names a pool for every shot)
   const echo = !process.env.FOOTAGE_ARC || ARC.length < pieces.length;
-  const arc = pieces.map((_, i) => (echo && i === pieces.length - 1 && pieces.length > 2 ? (process.env.FOOTAGE_ARC ? ARC[0] : 'mosqueN') : ARC[i % ARC.length]));
+  const arc = pieces.map((_, i) => (echo && i === pieces.length - 1 && pieces.length > 2 ? (process.env.FOOTAGE_ARC ? ARC[0] : 'skyN') : ARC[i % ARC.length]));
   cfg.shots = arc.map((pool, i) => {
-    // with FOOTAGE_ARC an emptied pool repeats its own clip rather than borrowing another pool's
-    const c = pick(pool) || (process.env.FOOTAGE_ARC && pools[pool] ? pools[pool][0] : null) || pick('dusk') || pick('skyN') || pick('day') || pick('mosqueD') || pick('mosqueN') || lib.clips[(seed + i) % lib.clips.length];
-    return { src: lib.base + c.id + '-vertical.mp4', _what: c.what + ' [' + pool + ']', at: 0.3 + ((seed + i) % 3) };
+    const c = pick(pool) || pick('sky') || pick('sea') || pick('forest') || have[(seed + i) % have.length];
+    return { src: localOf(c), _what: c.what + ' [' + pool + ']', at: 0.3 + ((seed + i) % 3) };
   });
 }
 // 2. one segment per piece
 const segs = [];
-const cache = {};
 for (const [i, p] of pieces.entries()) {
   const s = cfg.shots[i % cfg.shots.length], len = p.end - p.start;
-  if (!cache[s.src]) { cache[s.src] = path.join(work, `src_${Object.keys(cache).length}.mp4`); sh(`curl -sSL --fail -o "${cache[s.src]}" "${s.src}"`); }
-  const src = cache[s.src];
+  const src = s.src; // committed local clip (data/footage/…); no network fetch
   const full = Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${src}"`));
   if (full - (s.at || 0) < len) s.at = Math.max(0, full - len - 0.1);
   const avail = full - (s.at || 0) - 0.05;

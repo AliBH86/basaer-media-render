@@ -1,0 +1,1279 @@
+{
+ "_comment": "Approved footage pool (owner all-approved 2026-10-31). Pixabay via PIXABAY_API_KEY, Coverr via COVERR_API_KEY. Clips are downloaded, graded and stored in the repo; footage_background.js reads them local-first so renders do not fetch footage from Cloudinary.",
+ "pixabay_count": 144,
+ "coverr_count": 44,
+ "clips": [
+  {
+   "source": "pixabay",
+   "id": "90998",
+   "pool": "skyN",
+   "dur": 55,
+   "what": "stars, sky, night, aurora, forest, nature, trees, landscape"
+  },
+  {
+   "source": "pixabay",
+   "id": "35419",
+   "pool": "skyN",
+   "dur": 8,
+   "what": "star, guadarrama, madrid, sierra, sky, night, mountain, dark"
+  },
+  {
+   "source": "pixabay",
+   "id": "176198",
+   "pool": "skyN",
+   "dur": 7,
+   "what": "tree, stars, starry, galaxy, night, sky, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "183967",
+   "pool": "skyN",
+   "dur": 7,
+   "what": "moon, trees, forest, stars, sky, moonlight, night, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "44335",
+   "pool": "skyN",
+   "dur": 60,
+   "what": "moon, rotation, loop, craters, heaven, space, planet, astron"
+  },
+  {
+   "source": "pixabay",
+   "id": "1373",
+   "pool": "skyN",
+   "dur": 15,
+   "what": "farmer, farmer house, night, moon, stars, country, village, "
+  },
+  {
+   "source": "pixabay",
+   "id": "7348",
+   "pool": "skyN",
+   "dur": 60,
+   "what": "aurora borealis, sky, aurora, star, night, blue, green, natu"
+  },
+  {
+   "source": "pixabay",
+   "id": "161095",
+   "pool": "skyN",
+   "dur": 18,
+   "what": "northern lights, aurora borealis, snow, fields, snow fields,"
+  },
+  {
+   "source": "pixabay",
+   "id": "213423",
+   "pool": "skyN",
+   "dur": 9,
+   "what": "northern lights, aurora borealis, clouds, night, sky, boreal"
+  },
+  {
+   "source": "pixabay",
+   "id": "29238",
+   "pool": "skyN",
+   "dur": 20,
+   "what": "moon, night, sky, astronomy, stars, dark, nature, planet, mi"
+  },
+  {
+   "source": "pixabay",
+   "id": "218646",
+   "pool": "skyN",
+   "dur": 6,
+   "what": "northern lights, aurora borealis, nature, night, glow, light"
+  },
+  {
+   "source": "pixabay",
+   "id": "37697",
+   "pool": "skyN",
+   "dur": 6,
+   "what": "sky, stars, lake, landscape, night, nature, moon, water, inn"
+  },
+  {
+   "source": "pixabay",
+   "id": "1890",
+   "pool": "sea",
+   "dur": 34,
+   "what": "cliff, island, aerial view, nature, landscape, ocean, sea, w"
+  },
+  {
+   "source": "pixabay",
+   "id": "4006",
+   "pool": "sea",
+   "dur": 40,
+   "what": "sea, wave, golden, sand, sunrise, ocean, water, surf, beach,"
+  },
+  {
+   "source": "pixabay",
+   "id": "24216",
+   "pool": "sea",
+   "dur": 31,
+   "what": "sea, ocean, wave, beach, blue, nature, pacific, sand, water,"
+  },
+  {
+   "source": "pixabay",
+   "id": "338904",
+   "pool": "sea",
+   "dur": 23,
+   "what": "beach, nature, sea, sand, ocean, water, seascape, seashore, "
+  },
+  {
+   "source": "pixabay",
+   "id": "19368",
+   "pool": "sea",
+   "dur": 46,
+   "what": "wave, lighthouse, ocean, coast, blue, landscape"
+  },
+  {
+   "source": "pixabay",
+   "id": "22183",
+   "pool": "sea",
+   "dur": 31,
+   "what": "waves, water, sea, ocean, landscape, nature, sunset, coast"
+  },
+  {
+   "source": "pixabay",
+   "id": "31377",
+   "pool": "sea",
+   "dur": 29,
+   "what": "nature, waves, ocean, sea, rock, live wallpaper, earth day"
+  },
+  {
+   "source": "pixabay",
+   "id": "36609",
+   "pool": "sea",
+   "dur": 19,
+   "what": "surf, sea, ocean, wave, beach, water, surfing, travel, surfe"
+  },
+  {
+   "source": "pixabay",
+   "id": "138588",
+   "pool": "sea",
+   "dur": 29,
+   "what": "sea, ocean, beach, waves, sun, dusk, sunset, nature, rest, m"
+  },
+  {
+   "source": "pixabay",
+   "id": "176303",
+   "pool": "sea",
+   "dur": 19,
+   "what": "sea, ocean, waves, beach, sand, water, summer, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "135658",
+   "pool": "sea",
+   "dur": 9,
+   "what": "ocean, beach, sunset, sea, atmosphere, relaxing, relaxation,"
+  },
+  {
+   "source": "pixabay",
+   "id": "218714",
+   "pool": "sea",
+   "dur": 59,
+   "what": "beach, ocean, sea, summer, holiday, beautiful wallpaper, wav"
+  },
+  {
+   "source": "pixabay",
+   "id": "12127",
+   "pool": "dawn",
+   "dur": 7,
+   "what": "footage, dawn, city, sunrise, sun, beach, sky, river, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "201308",
+   "pool": "dawn",
+   "dur": 59,
+   "what": "beach, ocean, sunset, sea, nature, sky, sun, sunrise, summer"
+  },
+  {
+   "source": "pixabay",
+   "id": "18390",
+   "pool": "dawn",
+   "dur": 11,
+   "what": "aerial, aerial shot, clouds, dawn, daylight, dusk, fog, natu"
+  },
+  {
+   "source": "pixabay",
+   "id": "262916",
+   "pool": "dawn",
+   "dur": 14,
+   "what": "sunrise, dawn, nature, sun, sky"
+  },
+  {
+   "source": "pixabay",
+   "id": "262918",
+   "pool": "dawn",
+   "dur": 22,
+   "what": "sunrise, dawn, sun, sky, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "262915",
+   "pool": "dawn",
+   "dur": 10,
+   "what": "sunrise, dawn, sky, sun, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "74888",
+   "pool": "dawn",
+   "dur": 36,
+   "what": "ocean, birds, waves, beach, sunset, sea, wildlife, horizon, "
+  },
+  {
+   "source": "pixabay",
+   "id": "200552",
+   "pool": "dawn",
+   "dur": 17,
+   "what": "sunrise, sunset, twilight, sunlight, clouds sky, sun, sky, d"
+  },
+  {
+   "source": "pixabay",
+   "id": "363649",
+   "pool": "dawn",
+   "dur": 10,
+   "what": "sunset, sunrise, landscape, sun, sky, evening, night, horizo"
+  },
+  {
+   "source": "pixabay",
+   "id": "262917",
+   "pool": "dawn",
+   "dur": 18,
+   "what": "sunrise, dawn, sun, sky, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "111204",
+   "pool": "dawn",
+   "dur": 16,
+   "what": "sunset, nature, sky, dubai"
+  },
+  {
+   "source": "pixabay",
+   "id": "339640",
+   "pool": "dawn",
+   "dur": 23,
+   "what": "twilight, yellow, sunlight, cloud, light, skyline, hyper lap"
+  },
+  {
+   "source": "pixabay",
+   "id": "382582",
+   "pool": "forest",
+   "dur": 12,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "83880",
+   "pool": "forest",
+   "dur": 34,
+   "what": "sunrise, sunbeams, trees, woods, forest, fog, lands, misty, "
+  },
+  {
+   "source": "pixabay",
+   "id": "382580",
+   "pool": "forest",
+   "dur": 17,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382584",
+   "pool": "forest",
+   "dur": 30,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382583",
+   "pool": "forest",
+   "dur": 18,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382586",
+   "pool": "forest",
+   "dur": 7,
+   "what": "man, hiking, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382578",
+   "pool": "forest",
+   "dur": 22,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382585",
+   "pool": "forest",
+   "dur": 23,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382581",
+   "pool": "forest",
+   "dur": 16,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "382579",
+   "pool": "forest",
+   "dur": 30,
+   "what": "netherlands, sun rays, misty forest, sunlight, fog, woodland"
+  },
+  {
+   "source": "pixabay",
+   "id": "98976",
+   "pool": "forest",
+   "dur": 42,
+   "what": "forest, snow, fog, winter, landscape, sun rays, pine, trees,"
+  },
+  {
+   "source": "pixabay",
+   "id": "83095",
+   "pool": "forest",
+   "dur": 60,
+   "what": "trees, cross, grave, fog, forest, woods, mist, nature, lands"
+  },
+  {
+   "source": "pixabay",
+   "id": "285663",
+   "pool": "valley",
+   "dur": 27,
+   "what": "starry sky, milky way, cloud, mountain hut"
+  },
+  {
+   "source": "pixabay",
+   "id": "169951",
+   "pool": "valley",
+   "dur": 11,
+   "what": "starry sky, mountains, milky way, universe, cloud, city ligh"
+  },
+  {
+   "source": "pixabay",
+   "id": "305657",
+   "pool": "valley",
+   "dur": 14,
+   "what": "mountain, nature, landscape, austria, hiking, italy, alps, s"
+  },
+  {
+   "source": "pixabay",
+   "id": "289855",
+   "pool": "valley",
+   "dur": 28,
+   "what": "mountains, morning, cloud, sea of clouds, asahi, kii mountai"
+  },
+  {
+   "source": "pixabay",
+   "id": "368458",
+   "pool": "valley",
+   "dur": 22,
+   "what": "night view, mountains, kii mountains, starry sky, cloud, jap"
+  },
+  {
+   "source": "pixabay",
+   "id": "278750",
+   "pool": "valley",
+   "dur": 6,
+   "what": "clouds, storm, landscape, background, beautiful wallpaper, m"
+  },
+  {
+   "source": "pixabay",
+   "id": "31175",
+   "pool": "valley",
+   "dur": 8,
+   "what": "mountains, clouds, 4k, nature, cold, sky, mountain, landscap"
+  },
+  {
+   "source": "pixabay",
+   "id": "324297",
+   "pool": "valley",
+   "dur": 7,
+   "what": "cloud, lake, mountain"
+  },
+  {
+   "source": "pixabay",
+   "id": "207309",
+   "pool": "valley",
+   "dur": 40,
+   "what": "cloud formation, fog, mountain, clouds, snow mountain, natur"
+  },
+  {
+   "source": "pixabay",
+   "id": "230059",
+   "pool": "valley",
+   "dur": 17,
+   "what": "clouds, cloud formation, mountain world, hiking area, outloo"
+  },
+  {
+   "source": "pixabay",
+   "id": "33079",
+   "pool": "valley",
+   "dur": 20,
+   "what": "cloud, mountain, tropical forest, vietnam"
+  },
+  {
+   "source": "pixabay",
+   "id": "138276",
+   "pool": "valley",
+   "dur": 17,
+   "what": "mountains, clouds, mountain landscape, cloud formation, outl"
+  },
+  {
+   "source": "pixabay",
+   "id": "122078",
+   "pool": "rain",
+   "dur": 30,
+   "what": "flower, buds, leaves, bush, rain, drops"
+  },
+  {
+   "source": "pixabay",
+   "id": "123091",
+   "pool": "rain",
+   "dur": 59,
+   "what": "rain, drops, leaves, plants, foliage"
+  },
+  {
+   "source": "pixabay",
+   "id": "85526",
+   "pool": "rain",
+   "dur": 30,
+   "what": "tree, leaves, foliage, rain, drops, tropical, green, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "92994",
+   "pool": "rain",
+   "dur": 30,
+   "what": "plant, leaves, foliage, rain, drops, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "203878",
+   "pool": "rain",
+   "dur": 12,
+   "what": "leaves, foliage, plants, rain, water, raining, drops, weathe"
+  },
+  {
+   "source": "pixabay",
+   "id": "138222",
+   "pool": "rain",
+   "dur": 30,
+   "what": "leaves, foliage, plants, rain, drops, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "130924",
+   "pool": "rain",
+   "dur": 30,
+   "what": "leaves, foliage, bush, rain, drops, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "58461",
+   "pool": "rain",
+   "dur": 13,
+   "what": "leaves, foliage, plants, dew, drops, rain"
+  },
+  {
+   "source": "pixabay",
+   "id": "204307",
+   "pool": "rain",
+   "dur": 12,
+   "what": "trees, leaves, foliage, rain, drops, water, green, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "111522",
+   "pool": "rain",
+   "dur": 19,
+   "what": "leaves, wet, drops, after the rain, green, nature, forest"
+  },
+  {
+   "source": "pixabay",
+   "id": "121128",
+   "pool": "rain",
+   "dur": 29,
+   "what": "hairbrush, brush, dew, light, light-emitting diode, bright, "
+  },
+  {
+   "source": "pixabay",
+   "id": "73976",
+   "pool": "rain",
+   "dur": 20,
+   "what": "leaves, banana, tree, plants, foliage, rain, drops, wind, we"
+  },
+  {
+   "source": "pixabay",
+   "id": "240320",
+   "pool": "stream",
+   "dur": 30,
+   "what": "leaves, water, river, stream, autumn, fall, season, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "169249",
+   "pool": "stream",
+   "dur": 30,
+   "what": "waterfall, stream, river, mountains, nature, park, water, to"
+  },
+  {
+   "source": "pixabay",
+   "id": "216134",
+   "pool": "stream",
+   "dur": 20,
+   "what": "waterfall, stream, brook, forest, falls, green, rainforest, "
+  },
+  {
+   "source": "pixabay",
+   "id": "251262",
+   "pool": "stream",
+   "dur": 5,
+   "what": "waterfall, nature, landscape, river, water, forest, iceland,"
+  },
+  {
+   "source": "pixabay",
+   "id": "21788",
+   "pool": "stream",
+   "dur": 43,
+   "what": "river, water, water stream, nature, waterfall"
+  },
+  {
+   "source": "pixabay",
+   "id": "199243",
+   "pool": "stream",
+   "dur": 59,
+   "what": "river, stream, mountain stream, roaring stream, creek, flowi"
+  },
+  {
+   "source": "pixabay",
+   "id": "133179",
+   "pool": "stream",
+   "dur": 44,
+   "what": "stream, river, water, relaxing, relaxing stream, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "73214",
+   "pool": "stream",
+   "dur": 30,
+   "what": "moss, river, stream, moss valley, water stream, water, natur"
+  },
+  {
+   "source": "pixabay",
+   "id": "89454",
+   "pool": "stream",
+   "dur": 36,
+   "what": "brook, river, stream, water, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "326081",
+   "pool": "stream",
+   "dur": 10,
+   "what": "nature, autumn, river, water, stream, forest, landscape, fal"
+  },
+  {
+   "source": "pixabay",
+   "id": "382385",
+   "pool": "stream",
+   "dur": 33,
+   "what": "river, stream, creek, autumn, leaves, fall, water, forest"
+  },
+  {
+   "source": "pixabay",
+   "id": "21791",
+   "pool": "stream",
+   "dur": 52,
+   "what": "river, nature, water stream, water"
+  },
+  {
+   "source": "pixabay",
+   "id": "228847",
+   "pool": "falls",
+   "dur": 20,
+   "what": "waterfall, mountain stream, flow, stone, moss, forest, natur"
+  },
+  {
+   "source": "pixabay",
+   "id": "246856",
+   "pool": "falls",
+   "dur": 30,
+   "what": "waterfall, rainbow, river, nature, outdoors, landscape, scen"
+  },
+  {
+   "source": "pixabay",
+   "id": "358693",
+   "pool": "falls",
+   "dur": 35,
+   "what": "water, falls, waterfall, rivers, river, nature, landscape, f"
+  },
+  {
+   "source": "pixabay",
+   "id": "169249",
+   "pool": "falls",
+   "dur": 30,
+   "what": "waterfall, stream, river, mountains, nature, park, water, to"
+  },
+  {
+   "source": "pixabay",
+   "id": "174860",
+   "pool": "falls",
+   "dur": 28,
+   "what": "river, stream, waterfall, trees, forest, mountain river, lan"
+  },
+  {
+   "source": "pixabay",
+   "id": "158229",
+   "pool": "falls",
+   "dur": 20,
+   "what": "waterfall, river, water, drone, nature, ulba, ecuador, earth"
+  },
+  {
+   "source": "pixabay",
+   "id": "6998",
+   "pool": "falls",
+   "dur": 10,
+   "what": "waterfall, iceland, water, landscape, nature, icelandic, tra"
+  },
+  {
+   "source": "pixabay",
+   "id": "154726",
+   "pool": "falls",
+   "dur": 8,
+   "what": "waterfall, ice, water, melting, cold, spring, landscape, nat"
+  },
+  {
+   "source": "pixabay",
+   "id": "236928",
+   "pool": "falls",
+   "dur": 18,
+   "what": "waterfall, water flow, japan, natural, landscape"
+  },
+  {
+   "source": "pixabay",
+   "id": "208314",
+   "pool": "falls",
+   "dur": 15,
+   "what": "waterfall, trees, forest, autumn, water, drone, dji, flight,"
+  },
+  {
+   "source": "pixabay",
+   "id": "37088",
+   "pool": "falls",
+   "dur": 20,
+   "what": "waterfall, water, river, nature, landscape, cascade, outdoor"
+  },
+  {
+   "source": "pixabay",
+   "id": "24515",
+   "pool": "falls",
+   "dur": 33,
+   "what": "waterfall, water, flow, power, energy, nature, cascade, rive"
+  },
+  {
+   "source": "pixabay",
+   "id": "202864",
+   "pool": "lake",
+   "dur": 21,
+   "what": "lake, sunset, reflection, golden, calm, peaceful, sky, rippl"
+  },
+  {
+   "source": "pixabay",
+   "id": "84634",
+   "pool": "lake",
+   "dur": 60,
+   "what": "boat, trees, duck, pond, lake, scenery, nature, water, weeds"
+  },
+  {
+   "source": "pixabay",
+   "id": "203872",
+   "pool": "lake",
+   "dur": 22,
+   "what": "lake, mountain lake, reflection, mountain, peaks, moraine, b"
+  },
+  {
+   "source": "pixabay",
+   "id": "12770",
+   "pool": "lake",
+   "dur": 13,
+   "what": "lake, landscape, nature, sky, smooth surface, calmness, even"
+  },
+  {
+   "source": "pixabay",
+   "id": "371741",
+   "pool": "lake",
+   "dur": 12,
+   "what": "salt lake, aerial view, nature, drone, aerial, water, outdoo"
+  },
+  {
+   "source": "pixabay",
+   "id": "20804",
+   "pool": "lake",
+   "dur": 30,
+   "what": "water, reflection, lake, landscape, outdoors, peaceful, mirr"
+  },
+  {
+   "source": "pixabay",
+   "id": "1032",
+   "pool": "lake",
+   "dur": 12,
+   "what": "lake, calm, quiet, zen, nature, water, landscape, reflection"
+  },
+  {
+   "source": "pixabay",
+   "id": "41300",
+   "pool": "lake",
+   "dur": 9,
+   "what": "sunset, lake, landscape, reflection, nature, sunrise, clouds"
+  },
+  {
+   "source": "pixabay",
+   "id": "28417",
+   "pool": "lake",
+   "dur": 41,
+   "what": "water, lake, water surface, lake surface, autumn, colors, na"
+  },
+  {
+   "source": "pixabay",
+   "id": "28420",
+   "pool": "lake",
+   "dur": 49,
+   "what": "water, lake, water surface, lake surface, autumn, colors, na"
+  },
+  {
+   "source": "pixabay",
+   "id": "3144",
+   "pool": "lake",
+   "dur": 20,
+   "what": "lake, hill, ripples, landscape, water, nature, sky, scenery,"
+  },
+  {
+   "source": "pixabay",
+   "id": "244733",
+   "pool": "lake",
+   "dur": 30,
+   "what": "waterfall, rocks, moss, peaceful, calm, water, ripples, liqu"
+  },
+  {
+   "source": "pixabay",
+   "id": "284568",
+   "pool": "desert",
+   "dur": 17,
+   "what": "namibia, nature, africa, drone, desert, sand, dunes"
+  },
+  {
+   "source": "pixabay",
+   "id": "284566",
+   "pool": "desert",
+   "dur": 20,
+   "what": "desert, dunes, sand, namibia, nature, africa, drone"
+  },
+  {
+   "source": "pixabay",
+   "id": "92837",
+   "pool": "desert",
+   "dur": 7,
+   "what": "desert, sand, dunes, dry, travel, clouds, hill, hot, sahara,"
+  },
+  {
+   "source": "pixabay",
+   "id": "26085",
+   "pool": "desert",
+   "dur": 73,
+   "what": "namibia, sundowner, sunset, africa, landscape, sahara, sand,"
+  },
+  {
+   "source": "pixabay",
+   "id": "108420",
+   "pool": "desert",
+   "dur": 9,
+   "what": "desert, sand, dune, landscape, loop, background, beautiful w"
+  },
+  {
+   "source": "pixabay",
+   "id": "128663",
+   "pool": "desert",
+   "dur": 8,
+   "what": "desert, sand, dunes, nature"
+  },
+  {
+   "source": "pixabay",
+   "id": "92840",
+   "pool": "desert",
+   "dur": 6,
+   "what": "sea, sand, desert, sand dune, sky, dunes, travel, summer, hi"
+  },
+  {
+   "source": "pixabay",
+   "id": "284577",
+   "pool": "desert",
+   "dur": 27,
+   "what": "namibia, nature, africa, drone, desert, sand, dunes"
+  },
+  {
+   "source": "pixabay",
+   "id": "190466",
+   "pool": "desert",
+   "dur": 20,
+   "what": "sunset, dunes, desert, sand dunes, sahara, namibia, africa, "
+  },
+  {
+   "source": "pixabay",
+   "id": "147663",
+   "pool": "desert",
+   "dur": 26,
+   "what": "sunset, dunes, desert, sand dunes, sahara, namibia, africa, "
+  },
+  {
+   "source": "pixabay",
+   "id": "284557",
+   "pool": "desert",
+   "dur": 21,
+   "what": "desert, dunes, sand, namibia, nature, africa, drone, shore"
+  },
+  {
+   "source": "pixabay",
+   "id": "284565",
+   "pool": "desert",
+   "dur": 16,
+   "what": "desert, dunes, sand, namibia, nature, africa, drone"
+  },
+  {
+   "source": "pixabay",
+   "id": "142579",
+   "pool": "snow",
+   "dur": 45,
+   "what": "pine, forest, snow, winter, snowfall"
+  },
+  {
+   "source": "pixabay",
+   "id": "192649",
+   "pool": "snow",
+   "dur": 28,
+   "what": "nature, trees, forest, snow, aerial view, winter, hill, land"
+  },
+  {
+   "source": "pixabay",
+   "id": "192357",
+   "pool": "snow",
+   "dur": 35,
+   "what": "trees, forest, snow, track, winter, dji, drone, sky, nature,"
+  },
+  {
+   "source": "pixabay",
+   "id": "61818",
+   "pool": "snow",
+   "dur": 8,
+   "what": "mountains, trees, woods, forest, poland, winter, tourism, co"
+  },
+  {
+   "source": "pixabay",
+   "id": "154586",
+   "pool": "snow",
+   "dur": 48,
+   "what": "trees, forest, sunrise, snow, national park, winter, cold, n"
+  },
+  {
+   "source": "pixabay",
+   "id": "305660",
+   "pool": "snow",
+   "dur": 15,
+   "what": "forest, nature, mushroom, moss, trees, woods, path, landscap"
+  },
+  {
+   "source": "pixabay",
+   "id": "25477",
+   "pool": "snow",
+   "dur": 19,
+   "what": "vosges, france, snow, nature, landscape, mountain, forest, c"
+  },
+  {
+   "source": "pixabay",
+   "id": "325502",
+   "pool": "snow",
+   "dur": 20,
+   "what": "winter, snow, nature, cold, frost, landscape, wonderland, fo"
+  },
+  {
+   "source": "pixabay",
+   "id": "328167",
+   "pool": "snow",
+   "dur": 12,
+   "what": "winter, snow, nature, landscape, frost, cold, trees, frozen,"
+  },
+  {
+   "source": "pixabay",
+   "id": "330898",
+   "pool": "snow",
+   "dur": 16,
+   "what": "winter, river, forest, landscape, nature, snow, the water, w"
+  },
+  {
+   "source": "pixabay",
+   "id": "147572",
+   "pool": "snow",
+   "dur": 23,
+   "what": "trees, woods, forest, snow, winter forest, winter landscape"
+  },
+  {
+   "source": "pixabay",
+   "id": "7328",
+   "pool": "snow",
+   "dur": 28,
+   "what": "snowy trees, above, winter, landscape, forest, aerial, snow,"
+  },
+  {
+   "source": "pixabay",
+   "id": "190332",
+   "pool": "sky",
+   "dur": 14,
+   "what": "atmospheric, sky, clouds, cloudscape, sunset, mountains, sce"
+  },
+  {
+   "source": "pixabay",
+   "id": "2093",
+   "pool": "sky",
+   "dur": 30,
+   "what": "white clouds, blue sky, summer, atmosphere, weather, air, cl"
+  },
+  {
+   "source": "pixabay",
+   "id": "23567",
+   "pool": "sky",
+   "dur": 22,
+   "what": "clouds, stars, full moon, night sky, light, mood, landscape,"
+  },
+  {
+   "source": "pixabay",
+   "id": "199856",
+   "pool": "sky",
+   "dur": 14,
+   "what": "sky, clouds, storm, weather, storm clouds, drone, aerial, na"
+  },
+  {
+   "source": "pixabay",
+   "id": "92442",
+   "pool": "sky",
+   "dur": 11,
+   "what": "clouds, heaven, nature, clouded sky, blue, cumulus clouds, c"
+  },
+  {
+   "source": "pixabay",
+   "id": "190335",
+   "pool": "sky",
+   "dur": 13,
+   "what": "sky, clouds, cloudscape, sunset, mountains, scenery, nature,"
+  },
+  {
+   "source": "pixabay",
+   "id": "236027",
+   "pool": "sky",
+   "dur": 9,
+   "what": "mountains, clouds, snow, panorama, alps, timelapse, sky, atm"
+  },
+  {
+   "source": "pixabay",
+   "id": "190331",
+   "pool": "sky",
+   "dur": 14,
+   "what": "sky, rain clouds, cloudscape, lightning, storm, nature, land"
+  },
+  {
+   "source": "pixabay",
+   "id": "201063",
+   "pool": "sky",
+   "dur": 5,
+   "what": "sky, clouds, sunset, mountains, drone, aerial, nature, lands"
+  },
+  {
+   "source": "pixabay",
+   "id": "200117",
+   "pool": "sky",
+   "dur": 8,
+   "what": "sky, clouds, sun, cloudscape, drone, aerial, nature, landsca"
+  },
+  {
+   "source": "pixabay",
+   "id": "198547",
+   "pool": "sky",
+   "dur": 12,
+   "what": "sky, storm clouds, clouds, sunset, thunderstorm, weather, dr"
+  },
+  {
+   "source": "pixabay",
+   "id": "197994",
+   "pool": "sky",
+   "dur": 12,
+   "what": "sky, clouds, sunset, dusk, drone, aerial, nature, landscape,"
+  },
+  {
+   "source": "coverr",
+   "id": "QjW7fCpztu",
+   "pool": "cNight",
+   "what": "Coverr: stars over pine silhouettes"
+  },
+  {
+   "source": "coverr",
+   "id": "PtDce945WL",
+   "pool": "cDusk",
+   "what": "Coverr: dusk shore, last light on the horizon"
+  },
+  {
+   "source": "coverr",
+   "id": "ncFMIJ5yHJ",
+   "pool": "cDawn",
+   "what": "Coverr: mountain ridges at first light"
+  },
+  {
+   "source": "coverr",
+   "id": "fsnU3mB4YK",
+   "pool": "cSun",
+   "what": "Coverr: sun over forest and mountains"
+  },
+  {
+   "source": "coverr",
+   "id": "Clo38tKFcq",
+   "pool": "cLight",
+   "what": "Coverr: sun rays through an autumn forest"
+  },
+  {
+   "source": "coverr",
+   "id": "CLew6kVZWU",
+   "pool": "cGold",
+   "what": "Coverr: golden sunrise over a calm lake"
+  },
+  {
+   "source": "coverr",
+   "id": "DSal4pXnYW",
+   "pool": "cClouds",
+   "what": "Coverr: soft clouds drifting"
+  },
+  {
+   "source": "coverr",
+   "id": "HM7pVL1BAT",
+   "pool": "cSea",
+   "what": "Coverr: dawn over a calm bay"
+  },
+  {
+   "source": "coverr",
+   "id": "YtarCBiCxj",
+   "pool": "seaNight",
+   "what": "Coverr: waves rolling in at blue hour"
+  },
+  {
+   "source": "coverr",
+   "id": "jOlwnczJML",
+   "pool": "seaNight",
+   "what": "Coverr: dark ocean waves breaking"
+  },
+  {
+   "source": "coverr",
+   "id": "Pqr1FV3tIk",
+   "pool": "sea",
+   "what": "Coverr: sunset over the sea, waves on the sand"
+  },
+  {
+   "source": "coverr",
+   "id": "TnhH3rqEox",
+   "pool": "sea",
+   "what": "Coverr: aerial waves over dark water"
+  },
+  {
+   "source": "coverr",
+   "id": "tHlDPuZqDQ",
+   "pool": "sea",
+   "what": "Coverr: sun glitter on the water"
+  },
+  {
+   "source": "coverr",
+   "id": "arFjntMqk8",
+   "pool": "sea",
+   "what": "Coverr: calm turquoise sea"
+  },
+  {
+   "source": "coverr",
+   "id": "JOn9ZCMKGH",
+   "pool": "falls",
+   "what": "Coverr: waterfall with a rainbow"
+  },
+  {
+   "source": "coverr",
+   "id": "ZH4Mbb3bmj",
+   "pool": "stream",
+   "what": "Coverr: close-up of a clear stream"
+  },
+  {
+   "source": "coverr",
+   "id": "pxABs1Xpah",
+   "pool": "stream",
+   "what": "Coverr: stream over pebbles"
+  },
+  {
+   "source": "coverr",
+   "id": "t77Lfa2lI3",
+   "pool": "stream",
+   "what": "Coverr: water around a rock"
+  },
+  {
+   "source": "coverr",
+   "id": "P16Y8nbm1e",
+   "pool": "valley",
+   "what": "Coverr: lake below autumn mountains"
+  },
+  {
+   "source": "coverr",
+   "id": "XmdcGNt12U",
+   "pool": "valley",
+   "what": "Coverr: green valley river, snow peaks"
+  },
+  {
+   "source": "coverr",
+   "id": "kwLPECiFOf",
+   "pool": "lake",
+   "what": "Coverr: mountain lake reflection"
+  },
+  {
+   "source": "coverr",
+   "id": "Bqjj6OVNHd",
+   "pool": "lake",
+   "what": "Coverr: autumn lake reflection"
+  },
+  {
+   "source": "coverr",
+   "id": "lEMJdmCAHP",
+   "pool": "lake",
+   "what": "Coverr: mountains and a turquoise lake"
+  },
+  {
+   "source": "coverr",
+   "id": "MnI5sqK3Vo",
+   "pool": "lake",
+   "what": "Coverr: lake below snow mountains"
+  },
+  {
+   "source": "coverr",
+   "id": "TQcg9gPi7h",
+   "pool": "skyDusk",
+   "what": "Coverr: pink sky over a lake"
+  },
+  {
+   "source": "coverr",
+   "id": "2bfiRK705y",
+   "pool": "skyDusk",
+   "what": "Coverr: pink sunset over the water"
+  },
+  {
+   "source": "coverr",
+   "id": "NI0F09Y3bw",
+   "pool": "snow",
+   "what": "Coverr: snowy peaks and pines"
+  },
+  {
+   "source": "coverr",
+   "id": "ebyoNxa4bh",
+   "pool": "snow",
+   "what": "Coverr: snow slopes under a clear sky"
+  },
+  {
+   "source": "coverr",
+   "id": "L7iQYa4N5Y",
+   "pool": "falls",
+   "what": "Coverr: waterfall in the mountains"
+  },
+  {
+   "source": "coverr",
+   "id": "QyIve2hMwg",
+   "pool": "falls",
+   "what": "Coverr: rainforest waterfalls"
+  },
+  {
+   "source": "coverr",
+   "id": "A22SRO662u",
+   "pool": "snow",
+   "what": "Coverr: mountain ridge above clouds"
+  },
+  {
+   "source": "coverr",
+   "id": "0V5peQ9un0",
+   "pool": "forest",
+   "what": "Coverr: sunlit ferns in a forest"
+  },
+  {
+   "source": "coverr",
+   "id": "I68972Om7F",
+   "pool": "forest",
+   "what": "Coverr: misty forest with sun rays"
+  },
+  {
+   "source": "coverr",
+   "id": "hdorBTWXNY",
+   "pool": "forest",
+   "what": "Coverr: forest edge above the beach"
+  },
+  {
+   "source": "coverr",
+   "id": "LRFCJa5vRR",
+   "pool": "forest",
+   "what": "Coverr: fog over a forest"
+  },
+  {
+   "source": "coverr",
+   "id": "95N7qiWzte",
+   "pool": "leaves",
+   "what": "Coverr: sunlight through a green leaf"
+  },
+  {
+   "source": "coverr",
+   "id": "xee53qcBr8",
+   "pool": "leaves",
+   "what": "Coverr: golden autumn leaves"
+  },
+  {
+   "source": "coverr",
+   "id": "2v00OhJpqE",
+   "pool": "sky",
+   "what": "Coverr: sun behind moving clouds"
+  },
+  {
+   "source": "coverr",
+   "id": "E0Zj8lC3HQ",
+   "pool": "sky",
+   "what": "Coverr: moon in a blue sky"
+  },
+  {
+   "source": "coverr",
+   "id": "MsZyBam70M",
+   "pool": "skyN",
+   "what": "Coverr: palm silhouettes and the moon"
+  },
+  {
+   "source": "coverr",
+   "id": "DnBhCNa6Tl",
+   "pool": "desert",
+   "what": "Coverr: golden dunes"
+  },
+  {
+   "source": "coverr",
+   "id": "qXLxwV9w3a",
+   "pool": "desert",
+   "what": "Coverr: pink dunes at dusk"
+  },
+  {
+   "source": "coverr",
+   "id": "Bdr5NfQZ19",
+   "pool": "field",
+   "what": "Coverr: wide golden field"
+  },
+  {
+   "source": "coverr",
+   "id": "9d6jSSPYwm",
+   "pool": "birds",
+   "what": "Coverr: birds over the treetops"
+  }
+ ]
+}
