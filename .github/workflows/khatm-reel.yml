@@ -93,6 +93,10 @@ jobs:
       - name: Render Khatm Reel
         env:
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          # Footage is read through the R2 endpoint: the public media host answers 403 to GitHub's runners.
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
           KHATM: "1"
           FOOTAGE_STYLE: ${{ github.event.inputs.footageStyle }}
           SOFT_CAP_SEC: "75"

@@ -75,7 +75,7 @@ const segs = [];
 const cache = {};
 for (const [i, p] of pieces.entries()) {
   const s = cfg.shots[i % cfg.shots.length], len = p.end - p.start;
-  if (!cache[s.src]) { cache[s.src] = path.join(work, `src_${Object.keys(cache).length}.mp4`); sh(`curl -sSL --fail -o "${cache[s.src]}" "${s.src}"`); }
+  if (!cache[s.src]) { cache[s.src] = path.join(work, `src_${Object.keys(cache).length}.mp4`); if (process.env.R2_BASAER_ENDPOINT && s.src.startsWith('https://basaer-media.ahbrandsbh.com/')) sh(`node "${path.join(__dirname, 'r2_download.js')}" "${cache[s.src]}" "${s.src}"`); else sh(`curl -sSL --fail -o "${cache[s.src]}" "${s.src}"`); }
   const src = cache[s.src];
   const full = Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${src}"`));
   if (full - (s.at || 0) < len) s.at = Math.max(0, full - len - 0.1);
