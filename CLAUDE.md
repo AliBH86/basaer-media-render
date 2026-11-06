@@ -31,3 +31,6 @@
 - `Basaer - Instagram Token Monitor` — twice-daily read-only token check + expiry reminders (14/7/3/1 days) to Telegram. ACTIVE by design; renewal is manual (HANDOFF > "Renew the Instagram token"). Never create an n8n API key with write access to automate it.
 
 Captions: the reflection line is picked from the user-approved list — never call an AI at publish time. No dua line in captions. **Integrity guards**: slides, captions and Reels are compared character by character with a fresh Quran.com API copy; any difference voids the draft and alerts the owner — never bypass them, and keep the Reel `integrityTest` input empty. Rotation starts 2026-10-10 (Config.CYCLE_START_DATE); Daily Post and Reel skip silently (and log) before that date. Go-live steps are in the GO-LIVE CHECKLIST at the top of `docs/HANDOFF.md`. Full details, blockers and next steps are in `docs/HANDOFF.md`.
+
+## Media storage (2026-11-06)
+Cloudinary is disabled by the provider. Migration to Cloudflare R2 is in Phase A, so **R2 is not yet the production media source**. Planned bucket `basaer-media` at `media.elturk.xyz`, credential `Basaer - R2 Media` (name only). Media is generally temporary: delete only after confirmed publication plus a rollback window, never originals or irreplaceable audio. Full record: `docs/BASAER_INFRASTRUCTURE.md` in the Basaer Media project.

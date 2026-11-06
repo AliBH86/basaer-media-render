@@ -1,3 +1,11 @@
+## STATUS 2026-11-06 — CLOUDINARY DISABLED, R2 PHASE A (read this first)
+
+Cloudinary (cloud `b72gfdzx`, shared with AH Brands) has been disabled by the provider since about 07:00 UTC on 2026-11-06, so Basaer media does not load and new uploads fail. Migration to Cloudflare R2 is approved in phases: Phase A builds it in parallel, and **R2 is not yet the production media source**. Full record: `docs/BASAER_INFRASTRUCTURE.md` in the Basaer Media project.
+
+Rule: media is generally temporary. Delete only after **confirmed** publication plus a rollback window, never originals or irreplaceable audio. Validators that hard-code `res.cloudinary.com/b72gfdzx` must change at cutover. Check for other copies of the دعاء الصباح audio and Studio originals.
+
+---
+
 # Basaer Media — Handoff
 
 Last updated: 2026-10-04 go-live (Daily Post LIVE with publish-on-Approve; see LIVE STATUS). Before that, 2026-10-04 afternoon (ACTIVATION RUNBOOK for 10-11 Oct; Draft Approval publish path: FINISHED gate + no-double-publish guard; live Gotenberg check of 57:9 and 18:1; 59:10 spacing; Reel 42:25-26 replaced by 7:55-56; privacy policy draft). Earlier the same day (overnight): PUBLISH_ENABLED hard switch, surah spellings, Al-Kahf Reels re-tagged, Daily Post + Reel QA, prayer-time and hadith research, Quran.Foundation application text, GO-LIVE READINESS table. Read this file first in any new session before touching the project. No secrets appear anywhere in this file; see "Secrets" at the bottom for where they actually live.
