@@ -19,7 +19,7 @@
 - **n8n** (DigitalOcean droplet, shared with AH Brands, RAM is tight) orchestrates: picks an ayah, fetches text, triggers rendering, builds captions, sends review notifications. Nothing publishes (PUBLISH_ENABLED=false). The only posts on the account so far: the user's own Reel (2026-10-02) and one image post the user asked for (2026-10-04, 94:6).
 - **GitHub Actions** (`AliBH86/basaer-media-render`, private repo) does all Reel video rendering — ffmpeg + headless Chrome for text overlays, triggered by n8n's GitHub node or manually via `gh workflow run`.
 - **Gotenberg** (on the droplet) renders the static Daily Post images from HTML.
-- **Cloudinary** hosts all rendered media.
+- **Cloudflare R2** hosts all rendered media (`basaer-media`). Upload with `scripts/upload_r2.js`, read with `scripts/r2_download.js`; both need the `R2_BASAER_*` env on the step.
 - **Quran.com API v4** is the primary text/audio source; **alquran.cloud** is the fallback.
 
 ## Five n8n workflows
@@ -33,4 +33,4 @@
 Captions: the reflection line is picked from the user-approved list — never call an AI at publish time. No dua line in captions. **Integrity guards**: slides, captions and Reels are compared character by character with a fresh Quran.com API copy; any difference voids the draft and alerts the owner — never bypass them, and keep the Reel `integrityTest` input empty. Rotation starts 2026-10-10 (Config.CYCLE_START_DATE); Daily Post and Reel skip silently (and log) before that date. Go-live steps are in the GO-LIVE CHECKLIST at the top of `docs/HANDOFF.md`. Full details, blockers and next steps are in `docs/HANDOFF.md`.
 
 ## Media storage (2026-11-06)
-Cloudinary is disabled by the provider. Migration to Cloudflare R2 is in Phase A, so **R2 is not yet the production media source**. Planned bucket `basaer-media` at `media.elturk.xyz`, credential `Basaer - R2 Media` (name only). Media is generally temporary: delete only after confirmed publication plus a rollback window, never originals or irreplaceable audio. Full record: `docs/BASAER_INFRASTRUCTURE.md` in the Basaer Media project.
+Cloudinary is disabled by the provider and is out of every active path. All new Basaer and AH Brands media goes to Cloudflare R2 (cut over 2026-11-07). Full record: `docs/BASAER_INFRASTRUCTURE.md` in the Basaer Media project. Media is generally temporary: delete only after confirmed publication plus a rollback window, never originals or irreplaceable audio.

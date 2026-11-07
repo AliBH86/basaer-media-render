@@ -1,6 +1,6 @@
-## STATUS 2026-11-06 — CLOUDINARY DISABLED, R2 PHASE A (read this first)
+## STATUS 2026-11-07 — MEDIA IS ON R2 (read this first)
 
-Cloudinary (cloud `b72gfdzx`, shared with AH Brands) has been disabled by the provider since about 07:00 UTC on 2026-11-06, so Basaer media does not load and new uploads fail. Migration to Cloudflare R2 is approved in phases: Phase A builds it in parallel, and **R2 is not yet the production media source**. Full record: `docs/BASAER_INFRASTRUCTURE.md` in the Basaer Media project.
+Cloudinary (cloud `b72gfdzx`, shared with AH Brands) has been disabled by the provider since about 07:00 UTC on 2026-11-06. All new media now goes to Cloudflare R2, and older sections of this file that mention Cloudinary are history. Rows that still point at Cloudinary cannot publish. Full record: `docs/BASAER_INFRASTRUCTURE.md` in the Basaer Media project.
 
 Rule: media is generally temporary. Delete only after **confirmed** publication plus a rollback window, never originals or irreplaceable audio. Validators that hard-code `res.cloudinary.com/b72gfdzx` must change at cutover. Check for other copies of the دعاء الصباح audio and Studio originals.
 
