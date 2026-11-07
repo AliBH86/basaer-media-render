@@ -1,7 +1,7 @@
 // SAMPLE prayer-time cards (research only, 2026-10-04). Nothing is scheduled or published.
 // Fetches 7 days of calculated times for Manama from the Aladhan API (Gulf Region = method 8 for the Sunni column,
 // Shia Ithna-Ashari / Leva Institute Qum = method 0 for the Ja'fari column; explicit coordinates, Asia/Bahrain),
-// renders three 1080x1350 cards in the Basaer navy/gold design and uploads them to Cloudinary qa-overnight as
+// renders three 1080x1350 cards in the Basaer navy/gold design and uploads them to R2 basaer/temp/qa-overnight as
 // SAMPLE-prayer-daily, SAMPLE-prayer-weekly-sunni, SAMPLE-prayer-weekly-jafari.
 // Usage: node scripts/sample_prayer_cards.js <outDir> <startDate dd-mm-yyyy>
 const fs = require('fs');
@@ -19,9 +19,10 @@ const PRAYERS = [
   ['Fajr', 'الفجر'], ['Sunrise', 'الشروق'], ['Dhuhr', 'الظهر'], ['Asr', 'العصر'], ['Maghrib', 'المغرب'], ['Isha', 'العشاء'],
 ];
 const DAYS_AR = { Sun: 'الأحد', Mon: 'الاثنين', Tue: 'الثلاثاء', Wed: 'الأربعاء', Thu: 'الخميس', Fri: 'الجمعة', Sat: 'السبت' };
-const SCH = 'https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960346/fonts/scheherazade-regular.woff2';
-const SCH_B = 'https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960348/fonts/scheherazade-bold.woff2';
-const INTER = 'https://res.cloudinary.com/b72gfdzx/raw/upload/v1790955379/fonts/inter-regular.woff2';
+const fontUrl = (n) => `https://basaer-media.ahbrandsbh.com/basaer/fonts/v4/${n}.woff2`;
+const SCH = fontUrl('scheherazade-regular');
+const SCH_B = fontUrl('scheherazade-bold');
+const INTER = fontUrl('inter-regular');
 
 function getJson(url) {
   return new Promise((resolve, reject) => {
@@ -121,10 +122,9 @@ const page = (inner) => `<!DOCTYPE html><html><head><meta charset="utf-8"><style
     await pg.waitForFunction('window.__done === true', { timeout: 30000 });
     const png = hp.replace(/\.html$/, '.png');
     await pg.screenshot({ path: png });
-    const resp = JSON.parse(execSync(`curl -sS -X POST "https://api.cloudinary.com/v1_1/b72gfdzx/image/upload" -F "file=@${png}" -F "upload_preset=ml_default" -F "public_id=qa-overnight/${name}"`, { encoding: 'utf8' }));
-    if (!resp.secure_url) throw new Error(`upload failed: ${JSON.stringify(resp.error)}`);
-    urls[name] = resp.secure_url; bytes += resp.bytes;
-    console.log(`${name} -> ${resp.secure_url}`);
+    const line = execSync(`node "${path.join(__dirname, 'upload_r2.js')}" "${png}" "basaer/temp/qa-overnight/${name}.png" image/png`, { encoding: 'utf8' }).trim();
+    urls[name] = line.split(' -> ')[1]; bytes += fs.statSync(png).size;
+    console.log(`${name} -> ${urls[name]}`);
   }
   await browser.close();
   fs.writeFileSync(path.join(outDir, 'samples.json'), JSON.stringify({ urls, bytes, days: days.map((r) => ({ d: r.d, sunni: r.sunni, jafari: r.jafari })) }, null, 2));

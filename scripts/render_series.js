@@ -206,7 +206,7 @@ async function main() {
   const dur = +(clipEnd - clipStart).toFixed(3);
   const rel = (t) => +(t - clipStart).toFixed(3);
   const rec = path.join(work, 'rec.mp3');
-  sh(`curl -sSL --fail -o "${rec}" "${process.env.AUDIO_URL}"`);
+  sh(`node "${path.join(__dirname, 'r2_download.js')}" "${rec}" "${process.env.AUDIO_URL}"`);
   const audio = path.join(work, 'clip.m4a');
   const fadeOut = Math.min(0.6, Math.max(0.15, clipEnd - last.end));
   sh(`ffmpeg -nostdin -loglevel error -y -ss ${clipStart.toFixed(3)} -t ${dur} -i "${rec}" -af "afade=t=in:d=0.08,afade=t=out:st=${(dur - fadeOut).toFixed(3)}:d=${fadeOut.toFixed(3)}" -c:a aac -b:a 160k "${audio}"`);
@@ -266,7 +266,7 @@ async function main() {
   // Reel's length (the last frame held if it is shorter); otherwise footage from the approved library.
   if (meta.bgUrl) {
     const raw = path.join(work, 'bg_src.mp4');
-    sh(`curl -sSL --fail -o "${raw}" "${meta.bgUrl}"`);
+    sh(`node "${path.join(__dirname, 'r2_download.js')}" "${raw}" "${meta.bgUrl}"`);
     sh(`ffmpeg -nostdin -loglevel error -y -i "${raw}" -an -vf "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=${FPS},tpad=stop_mode=clone:stop_duration=${dur},format=yuv420p,setsar=1" -t ${dur} -c:v libx264 -crf 17 -preset veryfast "${bg}"`);
   } else
   // seed: per item (studio clips: from its text) so two clips never pick the same footage in the same order

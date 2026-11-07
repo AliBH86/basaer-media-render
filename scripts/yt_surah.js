@@ -229,8 +229,8 @@ function thumbHtml({ surahAr, surahEn, number }, stillPath, sheikh = true) {
 
 const ffDur = (f) => Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${f}"`).trim());
 
-// FOOTAGE (2026-10-21): eye-checked, pre-graded 14 s nature shots (list data/youtube_footage.json, files on Cloudinary
-// youtube-test/footage-graded/, made once by scripts/yt_grade_footage.js with fades from/to black) strung together with
+// FOOTAGE (2026-10-21): eye-checked, pre-graded 14 s nature shots (list data/youtube_footage.json, files on R2
+// basaer/youtube/footage-graded/, made once by scripts/yt_grade_footage.js with fades from/to black) strung together with
 // the concat demuxer, so no footage is re-encoded per video and long surahs stay fast. The starting shot depends on the
 // surah and the reciter, so consecutive videos open on different scenes; a video uses up to 16 different shots in a loop.
 async function footage(total) {
@@ -243,7 +243,7 @@ async function footage(total) {
   for (let k = 0; k < n; k++) {
     const id = list[(start + k) % list.length];
     const raw = path.join(work, id + '.mp4');
-    sh('curl -sSfL --retry 3 -o "' + raw + '" "https://res.cloudinary.com/b72gfdzx/video/upload/youtube-test/footage-graded/' + id + '.mp4"');
+    sh('node "' + path.join(__dirname, 'r2_download.js') + '" "' + raw + '" "https://basaer-media.ahbrandsbh.com/basaer/youtube/footage-graded/' + id + '.mp4"');
     files.push({ id, raw });
   }
   const bg = path.join(work, 'bg.txt');

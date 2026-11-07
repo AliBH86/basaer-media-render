@@ -1,5 +1,5 @@
 {
- "_comment": "16:9 footage for YouTube full-surah videos (2026-10-21). Approved Coverr nature clips whose WIDE 1920x1080 frame was checked by eye on contact sheets (Cloudinary youtube-test/sheets/): no people, writing, logos, buildings or mosques. Left out: arFjntMqk8 (pink objects at the edge), 2bfiRK705y (plane in the sky), 9d6jSSPYwm (roof under the birds), ZH4Mbb3bmj, pxABs1Xpah, t77Lfa2lI3 (stream close-ups, dull), E0Zj8lC3HQ (plain sky), Bdr5NfQZ19 (tyre-track field). Graded 14 s shots: youtube-test/footage-graded/<id>.mp4 (scripts/yt_grade_footage.js).",
+ "_comment": "16:9 footage for YouTube full-surah videos (2026-10-21). Approved Coverr nature clips whose WIDE 1920x1080 frame was checked by eye on contact sheets: no people, writing, logos, buildings or mosques. Left out: arFjntMqk8 (pink objects at the edge), 2bfiRK705y (plane in the sky), 9d6jSSPYwm (roof under the birds), ZH4Mbb3bmj, pxABs1Xpah, t77Lfa2lI3 (stream close-ups, dull), E0Zj8lC3HQ (plain sky), Bdr5NfQZ19 (tyre-track field). Graded 14 s shots: basaer/youtube/footage-graded/<id>.mp4 on R2 (scripts/yt_grade_footage.js).",
  "clips": [
   "coverr-QjW7fCpztu",
   "coverr-PtDce945WL",

@@ -7,7 +7,7 @@ name: YouTube full surah (render + upload)
 # 2. The video is uploaded STRAIGHT to YouTube with the one-time resumable-upload link that n8n created (n8n keeps the
 #    Google login; this job never sees it). The link is masked in the log. The video stays private until n8n has set the
 #    title, description, thumbnail and playlist, then n8n makes it public.
-# 3. The thumbnail, meta and stills go to Cloudinary youtube/surahs/ and everything is POSTed back to n8n.
+# 3. The thumbnail, meta and stills go to R2 basaer/youtube/surahs/ and everything is POSTed back to n8n.
 on:
   workflow_dispatch:
     inputs:
@@ -66,19 +66,31 @@ jobs:
 
       - name: Render the surah
         env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
           SURAH: ${{ github.event.inputs.surah }}
           RECITER: ${{ github.event.inputs.reciter }}
         run: node scripts/yt_surah.js out
 
-      - name: Upload thumbnail, meta and stills to Cloudinary
+      - name: Upload thumbnail, meta and stills to R2
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
-          F="youtube/surahs/s${{ github.event.inputs.surah }}-r${{ github.event.inputs.reciter }}-${{ github.run_id }}"
-          node scripts/upload_cloudinary.js out/thumbnail.png "$F/thumbnail" image out thumbnailUrl
-          node scripts/upload_cloudinary.js out/meta.json "$F/meta.json" raw out metaUrl
+          F="basaer/youtube/surahs/s${{ github.event.inputs.surah }}-r${{ github.event.inputs.reciter }}-${{ github.run_id }}"
+          # YouTube thumbnails must be under 2 MB: a JPEG copy of the PNG.
+          ffmpeg -nostdin -loglevel error -y -i out/thumbnail.png -q:v 3 out/thumbnail.jpg
+          test "$(stat -c %s out/thumbnail.jpg)" -lt 2000000
+          node scripts/upload_r2.js out/thumbnail.jpg "$F/thumbnail.jpg" image/jpeg out thumbnailUrl
+          node scripts/upload_r2.js out/meta.json "$F/meta.json" application/json out metaUrl
           for f in out/still-*.png; do
             n=$(basename "$f" .png)
-            node scripts/upload_cloudinary.js "$f" "$F/$n" image out "$n"
+            node scripts/upload_r2.js "$f" "$F/$n.png" image/png out "$n"
           done
 
       - name: Upload the video to YouTube (one-time link from n8n)

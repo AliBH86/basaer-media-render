@@ -1,8 +1,8 @@
 name: Scene library - render takes (lemo-opuscar)
 # Basaer scene library (owner, 2026-10-15): motion-graphic backgrounds for Studio speech Reels, drawn in code with the
 # Lemo-Opuscar library (MIT, pinned commit). Each scene in scenes/<name>/ renders as 4 takes of 6 s (1080x1920, 30 fps,
-# silent), one job per take, and is uploaded to Cloudinary next to the approved footage as
-# cinematic-test/pexels/<id>-vertical.mp4 so footage_background.js can use it once data/footage_library.json lists it.
+# silent), one job per take, and is uploaded to R2 next to the approved footage as
+# basaer/footage/<id>-vertical.mp4 so footage_background.js can use it once data/footage_library.json lists it.
 # Nothing here changes a Reel: a scene is only used after the owner approves it and it is added to the library.
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ on:
         description: 'supersampling for the paper-cut scenes (1-2)'
         default: '1.5'
       upload:
-        description: 'upload to Cloudinary (true/false)'
+        description: 'upload to R2 (true/false)'
         default: 'true'
 
 env:
@@ -80,13 +80,15 @@ jobs:
           ffmpeg -v error -i "$f" -vf blackdetect=d=0.2:pix_th=0.04 -an -f null - 2>&1 | tee out/black.txt
           if grep -q black_start out/black.txt; then echo "black frames found"; exit 1; fi
           for t in 0.3 2.5 5.7; do ffmpeg -v error -y -ss $t -i "$f" -frames:v 1 -q:v 3 "out/${{ matrix.id }}_$t.jpg"; done
-      - name: Upload to Cloudinary
+      - name: Upload to R2
         if: github.event.inputs.upload == 'true'
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
-          r=$(curl -sS -X POST https://api.cloudinary.com/v1_1/b72gfdzx/video/upload \
-            -F "file=@out/${{ matrix.id }}.mp4" -F upload_preset=ml_default \
-            -F "public_id=cinematic-test/pexels/${{ matrix.id }}-vertical")
-          echo "$r" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s); if(!j.secure_url){console.error(s);process.exit(1)} console.log(j.secure_url, j.duration, j.width+"x"+j.height)})'
+          node scripts/upload_r2.js "out/${{ matrix.id }}.mp4" "basaer/footage/${{ matrix.id }}-vertical.mp4" video/mp4
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.id }}

@@ -23,6 +23,10 @@ jobs:
 
       - name: Render every Daily Post slide and check it (nothing is published)
         env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
         run: node scripts/qa_daily.js out/qa
 

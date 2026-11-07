@@ -47,11 +47,24 @@ jobs:
       - name: Download the clip's audio
         id: dl
         env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
           CLIP_URL: ${{ github.event.inputs.url }}
         run: |
           mkdir -p work
+          # A file the owner sent the bot is already on R2: read it through the bucket (the public host refuses GitHub's runners).
+          case "$CLIP_URL" in
+            https://basaer-media.ahbrandsbh.com/*)
+              node scripts/r2_download.js work/upload.bin "$CLIP_URL"
+              ffmpeg -nostdin -loglevel error -y -i work/upload.bin -vn -c:a libmp3lame -q:a 0 work/clip.mp3
+              rm -f work/upload.bin
+              ;;
+          esac
           # Instagram sometimes refuses anonymous downloads for a while (2026-10-14: "exceeded the rate-limit"); a retry later works
           for n in 1 2 3 4 5; do
+            test -s work/clip.mp3 && break
             yt-dlp --no-playlist -f "bestaudio/best" -x --audio-format mp3 --audio-quality 0 --write-info-json -o "work/clip.%(ext)s" "$CLIP_URL" 2>&1 | tail -20
             test -s work/clip.mp3 && break
             echo "download attempt $n failed, waiting $((n * 45)) s"
@@ -80,9 +93,14 @@ jobs:
           export STUDIO_HINT="$(node -e "const j=require('./work/clip.info.json');console.log(String(j.description||j.title||'').slice(0,400))" 2>/dev/null || true)"
           python scripts/studio_transcribe.py work/voice.mp3 large-v3 work/words.json
       - name: Upload audio
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
-          node scripts/upload_cloudinary.js work/original.mp3 "studio/clips/${{ github.event.inputs.itemId }}-original-${{ github.run_id }}" video work originalUrl
-          node scripts/upload_cloudinary.js work/voice.mp3 "studio/clips/${{ github.event.inputs.itemId }}-voice-${{ github.run_id }}" video work voiceUrl
+          node scripts/upload_r2.js work/original.mp3 "basaer/studio/originals/${{ github.event.inputs.itemId }}-original-${{ github.run_id }}.mp3" audio/mpeg work originalUrl
+          node scripts/upload_r2.js work/voice.mp3 "basaer/studio/originals/${{ github.event.inputs.itemId }}-voice-${{ github.run_id }}.mp3" audio/mpeg work voiceUrl
           cat work/uploads.json
       - name: Report to n8n
         if: ${{ always() && github.event.inputs.resumeUrl != '' }}

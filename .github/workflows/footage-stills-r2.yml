@@ -1,0 +1,21 @@
+name: Daily Post stills to R2
+
+# Cuts the Daily Post background stills from the footage library on R2. Review only: nothing publishes. Safe to repeat.
+on:
+  workflow_dispatch:
+
+jobs:
+  stills:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - name: Cut and upload stills
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
+        run: node scripts/footage_stills_r2.js work

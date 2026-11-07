@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       audioUrl:
-        description: "Clip audio (Cloudinary URL)"
+        description: "Clip audio (link)"
         required: true
       whisperModel:
         description: "faster-whisper model"
@@ -35,9 +35,14 @@ jobs:
           pip install --quiet torch torchaudio --index-url https://download.pytorch.org/whl/cpu
           pip install --quiet demucs faster-whisper soundfile
       - name: Get the clip
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
           mkdir -p work
-          curl -sSL --fail -o work/clip.mp3 "${{ github.event.inputs.audioUrl }}"
+          node scripts/r2_download.js work/clip.mp3 "${{ github.event.inputs.audioUrl }}"
           ffmpeg -nostdin -loglevel error -y -i work/clip.mp3 -ac 2 -ar 44100 work/clip.wav
       - name: Separate the voice from the music
         run: |

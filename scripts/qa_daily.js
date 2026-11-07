@@ -9,7 +9,7 @@
 //   droplet's RAM is not touched.)
 // - Integrity: the same checks as the slide part of the n8n 'Verify Text Integrity' node, against a SECOND,
 //   independent API fetch: slide Arabic, end-of-ayah number, slide English, U+FFFD / mojibake / non-Arabic.
-// - Output: out/qa/<n>-<key>.png per slide, contact sheets of 12 (qa-overnight on Cloudinary),
+// - Output: out/qa/<n>-<key>.png per slide, contact sheets of 12 (basaer/temp/qa-overnight on R2),
 //   out/qa/daily_qa.json and out/qa/daily_qa.md.
 //
 // Usage: node scripts/qa_daily.js <outDir>
@@ -96,10 +96,9 @@ function checkSlide(item, fresh, ayahNumber) {
 }
 
 function upload(file, publicId) {
-  const resp = execSync(`curl -sS -X POST "https://api.cloudinary.com/v1_1/b72gfdzx/image/upload" -F "file=@${file}" -F "upload_preset=ml_default" -F "public_id=${publicId}"`, { shell: '/bin/bash', encoding: 'utf8' });
-  const j = JSON.parse(resp);
-  if (!j.secure_url) throw new Error(`upload failed for ${publicId}: ${JSON.stringify(j.error)}`);
-  return { url: j.secure_url, bytes: j.bytes };
+  const objectKey = `basaer/temp/${publicId}${path.extname(file)}`;
+  const line = execSync(`node "${path.join(__dirname, 'upload_r2.js')}" "${file}" "${objectKey}" image/png`, { shell: '/bin/bash', encoding: 'utf8' }).trim();
+  return { url: line.split(' -> ')[1], bytes: fs.statSync(file).size };
 }
 
 (async () => {

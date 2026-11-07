@@ -10,8 +10,8 @@ on:
         description: "Series folder under data/series/"
         default: "dua-sabah"
       audioUrl:
-        description: "Recording (Cloudinary URL)"
-        default: "https://res.cloudinary.com/b72gfdzx/video/upload/v1791731983/series/dua-sabah/audio-ali-hamadi.mp3"
+        description: "Recording (link)"
+        required: true
 
 jobs:
   align:
@@ -28,9 +28,14 @@ jobs:
           pip install --quiet torch torchaudio --index-url https://download.pytorch.org/whl/cpu
           pip install --quiet git+https://github.com/MahmoudAshraf97/ctc-forced-aligner.git
       - name: Get the recording (16 kHz mono)
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
           mkdir -p work
-          curl -sSL --fail -o work/rec.mp3 "${{ github.event.inputs.audioUrl }}"
+          node scripts/r2_download.js work/rec.mp3 "${{ github.event.inputs.audioUrl }}"
           ffmpeg -nostdin -loglevel error -y -i work/rec.mp3 -ac 1 -ar 16000 work/rec.wav
       - name: Align
         run: python scripts/series_align.py work/rec.wav "data/series/${{ github.event.inputs.series }}/phrases.json" work/aligned.json

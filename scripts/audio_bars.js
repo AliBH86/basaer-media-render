@@ -3,7 +3,7 @@
 // audio into a gold visual, 800 x 64 px, overlaid at x=140, y=1256 (under the handle at 1190 and the save/share pill,
 // which ends at 1244). The volume boosts are for the drawing only, never the sound.
 //
-// Styles (samples: Cloudinary studio-test/wave-style-1..4-a.mp4), chosen with BARS_STYLE; DEFAULT is the owner's pick.
+// Styles chosen with BARS_STYLE; DEFAULT is the owner's pick.
 //   1 mirrored bars   2 bars from a baseline   3 smooth wave   4 fine mirrored bars
 const DEFAULT = '3'; // owner's pick, 2026-10-13: smooth wave
 const X = 140, Y = 1256;

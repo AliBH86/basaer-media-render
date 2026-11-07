@@ -1,7 +1,7 @@
 name: YouTube Short (Khatm part)
 
 # YouTube Shorts (owner, 2026-10-21): picks the next Khatm part estimated at 55 s or less (scripts/pick_short.js), renders
-# it exactly like a Khatm Reel but with the YouTube handle on screen, uploads it to Cloudinary youtube/shorts/ and POSTs the
+# it exactly like a Khatm Reel but with the YouTube handle on screen, uploads it to R2 basaer/youtube/shorts/ and POSTs the
 # result back to n8n. Nothing here touches YouTube or Instagram: n8n does the YouTube upload (videos.insert).
 on:
   workflow_dispatch:
@@ -59,6 +59,10 @@ jobs:
 
       - name: Render the Short
         env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
           CHROME_BIN: ${{ steps.chrome.outputs.path }}
           KHATM: "1"
           FOOTAGE_STYLE: "warm"
@@ -79,10 +83,15 @@ jobs:
         run: |
           node scripts/render_reel.js "${{ steps.pick.outputs.surah }}" "${{ steps.pick.outputs.ayahStart }}" "${{ steps.pick.outputs.reciterId }}" "footage" out "${{ steps.pick.outputs.ayahEnd }}"
 
-      - name: Upload the Short to Cloudinary
+      - name: Upload the Short to R2
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
           REEL_FILE=$(ls out/reel_*.mp4)
-          node scripts/upload_cloudinary.js "$REEL_FILE" "youtube/shorts/short-${{ steps.pick.outputs.khatmPart }}-${{ github.run_id }}" video out reelUrl
+          node scripts/upload_r2.js "$REEL_FILE" "basaer/youtube/shorts/short-${{ steps.pick.outputs.khatmPart }}-${{ github.run_id }}.mp4" video/mp4 out reelUrl
           ffprobe -v error -show_entries format=duration,size -show_entries stream=width,height,codec_name -of default=noprint_wrappers=1 "$REEL_FILE"
           cat out/uploads.json
 

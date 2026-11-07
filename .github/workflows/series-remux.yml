@@ -11,8 +11,6 @@ on:
         required: true
       series:
         default: "dua-sabah"
-      cloudFolder:
-        default: "series-v3"
 
 jobs:
   remux:
@@ -23,12 +21,17 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
       - name: Remux, check, upload
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          R2_BASAER_PUBLIC_BASE: https://basaer-media.ahbrandsbh.com
         run: |
           set -euo pipefail
           mkdir -p out
           for pair in ${{ github.event.inputs.items }}; do
             P="${pair%%=*}"; URL="${pair#*=}"
-            curl -sSL -o "in_$P.mp4" "$URL"
+            node scripts/r2_download.js "in_$P.mp4" "$URL"
             # Plain copy. Without edit lists the video starts 2 frames (67 ms) late and the 1024 AAC
             # priming samples (21 ms) play, so audio leads by ~45 ms: not visible on a text Reel.
             ffmpeg -nostdin -loglevel error -y -i "in_$P.mp4" -map 0 -c copy -movflags +faststart -use_editlist 0 "out/part_$P.mp4"
@@ -44,8 +47,8 @@ jobs:
               ffmpeg -nostdin -loglevel error -y -ss "$T" -i "out/part_$P.mp4" -frames:v 1 "out/s_${P}_$k.png"
             done
             ffmpeg -nostdin -loglevel error -y -i out/s_${P}_0.png -i out/s_${P}_1.png -i out/s_${P}_2.png -i out/s_${P}_3.png -filter_complex "hstack=4,scale=1600:-2" "out/tile_$P.jpg"
-            node scripts/upload_cloudinary.js "out/part_$P.mp4" "${{ github.event.inputs.cloudFolder }}/${{ github.event.inputs.series }}-part$P-${{ github.run_id }}" video out "reel_$P"
-            node scripts/upload_cloudinary.js "out/tile_$P.jpg" "${{ github.event.inputs.cloudFolder }}/${{ github.event.inputs.series }}-part$P-tile-${{ github.run_id }}" image out "tile_$P"
+            node scripts/upload_r2.js "out/part_$P.mp4" "basaer/reels/pending/${{ github.event.inputs.series }}-part$P-${{ github.run_id }}.mp4" video/mp4 out "reel_$P"
+            node scripts/upload_r2.js "out/tile_$P.jpg" "basaer/reels/stills/${{ github.event.inputs.series }}-part$P-tile-${{ github.run_id }}.jpg" image/jpeg out "tile_$P"
           done
           cat out/uploads.json
       - uses: actions/upload-artifact@v4

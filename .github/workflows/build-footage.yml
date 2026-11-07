@@ -2,7 +2,7 @@ name: Build Footage Pool
 
 # Downloads every approved clip in data/footage_pool.json (Pixabay via PIXABAY_API_KEY, Coverr via COVERR_API_KEY),
 # grades + crops each to a vertical 1080x1920 library clip, and COMMITS them into data/footage/ so renders read them
-# locally and never fetch footage from Cloudinary. Review only: nothing publishes. Run with workflow_dispatch.
+# locally and never fetch footage from a media host. Review only: nothing publishes. Run with workflow_dispatch.
 on:
   workflow_dispatch:
     inputs:

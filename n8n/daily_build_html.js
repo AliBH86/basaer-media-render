@@ -2,9 +2,9 @@ const pick = $('Pick Ayah').first().json;
 const verse = $('Get Verse').first().json.verse;
 const chapter = $('Get Chapter').first().json.chapter;
 
-const SCHEHERAZADE_REGULAR_URL = 'https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960346/fonts/scheherazade-regular.woff2';
-const SCHEHERAZADE_BOLD_URL = 'https://res.cloudinary.com/b72gfdzx/raw/upload/v1790960348/fonts/scheherazade-bold.woff2';
-const INTER_REGULAR_URL = 'https://res.cloudinary.com/b72gfdzx/raw/upload/v1790955379/fonts/inter-regular.woff2';
+const SCHEHERAZADE_REGULAR_URL = 'https://basaer-media.ahbrandsbh.com/basaer/fonts/v4/scheherazade-regular.woff2';
+const SCHEHERAZADE_BOLD_URL = 'https://basaer-media.ahbrandsbh.com/basaer/fonts/v4/scheherazade-bold.woff2';
+const INTER_REGULAR_URL = 'https://basaer-media.ahbrandsbh.com/basaer/fonts/v4/inter-regular.woff2';
 
 const EASTERN = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
 function toEastern(n) {

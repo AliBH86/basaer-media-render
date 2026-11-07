@@ -1,6 +1,6 @@
 // FOOTAGE BACKGROUND (owner-approved 2026-10-10): real-footage background for render_reel.js (style 'footage') from the
 // approved clip library data/footage_library.json (owner-picked Pexels clips, checked frame by frame: no people, no writing
-// or calligraphy, no logos; stored on Cloudinary already 1080x1920 and brand-graded). Cuts land on ayah starts (and the
+// or calligraphy, no logos; stored on R2 already 1080x1920 and brand-graded). Cuts land on ayah starts (and the
 // Bismillah -> first ayah join); any piece longer than MAX_SHOT is split so no shot overstays. The mood runs night -> dusk ->
 // day -> dusk -> night, opens and ends on a mosque at night, and never repeats a clip inside a Reel; FOOTAGE_SEED (set by
 // render_reel.js from the passage) moves the starting point so consecutive Reels open on different clips. A navy scrim is

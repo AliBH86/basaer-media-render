@@ -1,5 +1,4 @@
-// Uploads one file to the Basaer R2 bucket and appends {key: url} to <outDir>/uploads.json, the same contract as
-// upload_cloudinary.js, so the n8n resumeUrl callback does not change. A failure exits non-zero: there is no fallback.
+// Uploads one file to the Basaer R2 bucket and appends {key: url} to <outDir>/uploads.json, so the n8n resumeUrl callback does not change. A failure exits non-zero: there is no fallback.
 // Usage: node upload_r2.js <filePath> <objectKey> <contentType> [outDir] [key]
 // Env: R2_BASAER_ENDPOINT, R2_BASAER_ACCESS_KEY_ID, R2_BASAER_SECRET_ACCESS_KEY, R2_BASAER_PUBLIC_BASE
 const crypto = require('crypto');

@@ -7,6 +7,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { putObject } = require('./upload_r2');
+const { objectExists } = require('./r2_download');
 
 const shard = Number(process.argv[2] || 0), shards = Number(process.argv[3] || 1);
 const lib = require('../data/footage_library.json');
@@ -31,10 +32,8 @@ async function coverrFile(id, raw) {
   for (const clip of clips) {
     const name = clip.id, item = params[name];
     const objectKey = `basaer/footage/${name}-vertical.mp4`;
-    const publicUrl = `${process.env.R2_BASAER_PUBLIC_BASE.replace(/\/$/, '')}/${objectKey}`;
-    try {
-      const head = await fetch(publicUrl, { method: 'HEAD' });
-      if (head.ok) { done.push(name); console.log(`${name}: already on R2`); continue; }
+        try {
+      if (await objectExists(objectKey)) { done.push(name); console.log(`${name}: already on R2`); continue; }
       if (!item) throw new Error('no recorded import settings');
       const raw = path.join(work, `${name}.mp4`), vert = path.join(work, `${name}-vertical.mp4`);
       if (item.coverr) await coverrFile(item.coverr, raw);
