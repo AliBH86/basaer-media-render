@@ -43,7 +43,7 @@ on:
         description: "On-screen handle (YouTube Shorts: @Basaermedia_bh). Empty = @basaer.media.bh"
         required: false
       cloudFolder:
-        description: "Cloudinary folder (default khatm-test)"
+        description: "Not used (kept so existing dispatches stay valid)"
         default: "khatm-test"
         required: false
       resumeUrl:

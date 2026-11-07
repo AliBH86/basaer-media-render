@@ -21,6 +21,8 @@ const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data', 'dail
       if (!cached[clip]) { cached[clip] = path.join(work, clip + '.mp4'); fs.writeFileSync(cached[clip], await getObject(`basaer/footage/${clip}-vertical.mp4`)); }
       const out = path.join(work, `${clip}-${sec}.jpg`);
       execSync(`ffmpeg -nostdin -loglevel error -y -ss ${sec} -i "${cached[clip]}" -frames:v 1 -vf "scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350" -q:v 3 "${out}"`, { stdio: 'inherit', shell: '/bin/bash' });
+      // a clip shorter than the second asked for: its last frame
+      if (!fs.existsSync(out)) execSync(`ffmpeg -nostdin -loglevel error -y -sseof -0.3 -i "${cached[clip]}" -frames:v 1 -vf "scale=1080:1350:force_original_aspect_ratio=increase,crop=1080:1350" -q:v 3 "${out}"`, { stdio: 'inherit', shell: '/bin/bash' });
       await putObject(out, key, 'image/jpeg');
       bytes += fs.statSync(out).size; made++;
     } catch (e) { failed.push(`${entry}: ${e.message.split('\n')[0]}`); console.log('FAILED ' + entry + ' ' + e.message.split('\n')[0]); }
