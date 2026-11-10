@@ -80,6 +80,8 @@ jobs:
           TRANSLATION_ID: "20"
           TRANSLATION_NAME: "Saheeh International"
           HANDLE: "@Basaermedia_bh"
+          # Owner, 2026-11-10: Like · Share · Subscribe pill in the last 5 s (YouTube only; Instagram Reels never set this).
+          CTA: "1"
         run: |
           node scripts/render_reel.js "${{ steps.pick.outputs.surah }}" "${{ steps.pick.outputs.ayahStart }}" "${{ steps.pick.outputs.reciterId }}" "footage" out "${{ steps.pick.outputs.ayahEnd }}"
 

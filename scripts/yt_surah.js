@@ -15,6 +15,7 @@ const https = require('https');
 
 const { amiriQuranBase64, montserratBase64 } = require('./font_data');
 const { checkOverlay, readOverlay } = require('./verify_text');
+const { ctaRowHtml } = require('./yt_cta');
 
 const ROOT = path.join(__dirname, '..');
 const OUT = path.resolve(process.argv[2] || 'out');
@@ -174,7 +175,8 @@ function introHtml({ surahAr, surahEn, surahMeaning, number, count, place }) {
   </body></html>`;
 }
 
-// ---------- outro / end-screen layout (dashed boxes = where YouTube draws its end-screen elements; not drawn in production) ----------
+// ---------- outro: end of surah + Like · Share · Subscribe (owner, 2026-11-10) + the next surah ----------
+// The YouTube API cannot add clickable end-screen elements, so the call to action is part of the picture.
 function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${fontCss}
   body { width:${W}px; height:${H}px; overflow:hidden; background:rgba(6,18,25,0.62); color:${CREAM}; position:relative; }
@@ -182,15 +184,15 @@ function outroHtml({ surahAr, surahEn, nextAr, nextEn }) {
   .ar { font-family:'RQ'; font-size:76px; color:${GOLD_HI}; direction:rtl; line-height:1.4; ${glow} }
   .en { font-family:'CZ'; font-size:22px; letter-spacing:7px; font-weight:700; margin:2px 0 14px; }
   .box { position:absolute; border:2px dashed rgba(247,241,230,0.4); border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:'MS'; font-size:16px; letter-spacing:2px; opacity:0.75; text-align:center; line-height:1.5; }
-  .next { position:absolute; left:250px; top:660px; text-align:center; width:680px; }
+  .cta { position:absolute; left:0; width:100%; top:352px; }
+  .next { position:absolute; left:0; top:790px; text-align:center; width:100%; }
   .next-ar { font-family:'RQ'; font-size:46px; direction:rtl; color:${GOLD_HI}; line-height:1.5; }
   .next-en { font-family:'CZ'; font-size:18px; letter-spacing:4px; font-weight:700; }
   .brand { position:absolute; bottom:52px; width:100%; text-align:center; font-family:'CZ'; font-size:18px; letter-spacing:6px; opacity:0.8; font-weight:700; }
   </style></head><body>
   <div class="top"><div class="ar">ختام سورة ${surahAr}</div><div class="en">END OF SURAH ${surahEn.toUpperCase()}</div>${divider(140)}</div>
-  ${process.env.SHOW_GUIDES === '1' ? `<div class="box" style="left:250px;top:390px;width:680px;height:240px;">YouTube end screen:<br>NEXT SURAH video</div>` : ''}
-  <div class="next"><div class="next-ar">التالية: سورة ${nextAr}</div><div class="next-en">NEXT · SURAH ${nextEn.toUpperCase()}</div></div>
-  ${process.env.SHOW_GUIDES === '1' ? `<div class="box" style="left:1090px;top:390px;width:240px;height:240px;border-radius:50%;">SUBSCRIBE</div><div class="box" style="left:1390px;top:390px;width:280px;height:240px;">PLAYLIST:<br>FULL SURAHS</div>` : ''}
+  <div class="cta">${ctaRowHtml({ arFont: 'AQ', enFont: 'CZ' })}</div>
+  ${nextAr ? `<div class="next"><div class="next-ar">التالية: سورة ${nextAr}</div><div class="next-en">NEXT · SURAH ${nextEn.toUpperCase()}</div></div>` : ''}
   <div class="brand">${BRAND_EN} · ${BRAND_AR} · ${HANDLE}</div>
   </body></html>`;
 }

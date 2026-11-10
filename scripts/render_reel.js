@@ -9,6 +9,7 @@ const path = require('path');
 
 const { amiriQuranBase64, montserratBase64 } = require('./font_data');
 const { audioBarsLines } = require('./audio_bars');
+const { ctaPillPageHtml } = require('./yt_cta');
 
 const REPO_ROOT = path.join(__dirname, '..');
 const CHROME = process.env.CHROME_BIN || 'google-chrome';
@@ -640,6 +641,19 @@ async function main() {
     prev = out;
   });
   const audioInputIdx = overlaySpecs.length + 1;
+  // YouTube Shorts only (CTA=1; owner, 2026-11-10): a Like · Share · Subscribe pill under the wave for the last seconds.
+  // Its own input AFTER the audio, so no other input index moves. Not an ayah overlay: the integrity guard never sees it.
+  let extraInputs = '';
+  if (process.env.CTA === '1') {
+    const ctaSec = Number(process.env.CTA_SEC || 5);
+    const ctaPng = path.join(workDir, 'cta_pill.png');
+    const ctaFontCss = `@font-face { font-family:'Amiri Quran Local'; src:url(data:font/woff2;base64,${amiriQuranBase64}) format('woff2'); } @font-face { font-family:'Montserrat Local'; src:url(data:font/woff2;base64,${montserratBase64}) format('woff2'); font-weight:100 900; }`;
+    renderOverlayPng(ctaPillPageHtml({ W, H, fontCss: ctaFontCss, arFont: 'Amiri Quran Local', enFont: 'Montserrat Local' }), ctaPng);
+    extraInputs = ` -i "${ctaPng}"`;
+    const ctaStart = Math.max(0, timeline.durationSec - ctaSec).toFixed(3);
+    filterLines.push(`[${prev}][${audioInputIdx + 1}:v]overlay=enable='gte(t,${ctaStart})'[vcta]`);
+    prev = 'vcta';
+  }
   // Audio bars of the recitation under the @handle, on to the end (scripts/audio_bars.js; owner, 2026-10-13).
   // WAVE=0 turns them off.
   if (process.env.WAVE !== '0') {
@@ -652,7 +666,7 @@ async function main() {
   fs.writeFileSync(filterScriptPath, filterComplex);
 
   const outPath = path.join(outDir, `reel_${surah}_${ayahStart}.mp4`);
-  sh(`ffmpeg -y -nostdin ${inputs} -filter_complex_script "${filterScriptPath}" -map "[vout]" -map ${audioInputIdx}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 128k -shortest "${outPath}"`);
+  sh(`ffmpeg -y -nostdin ${inputs}${extraInputs} -filter_complex_script "${filterScriptPath}" -map "[vout]" -map ${audioInputIdx}:a -c:v libx264 -pix_fmt yuv420p -r ${FPS} -c:a aac -b:a 128k -shortest "${outPath}"`);
 
   const elapsed = (Date.now() - t0) / 1000;
   console.log(`\nTotal render time: ${elapsed.toFixed(1)}s (budget: ${TOTAL_BUDGET_SEC}s)`);
