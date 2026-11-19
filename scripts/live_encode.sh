@@ -53,9 +53,9 @@ for s in ${SURAHS//,/ }; do
   ffmpeg -hide_banner -loglevel error -y -stream_loop -1 -i "$WORK/loop.mp4" -i "$WORK/a.m4a" \
     -map 0:v:0 -map 1:a:0 -c copy -t "$adur" -movflags +faststart "$OUT/$id.mp4"
   # 5. checks: same format for every file, video covers the audio
-  p=$(ffprobe -v error -show_entries stream=codec_name,profile,width,height,r_frame_rate,sample_rate,channels -of csv=p=0 "$OUT/$id.mp4" | tr '\n' ' ')
-  want="h264,High,1280,720,30/1 aac,LC,48000,2 "
-  [ "$p" = "$want" ] || { echo "$id: unexpected format: $p"; exit 1; }
+  v=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,profile,width,height,r_frame_rate,pix_fmt -of csv=p=0 "$OUT/$id.mp4")
+  a=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name,profile,sample_rate,channels -of csv=p=0 "$OUT/$id.mp4")
+  [ "$v|$a" = "h264,High,1280,720,yuv420p,30/1|aac,LC,48000,2" ] || { echo "$id: unexpected format: $v | $a"; exit 1; }
   fdur=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$OUT/$id.mp4")
   awk -v a="$adur" -v f="$fdur" 'BEGIN { d = f - a; if (d < -1 || d > 2.5) exit 1 }' || { echo "$id: duration $fdur vs audio $adur"; exit 1; }
   ffmpeg -hide_banner -loglevel error -y -ss 30 -i "$OUT/$id.mp4" -frames:v 1 -q:v 3 "$OUT/stills/$id.jpg"
