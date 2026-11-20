@@ -1,0 +1,8 @@
+{
+ "_comment": "Basaer Live (24/7 stream) background shots, 2026-11-20. A calmer subset of data/youtube_footage.json (approved Coverr clips, graded copies on R2 basaer/youtube/footage-graded/). Chosen by measured motion (mean frame difference <= 0.67 on 0-255 luma; the full list runs 0.32-7.13) and an eye check of a contact sheet. Left out of the live set: QjW7fCpztu (star-trail time-lapse), HM7pVL1BAT (buildings and boats on the shore), hdorBTWXNY (aerial surf), L7iQYa4N5Y (waterfall), YtarCBiCxj (choppy sea) and every clip above motion 0.8.",
+ "clips": [
+  "coverr-PtDce945WL", "coverr-TQcg9gPi7h", "coverr-ncFMIJ5yHJ", "coverr-MnI5sqK3Vo", "coverr-DnBhCNa6Tl",
+  "coverr-qXLxwV9w3a", "coverr-ebyoNxa4bh", "coverr-Bqjj6OVNHd", "coverr-A22SRO662u", "coverr-Pqr1FV3tIk",
+  "coverr-kwLPECiFOf", "coverr-LRFCJa5vRR", "coverr-P16Y8nbm1e", "coverr-fsnU3mB4YK", "coverr-CLew6kVZWU"
+ ]
+}

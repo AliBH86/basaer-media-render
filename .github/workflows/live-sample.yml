@@ -1,0 +1,53 @@
+name: YouTube Live - production sample (Concept B night, H.264 + HEVC)
+
+# Representative production sample for the Basaer Live stream (scripts/live_surah.js). Each job renders ONE surah (or a
+# short test excerpt), runs the Quran text integrity guard, and encodes the same picture/audio twice: H.264 3.5 Mb/s and
+# HEVC 2.5 Mb/s CBR, 720p30, 2 s keyframes, BT.709. Output: artifact (2 days). Nothing is published anywhere.
+on:
+  workflow_dispatch:
+    inputs:
+      items:
+        description: 'JSON list of "surah" or "surah:from-to"'
+        default: '["1","67","112","113","114","2:255-257"]'
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        item: ${{ fromJSON(github.event.inputs.items) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install ffmpeg (with libx265)
+        run: sudo apt-get update -y && sudo apt-get install -y ffmpeg && ffmpeg -hide_banner -encoders | grep -E "libx264|libx265"
+      - name: Locate Chrome
+        id: chrome
+        run: |
+          for bin in google-chrome google-chrome-stable chromium-browser chromium; do
+            if command -v "$bin" >/dev/null 2>&1; then echo "path=$(command -v $bin)" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
+          echo "No Chrome found" >&2; exit 1
+      - name: Guard self-test
+        run: node scripts/verify_text.js --selftest
+      - name: Render + encode
+        env:
+          R2_BASAER_ENDPOINT: ${{ secrets.R2_BASAER_ENDPOINT }}
+          R2_BASAER_ACCESS_KEY_ID: ${{ secrets.R2_BASAER_ACCESS_KEY_ID }}
+          R2_BASAER_SECRET_ACCESS_KEY: ${{ secrets.R2_BASAER_SECRET_ACCESS_KEY }}
+          CHROME_BIN: ${{ steps.chrome.outputs.path }}
+          ITEM: ${{ matrix.item }}
+        run: |
+          [[ "$ITEM" =~ ^[0-9]+(:[0-9]+-[0-9]+)?$ ]] || { echo "bad item"; exit 1; }
+          export SURAH="${ITEM%%:*}"
+          [[ "$ITEM" == *:* ]] && export AYAHS="${ITEM#*:}"
+          node scripts/live_surah.js out
+      - id: name
+        run: echo "n=live-sample-$(echo '${{ matrix.item }}' | tr ':' '_')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.name.outputs.n }}
+          path: out
+          retention-days: 2
+          compression-level: 0
