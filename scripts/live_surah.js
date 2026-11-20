@@ -43,6 +43,8 @@ fs.mkdirSync(OUT, { recursive: true });
 const work = fs.mkdtempSync(path.join(os.tmpdir(), 'live-surah-'));
 const sh = (cmd) => execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], shell: '/bin/bash', maxBuffer: 1 << 28 }).toString();
 const arNum = (n) => Number(n).toLocaleString('ar-EG', { useGrouping: false });
+// Arabic counted noun: 3-10 take the plural (آيات), 11+ the singular (آية).
+const ayahWord = (n) => (n % 100 >= 3 && n % 100 <= 10 ? 'آيات' : 'آية');
 const b64 = (p) => fs.readFileSync(path.join(ROOT, p)).toString('base64');
 const ffDur = (f) => Number(sh(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${f}"`).trim());
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
@@ -106,7 +108,7 @@ function ayahHtml(meta, scr, flags) {
   const reciter = flags.reciter ? `<div style="position:absolute;bottom:58px;left:0;right:0;display:flex;justify-content:center;align-items:center;gap:12px">${portrait(36)}<div dir="rtl" style="font-family:AQ;font-size:17px;line-height:1.6;opacity:.9">الشيخ ${RECITER_AR} <span style="opacity:.6">· المصحف المجوَّد</span></div></div>` : '';
   const prompt = flags.prompt ? `<div style="position:absolute;bottom:62px;left:0;right:0;text-align:center"><span dir="rtl" style="font-family:AQ;font-size:17px;color:${GOLD_HI};opacity:.85">اشترك في بصائر ميديا لتصلك التلاوات</span><span style="font:600 11px MS;letter-spacing:2px;opacity:.55;margin-left:12px">SUBSCRIBE</span></div>` : '';
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${fontCss} .arabic{display:inline}</style></head><body>${chrome(meta)}${panel(meta, inner, page + label)}${reciter}${prompt}
-  <script>document.fonts.ready.then(()=>{const w=document.getElementById('wrap');let s=58;w.style.fontSize=s+'px';while(s>40&&(w.scrollHeight>300||w.scrollWidth>1000)){s-=2;w.style.fontSize=s+'px';}});</script></body></html>`;
+  <script>document.fonts.ready.then(()=>{const w=document.getElementById('wrap');let s=64;w.style.fontSize=s+'px';while(s>40&&(w.scrollHeight>300||w.scrollWidth>1000)){s-=2;w.style.fontSize=s+'px';}});</script></body></html>`;
 }
 
 function introHtml(meta) {
@@ -115,7 +117,7 @@ function introHtml(meta) {
   <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse 55% 50% at 50% 50%,rgba(4,10,18,.55),rgba(4,10,18,0))">
     <div dir="rtl" style="font-family:RQ;font-size:92px;color:${GOLD_HI};line-height:1.45;text-shadow:0 0 18px rgba(235,203,124,.3)">سورة ${meta.ar}</div>
     <div style="font:700 21px CZ;letter-spacing:8px;margin-top:-4px">${meta.en.toUpperCase()}</div>
-    <div dir="rtl" style="font-family:AQ;font-size:18px;opacity:.8;margin-top:10px;line-height:1.8">السورة ${arNum(meta.id)} · ${place[0]} · ${arNum(meta.count)} آية</div>
+    <div dir="rtl" style="font-family:AQ;font-size:18px;opacity:.8;margin-top:10px;line-height:1.8">السورة ${arNum(meta.id)} · ${place[0]} · ${arNum(meta.count)} ${ayahWord(meta.count)}</div>
     <div style="font:600 11px MS;letter-spacing:3px;opacity:.6;margin-top:2px">SURAH ${meta.id} · ${place[1]} · ${meta.count} AYAHS</div>
     <div style="display:flex;align-items:center;gap:14px;margin-top:38px">${portrait(54)}<div><div dir="rtl" style="font-family:AQ;font-size:21px;line-height:1.7">الشيخ ${RECITER_AR}</div><div style="font:600 11px MS;letter-spacing:2px;color:${GOLD_HI};opacity:.85">SHEIKH ${RECITER_EN.toUpperCase()} · MUJAWWAD</div></div></div>
   </div></body></html>`;
