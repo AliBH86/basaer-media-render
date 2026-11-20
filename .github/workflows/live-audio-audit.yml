@@ -1,0 +1,34 @@
+name: YouTube Live - audio audit (read-only)
+
+# Measures the recitation audio for the Basaer Live stream (loudness, true peak, balance, clipping, silences, ayah joins).
+# Read-only: downloads public audio and writes TSV reports as an artifact. Nothing is uploaded anywhere else.
+on:
+  workflow_dispatch:
+    inputs:
+      ayah:
+        description: 'Per-ayah joins (verses.quran.com, recitation 8)'
+        default: '1,2,18,67,112,113,114'
+
+jobs:
+  full:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1-9', '10-20', '21-40', '41-70', '71-114']
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - run: python3 scripts/live_audio_audit.py full "${{ matrix.shard }}" "out/full-${{ matrix.shard }}.tsv"
+      - uses: actions/upload-artifact@v4
+        with: { name: 'audio-full-${{ matrix.shard }}', path: out, retention-days: 7 }
+  ayah:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -y && sudo apt-get install -y ffmpeg
+      - run: python3 scripts/live_audio_audit.py ayah "${{ github.event.inputs.ayah }}" out/ayah.tsv
+      - uses: actions/upload-artifact@v4
+        with: { name: audio-ayah, path: out, retention-days: 7 }
